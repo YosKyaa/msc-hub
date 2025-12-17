@@ -37,6 +37,11 @@ class InventoryItemResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('inventory.view') ?? false;
+    }
+
     public static function form(Schema $form): Schema
     {
         return $form->schema([

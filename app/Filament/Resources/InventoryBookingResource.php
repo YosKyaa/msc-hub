@@ -38,6 +38,11 @@ class InventoryBookingResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'booking_code';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('inventory_bookings.view') ?? false;
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::where('status', BookingStatus::PENDING)->count() ?: null;

@@ -39,6 +39,11 @@ class FeaturedWorkResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'title';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('featured_works.view') ?? false;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema

@@ -44,6 +44,11 @@ class AssetResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'title';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('assets.view') ?? false;
+    }
+
     public static function getGloballySearchableAttributes(): array
     {
         return ['title', 'notes', 'project.title'];

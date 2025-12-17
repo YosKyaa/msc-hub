@@ -45,6 +45,11 @@ class AnnouncementResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'title';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('announcements.view') ?? false;
+    }
+
     public static function getGloballySearchableAttributes(): array
     {
         return ['title', 'summary', 'content'];

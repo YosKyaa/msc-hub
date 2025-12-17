@@ -42,6 +42,11 @@ class ContentRequestResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'request_code';
 
+    public static function canAccess(): bool
+    {
+        return auth()->user()?->can('content_requests.view') ?? false;
+    }
+
     public static function getNavigationBadge(): ?string
     {
         return static::getModel()::whereIn('status', [
