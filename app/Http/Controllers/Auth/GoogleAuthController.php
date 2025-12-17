@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Http\Controllers\Auth\AdminGoogleAuthController;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
@@ -28,6 +29,12 @@ class GoogleAuthController extends Controller
 
     public function callback(Request $request)
     {
+        // Check if this is an admin login
+        if (session('google_auth_type') === 'admin') {
+            Session::forget('google_auth_type');
+            return app(AdminGoogleAuthController::class)->callback($request);
+        }
+
         try {
             $googleUser = Socialite::driver('google')->user();
         } catch (\Exception $e) {
