@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use App\Filament\Pages\Auth\Login;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -28,10 +29,12 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(Login::class)
+            ->registration(false)
             ->brandName('MSC Hub')
-            ->brandLogo(new HtmlString('<div style="display:flex;align-items:center;gap:8px;"><img src="/img/jgu.png" alt="JGU" style="height:32px;width:auto;"><span style="font-weight:600;font-size:16px;color:#1f2937;">MSC Hub</span></div>'))
-            ->darkModeBrandLogo(new HtmlString('<div style="display:flex;align-items:center;gap:8px;"><img src="/img/jgu.png" alt="JGU" style="height:32px;width:auto;"><span style="font-weight:600;font-size:16px;color:#ffffff;">MSC Hub</span></div>'))
+            ->brandLogo(asset('img/jgu.png'))
+            ->darkModeBrandLogo(asset('img/jgu.png'))
+            ->brandLogoHeight('2rem')
             ->colors([
                 'primary' => Color::Amber,
             ])

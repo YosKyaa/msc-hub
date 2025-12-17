@@ -154,7 +154,7 @@ class ContentRequest extends Model
             'output_link' => $this->published_link,
             'happened_at' => $this->event_date ?? now(),
             'year' => ($this->event_date ?? now())->year,
-            'status' => AssetStatus::PUBLISHED,
+            'status' => AssetStatus::Published,
             'pic_user_id' => $this->assigned_to_user_id,
             'created_by' => auth()->id(),
             'notes' => "Auto-created from Content Request: {$this->request_code}",
@@ -193,13 +193,13 @@ class ContentRequest extends Model
     protected function mapContentTypeToAssetType(): AssetType
     {
         return match ($this->content_type) {
-            ContentType::PHOTO_DOCUMENTATION => AssetType::PHOTO,
-            ContentType::VIDEO_DOCUMENTATION, ContentType::VIDEO_PROFILE, ContentType::VIDEO_TEASER, ContentType::LIVE_STREAMING => AssetType::VIDEO,
-            ContentType::DESIGN_POSTER, ContentType::DESIGN_FLYER => AssetType::DESIGN,
-            ContentType::DESIGN_BANNER => AssetType::BANNER,
-            ContentType::SOCIAL_MEDIA_POST => AssetType::POST,
-            ContentType::WEBSITE_NEWS => AssetType::DOCUMENT,
-            default => AssetType::OTHER,
+            ContentType::PHOTO_DOCUMENTATION => AssetType::Photo,
+            ContentType::VIDEO_DOCUMENTATION, ContentType::VIDEO_PROFILE, ContentType::VIDEO_TEASER, ContentType::LIVE_STREAMING => AssetType::Video,
+            ContentType::DESIGN_POSTER, ContentType::DESIGN_FLYER => AssetType::Design,
+            ContentType::DESIGN_BANNER => AssetType::Banner,
+            ContentType::SOCIAL_MEDIA_POST => AssetType::Post,
+            ContentType::WEBSITE_NEWS => AssetType::Document,
+            default => AssetType::Other,
         };
     }
 
@@ -212,12 +212,12 @@ class ContentRequest extends Model
         $target = strtolower($this->platform_target);
 
         return match (true) {
-            str_contains($target, 'instagram') => Platform::INSTAGRAM,
-            str_contains($target, 'youtube') => Platform::YOUTUBE,
-            str_contains($target, 'tiktok') => Platform::TIKTOK,
-            str_contains($target, 'facebook') => Platform::FACEBOOK,
-            str_contains($target, 'website'), str_contains($target, 'web') => Platform::WEBSITE,
-            default => Platform::OTHER,
+            str_contains($target, 'instagram') => Platform::Instagram,
+            str_contains($target, 'youtube') => Platform::YouTube,
+            str_contains($target, 'tiktok') => Platform::TikTok,
+            str_contains($target, 'facebook') => Platform::Facebook,
+            str_contains($target, 'website'), str_contains($target, 'web') => Platform::Website,
+            default => Platform::Other,
         };
     }
 

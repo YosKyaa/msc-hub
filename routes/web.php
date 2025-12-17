@@ -1,19 +1,31 @@
 <?php
 
+use App\Http\Controllers\AnnouncementPublicController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\ContentRequestController;
+use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PublicBookingController;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+// Landing Page
+Route::get('/', [LandingController::class, 'index'])->name('landing');
+Route::get('/msc-hub', [LandingController::class, 'index'])->name('landing.alias');
+
+// Public Announcements
+Route::get('/announcements', [AnnouncementPublicController::class, 'index'])->name('announcements.index');
+Route::get('/announcements/{slug}', [AnnouncementPublicController::class, 'show'])->name('announcements.show');
 
 // Google OAuth for Public Requester
 Route::prefix('auth/google')->name('auth.google.')->group(function () {
     Route::get('/redirect', [GoogleAuthController::class, 'redirect'])->name('redirect');
     Route::get('/callback', [GoogleAuthController::class, 'callback'])->name('callback');
     Route::post('/logout', [GoogleAuthController::class, 'logout'])->name('logout');
+});
+
+// Google OAuth for Admin
+Route::prefix('admin/auth/google')->name('admin.google.')->group(function () {
+    Route::get('/redirect', [\App\Http\Controllers\Auth\AdminGoogleAuthController::class, 'redirect'])->name('redirect');
+    Route::get('/callback', [\App\Http\Controllers\Auth\AdminGoogleAuthController::class, 'callback'])->name('callback');
 });
 
 // Content Request (Public)

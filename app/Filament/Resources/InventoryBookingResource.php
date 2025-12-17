@@ -184,6 +184,19 @@ class InventoryBookingResource extends Resource
                     Actions\EditAction::make()
                         ->visible(fn ($record) => $record->status === BookingStatus::PENDING),
 
+                    // Export PDF
+                    Actions\Action::make('export_pdf')
+                        ->label('Export PDF')
+                        ->icon('heroicon-o-document-arrow-down')
+                        ->color('gray')
+                        ->action(function ($record) {
+                            $pdf = app('dompdf.wrapper')->loadView('pdf.inventory-booking', ['booking' => $record]);
+                            return response()->streamDownload(
+                                fn () => print($pdf->output()),
+                                'booking-inventory-' . $record->booking_code . '.pdf'
+                            );
+                        }),
+
                     // Staff Approve
                     Actions\Action::make('staff_approve')
                         ->label('Approve (Staff)')

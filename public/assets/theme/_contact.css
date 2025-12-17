@@ -1,0 +1,42 @@
+/* --------------- Contact --------------- */
+.contact-sa .box {
+  padding: 120px 60px;
+  background-image: url(../imgs/header/g-back.png);
+  background-size: cover;
+  background-position: center center;
+  border-radius: 30px;
+  overflow: hidden; }
+
+.contact-sa .info {
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-orient: vertical;
+  -webkit-box-direction: normal;
+  -ms-flex-direction: column;
+  flex-direction: column;
+  -webkit-box-pack: justify;
+  -ms-flex-pack: justify;
+  justify-content: space-between;
+  height: 100%; }
+
+.contact-sa .contact-form label {
+  font-size: 14px;
+  margin-bottom: 5px; }
+  .contact-sa .contact-form label .star {
+    color: red;
+    padding-left: 5px; }
+
+.contact-sa .contact-form input,
+.contact-sa .contact-form textarea {
+  color: #fff;
+  background: transparent;
+  width: 100%;
+  padding: 0 0 10px;
+  border: 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  font-size: 18px; }
+
+.contact-sa .contact-form button {
+  background: transparent;
+  color: #fff; }
