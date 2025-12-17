@@ -19,13 +19,16 @@ class AdminGoogleAuthController extends Controller
         return Socialite::driver('google')
             ->scopes(['openid', 'profile', 'email'])
             ->with(['prompt' => 'select_account'])
+            ->redirectUrl(route('admin.google.callback'))
             ->redirect();
     }
 
     public function callback(Request $request)
     {
         try {
-            $googleUser = Socialite::driver('google')->user();
+            $googleUser = Socialite::driver('google')
+                ->redirectUrl(route('admin.google.callback'))
+                ->user();
         } catch (\Exception $e) {
             return redirect()->route('filament.admin.auth.login')
                 ->with('error', 'Gagal login dengan Google. Silakan coba lagi.');
@@ -61,6 +64,6 @@ class AdminGoogleAuthController extends Controller
         // Login the user
         Auth::login($user, true);
 
-        return redirect()->intended(route('filament.admin.pages.dashboard'));
+        return redirect()->to('/admin');
     }
 }
