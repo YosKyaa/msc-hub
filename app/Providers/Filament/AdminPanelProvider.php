@@ -32,9 +32,9 @@ class AdminPanelProvider extends PanelProvider
             ->login(Login::class)
             ->registration(false)
             ->brandName('MSC Hub')
-            ->brandLogo(asset('img/jgu.png'))
-            ->darkModeBrandLogo(asset('img/jgu.png'))
-            ->brandLogoHeight('2rem')
+            ->brandLogo(new HtmlString('<div style="display: flex; align-items: center; gap: 8px;"><img src="' . asset('img/jgu.png') . '" alt="JGU" style="height: 2rem;"><span style="font-weight: 600; font-size: 1.1rem;">MSC Hub</span></div>'))
+            ->darkModeBrandLogo(new HtmlString('<div style="display: flex; align-items: center; gap: 8px;"><img src="' . asset('img/jgu.png') . '" alt="JGU" style="height: 2rem;"><span style="font-weight: 600; font-size: 1.1rem; color: white;">MSC Hub</span></div>'))
+            ->favicon(asset('img/jgusolo.png'))
             ->colors([
                 'primary' => Color::Amber,
             ])
