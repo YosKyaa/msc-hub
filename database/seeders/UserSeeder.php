@@ -14,25 +14,34 @@ class UserSeeder extends Seeder
             ['email' => 'admin@msc.jgu.ac.id'],
             [
                 'name' => 'Admin MSC',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('Admin@msc123'),
             ]
         );
         $admin->assignRole('admin');
 
         $head = User::firstOrCreate(
-            ['email' => 'head@msc.jgu.ac.id'],
+            ['email' => 'hadi@jgu.ac.id'],
             [
                 'name' => 'Head MSC',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('Head@msc123'),
             ]
         );
         $head->assignRole('head_msc');
 
         $staff = User::firstOrCreate(
-            ['email' => 'staff@msc.jgu.ac.id'],
+            ['email' => 'chika@jgu.ac.id'],
             [
                 'name' => 'Staff MSC',
-                'password' => Hash::make('password'),
+                'password' => Hash::make('Staff@msc123'),
+            ]
+        );
+        $staff->assignRole('staff_msc');
+
+             $staff = User::firstOrCreate(
+            ['email' => 'yosua@jgu.ac.id'],
+            [
+                'name' => 'Staff MSC',
+                'password' => Hash::make('Staff@msc123'),
             ]
         );
         $staff->assignRole('staff_msc');
