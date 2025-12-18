@@ -29,6 +29,11 @@
 
                 {{-- Desktop Nav --}}
                 <nav class="hidden md:flex items-center gap-4">
+                    <a href="{{ route('landing') }}" class="text-sm text-gray-500 hover:text-gray-900 flex items-center gap-1">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                        Beranda
+                    </a>
+                    <span class="text-gray-300">|</span>
                     <a href="{{ route('request.content') }}" class="text-sm {{ request()->routeIs('request.content') ? 'text-blue-600 font-medium' : 'text-gray-600 hover:text-gray-900' }}">
                         Request
                     </a>
@@ -78,6 +83,11 @@
 
             {{-- Mobile Menu --}}
             <div x-show="mobileMenuOpen" x-cloak x-transition class="md:hidden border-t py-3 space-y-1">
+                <a href="{{ route('landing') }}" class="block px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
+                    Kembali ke Beranda
+                </a>
+                <div class="border-t my-2"></div>
                 @if(session('requester'))
                     <div class="px-3 py-2 text-sm text-gray-700 font-medium border-b pb-3 mb-2">
                         {{ session('requester.name') }}
