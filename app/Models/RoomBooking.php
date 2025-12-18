@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\BookingStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Facades\DB;
 
 class RoomBooking extends Model
@@ -62,6 +63,13 @@ class RoomBooking extends Model
     public function rejectedByUser(): BelongsTo
     {
         return $this->belongsTo(User::class, 'rejected_by');
+    }
+
+    public function inventoryItems(): BelongsToMany
+    {
+        return $this->belongsToMany(InventoryItem::class, 'room_booking_items')
+            ->withPivot(['quantity', 'notes'])
+            ->withTimestamps();
     }
 
     // Generate unique booking code

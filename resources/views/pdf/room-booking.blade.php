@@ -216,6 +216,32 @@
             </table>
         </div>
 
+        @if($booking->inventoryItems->count() > 0)
+        <div class="section">
+            <div class="section-title">Peralatan Multimedia yang Dipinjam</div>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+                <thead>
+                    <tr style="background: #f3f4f6;">
+                        <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Kode</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Nama Peralatan</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: center;">Jumlah</th>
+                        <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Catatan</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach($booking->inventoryItems as $item)
+                    <tr>
+                        <td style="border: 1px solid #e5e7eb; padding: 8px;">{{ $item->code }}</td>
+                        <td style="border: 1px solid #e5e7eb; padding: 8px;">{{ $item->name }}</td>
+                        <td style="border: 1px solid #e5e7eb; padding: 8px; text-align: center;">{{ $item->pivot->quantity }}</td>
+                        <td style="border: 1px solid #e5e7eb; padding: 8px;">{{ $item->pivot->notes ?? '-' }}</td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
+        </div>
+        @endif
+
         @if($booking->staff_approved_at || $booking->head_approved_at)
         <div class="section">
             <div class="section-title">Riwayat Approval</div>

@@ -3,16 +3,20 @@
 namespace App\Filament\Resources;
 
 use App\Enums\BookingStatus;
+use App\Enums\InventoryCategory;
 use App\Filament\Resources\RoomBookingResource\Pages;
+use App\Models\InventoryItem;
 use App\Models\Room;
 use App\Models\RoomBooking;
 use BackedEnum;
 use UnitEnum;
 use Filament\Actions;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -113,6 +117,60 @@ class RoomBookingResource extends Resource
                 ])
                 ->columns(2),
 
+            Section::make('Pinjam Peralatan Multimedia')
+                ->description('Opsional - Pilih peralatan multimedia yang ingin dipinjam bersamaan dengan ruangan')
+                ->schema([
+                    Repeater::make('inventoryItems')
+                        ->label('')
+                        ->relationship()
+                        ->schema([
+                            Select::make('inventory_item_id')
+                                ->label('Peralatan')
+                                ->options(fn () => InventoryItem::where('is_active', true)
+                                    ->whereIn('category', [
+                                        InventoryCategory::CAMERA,
+                                        InventoryCategory::MICROPHONE,
+                                        InventoryCategory::AUDIO,
+                                        InventoryCategory::LIGHTING,
+                                        InventoryCategory::VIDEO,
+                                        InventoryCategory::PROJECTOR,
+                                    ])
+                                    ->get()
+                                    ->mapWithKeys(fn ($item) => [
+                                        $item->id => "{$item->code} - {$item->name}"
+                                    ]))
+                                ->required()
+                                ->searchable()
+                                ->preload()
+                                ->distinct()
+                                ->disableOptionsWhenSelectedInSiblingRepeaterItems()
+                                ->columnSpan(2),
+                            TextInput::make('quantity')
+                                ->label('Jumlah')
+                                ->numeric()
+                                ->default(1)
+                                ->minValue(1)
+                                ->required()
+                                ->columnSpan(1),
+                            TextInput::make('notes')
+                                ->label('Catatan')
+                                ->placeholder('Opsional')
+                                ->columnSpan(1),
+                        ])
+                        ->columns(4)
+                        ->addActionLabel('Tambah Peralatan')
+                        ->defaultItems(0)
+                        ->reorderable(false)
+                        ->collapsible()
+                        ->itemLabel(fn (array $state): ?string => 
+                            isset($state['inventory_item_id']) 
+                                ? InventoryItem::find($state['inventory_item_id'])?->name 
+                                : null
+                        ),
+                ])
+                ->collapsible()
+                ->collapsed(fn ($operation) => $operation === 'edit'),
+
             Section::make('Status')
                 ->schema([
                     Select::make('status')
@@ -151,6 +209,13 @@ class RoomBookingResource extends Resource
                     ->sortable(),
                 TextColumn::make('attendees')
                     ->label('Peserta')
+                    ->placeholder('-'),
+                TextColumn::make('inventory_items_count')
+                    ->label('Peralatan')
+                    ->counts('inventoryItems')
+                    ->badge()
+                    ->color('info')
+                    ->suffix(' item')
                     ->placeholder('-'),
                 TextColumn::make('status')
                     ->label('Status')

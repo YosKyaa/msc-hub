@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\BookingStatus;
+use App\Enums\InventoryCategory;
 use App\Models\InventoryBooking;
 use App\Models\InventoryItem;
 use App\Models\Room;
@@ -146,7 +147,21 @@ class PublicBookingController extends Controller
             return view('booking.room-unavailable');
         }
 
-        return view('booking.room-form', compact('requester', 'room'));
+        // Get multimedia items for optional borrowing
+        $inventoryItems = InventoryItem::where('is_active', true)
+            ->whereIn('category', [
+                InventoryCategory::CAMERA,
+                InventoryCategory::MICROPHONE,
+                InventoryCategory::AUDIO,
+                InventoryCategory::LIGHTING,
+                InventoryCategory::VIDEO,
+                InventoryCategory::PROJECTOR,
+            ])
+            ->orderBy('category')
+            ->orderBy('name')
+            ->get();
+
+        return view('booking.room-form', compact('requester', 'room', 'inventoryItems'));
     }
 
     public function submitRoomBooking(Request $request)
@@ -164,6 +179,8 @@ class PublicBookingController extends Controller
             'attendees' => 'nullable|integer|min:1',
             'start_at' => 'required|date|after:now',
             'end_at' => 'required|date|after:start_at',
+            'inventory_items' => 'nullable|array',
+            'inventory_items.*' => 'exists:inventory_items,id',
         ], [
             'start_at.after' => 'Waktu mulai harus lebih dari sekarang.',
             'end_at.after' => 'Waktu selesai harus setelah waktu mulai.',
@@ -193,7 +210,7 @@ class PublicBookingController extends Controller
         // Create booking
         try {
             $booking = DB::transaction(function () use ($validated, $requester, $room) {
-                return RoomBooking::create([
+                $booking = RoomBooking::create([
                     'booking_code' => RoomBooking::generateBookingCode(),
                     'room_id' => $room->id,
                     'requester_name' => $validated['requester_name'],
@@ -206,6 +223,17 @@ class PublicBookingController extends Controller
                     'end_at' => $validated['end_at'],
                     'status' => BookingStatus::PENDING,
                 ]);
+
+                // Attach inventory items if any
+                if (!empty($validated['inventory_items'])) {
+                    $itemsData = [];
+                    foreach ($validated['inventory_items'] as $itemId) {
+                        $itemsData[$itemId] = ['quantity' => 1];
+                    }
+                    $booking->inventoryItems()->attach($itemsData);
+                }
+
+                return $booking;
             });
 
             return redirect()->route('booking.success', [

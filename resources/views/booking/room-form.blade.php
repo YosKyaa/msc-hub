@@ -80,6 +80,37 @@
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">{{ old('purpose') }}</textarea>
             </div>
 
+            {{-- Inventory Items --}}
+            @if($inventoryItems->count() > 0)
+            <div x-data="{ showInventory: {{ old('inventory_items') ? 'true' : 'false' }} }">
+                <div class="flex items-center gap-2 mb-3">
+                    <input type="checkbox" id="need_inventory" x-model="showInventory"
+                        class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                    <label for="need_inventory" class="text-sm font-medium text-gray-700">
+                        Saya juga ingin meminjam peralatan multimedia
+                    </label>
+                </div>
+                
+                <div x-show="showInventory" x-cloak class="bg-gray-50 border rounded-lg p-4 space-y-3">
+                    <p class="text-sm text-gray-600 mb-3">Pilih peralatan yang ingin dipinjam:</p>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+                        @foreach($inventoryItems as $item)
+                        <label class="flex items-start gap-3 p-3 bg-white border rounded-lg cursor-pointer hover:border-indigo-300 transition">
+                            <input type="checkbox" name="inventory_items[]" value="{{ $item->id }}"
+                                {{ in_array($item->id, old('inventory_items', [])) ? 'checked' : '' }}
+                                class="mt-1 w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-medium text-gray-900">{{ $item->name }}</p>
+                                <p class="text-xs text-gray-500">{{ $item->code }} &bull; {{ $item->category?->getLabel() ?? 'Lainnya' }}</p>
+                            </div>
+                        </label>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+            @endif
+
             {{-- Date/Time --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
