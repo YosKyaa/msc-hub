@@ -15,6 +15,9 @@ class RoleSeeder extends Seeder
 
         // Define all permissions by module
         $permissions = [
+            // Panel Access
+            'panel.access',
+
             // Dashboard
             'dashboard.view',
 
@@ -110,6 +113,7 @@ class RoleSeeder extends Seeder
         $roles = [
             'admin' => $permissions, // Admin gets all permissions
             'head_msc' => [
+                'panel.access',
                 'dashboard.view',
                 'users.view',
                 'roles.view',
@@ -125,6 +129,7 @@ class RoleSeeder extends Seeder
                 'tags.view', 'tags.create', 'tags.edit',
             ],
             'staff_msc' => [
+                'panel.access',
                 'dashboard.view',
                 'assets.view', 'assets.create', 'assets.edit',
                 'projects.view', 'projects.create', 'projects.edit',
@@ -136,6 +141,14 @@ class RoleSeeder extends Seeder
                 'announcements.view', 'announcements.create', 'announcements.edit',
                 'featured_works.view', 'featured_works.create', 'featured_works.edit',
                 'tags.view', 'tags.create',
+            ],
+            'department' => [
+                'panel.access',
+                'dashboard.view',
+                'content_requests.view', 'content_requests.create',
+                'inventory_bookings.view',
+                'room_bookings.view',
+                'announcements.view',
             ],
         ];
 

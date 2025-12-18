@@ -14,7 +14,6 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Support\Facades\Hash;
 use UnitEnum;
 
 class UserResource extends Resource
@@ -61,7 +60,6 @@ class UserResource extends Resource
                         TextInput::make('password')
                             ->label('Password')
                             ->password()
-                            ->dehydrateStateUsing(fn ($state) => Hash::make($state))
                             ->dehydrated(fn ($state) => filled($state))
                             ->required(fn (string $operation): bool => $operation === 'create')
                             ->minLength(8)
