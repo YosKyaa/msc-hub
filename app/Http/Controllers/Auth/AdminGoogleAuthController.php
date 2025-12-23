@@ -28,7 +28,7 @@ class AdminGoogleAuthController extends Controller
     public function callback(Request $request)
     {
         try {
-            $googleUser = Socialite::driver('google')->user();
+            $googleUser = Socialite::driver('google')->stateless()->user();
         } catch (\Exception $e) {
             return redirect()->route('filament.admin.auth.login')
                 ->with('error', 'Gagal login dengan Google. Silakan coba lagi.');
@@ -55,8 +55,8 @@ class AdminGoogleAuthController extends Controller
                 ->with('error', 'Akun Anda belum terdaftar. Hubungi administrator.');
         }
 
-        // Check if user has admin access
-        if (!$user->hasAnyRole(['admin', 'staff_msc', 'head_msc'])) {
+        // Check if user has panel access permission
+        if (!$user->hasPermissionTo('panel.access')) {
             return redirect()->route('filament.admin.auth.login')
                 ->with('error', 'Anda tidak memiliki akses ke panel admin.');
         }
@@ -64,6 +64,6 @@ class AdminGoogleAuthController extends Controller
         // Login the user
         Auth::login($user, true);
 
-        return redirect()->to('/admin');
+        return redirect()->to('/panel');
     }
 }
