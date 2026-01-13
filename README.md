@@ -1,4 +1,54 @@
+# MSC Hub
+
+Web Application for MSC Hub management (Bookings, Content Requests, Assets, etc).
+
+## Feature: Email Notifications
+
+This project uses Laravel Queues to send email notifications asynchronously.
+
+### 1. SMTP Configuration
+Configure your mail server in `.env`:
+
+```env
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.gmail.com
+MAIL_PORT=587
+MAIL_USERNAME=your_email@gmail.com
+MAIL_PASSWORD=your_app_password
+MAIL_ENCRYPTION=tls
+MAIL_FROM_ADDRESS=noreply@msc-hub.com
+MAIL_FROM_NAME="MSC Hub"
+```
+
+### 2. Queue Configuration
+
+Ensure the queue connection is set to database in `.env`:
+
+```env
+QUEUE_CONNECTION=database
+```
+
+#### Development
+Run the queue worker manually:
+```bash
+php artisan queue:work
+```
+
+#### Production
+Use Supervisor to keep the queue worker running.
+1. Copy `supervisor.conf.example` to `/etc/supervisor/conf.d/msc-hub-worker.conf`.
+2. Edit the file to match your server paths and user.
+3. Start supervisor:
+   ```bash
+   sudo supervisorctl reread
+   sudo supervisorctl update
+   sudo supervisorctl start msc-hub-worker:*
+   ```
+
+---
+
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+
 
 <p align="center">
 <a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
