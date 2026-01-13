@@ -11,6 +11,13 @@ use Illuminate\Support\Facades\Notification;
 class ContentRequestObserver
 {
     /**
+     * Handle events after all transactions are committed.
+     *
+     * @var bool
+     */
+    public $afterCommit = true;
+
+    /**
      * Handle the ContentRequest "created" event.
      */
     public function created(ContentRequest $contentRequest): void

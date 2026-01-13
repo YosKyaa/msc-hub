@@ -11,6 +11,13 @@ use Illuminate\Support\Facades\Notification;
 class RoomBookingObserver
 {
     /**
+     * Handle events after all transactions are committed.
+     *
+     * @var bool
+     */
+    public $afterCommit = true;
+
+    /**
      * Handle the RoomBooking "created" event.
      */
     public function created(RoomBooking $roomBooking): void

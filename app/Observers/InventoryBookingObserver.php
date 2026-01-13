@@ -11,6 +11,13 @@ use Illuminate\Support\Facades\Notification;
 class InventoryBookingObserver
 {
     /**
+     * Handle events after all transactions are committed.
+     *
+     * @var bool
+     */
+    public $afterCommit = true;
+
+    /**
      * Handle the InventoryBooking "created" event.
      */
     public function created(InventoryBooking $inventoryBooking): void

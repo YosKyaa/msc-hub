@@ -68,3 +68,6 @@ Route::get('/booking/success/{type}/{code}', [PublicBookingController::class, 's
 Route::get('/my-bookings', [PublicBookingController::class, 'myBookings'])->name('my.bookings');
 Route::get('/my-bookings/{type}/{code}', [PublicBookingController::class, 'showBookingDetail'])->name('my.bookings.detail');
 Route::post('/booking/logout', [PublicBookingController::class, 'logout'])->name('booking.logout');
+
+// Log Viewer
+Route::get('logs', [\Rap2hpoutre\LaravelLogViewer\LogViewerController::class, 'index'])->middleware(['web']);
