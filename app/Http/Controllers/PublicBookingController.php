@@ -126,7 +126,7 @@ class PublicBookingController extends Controller
                 'code' => $booking->booking_code
             ]);
         } catch (\Exception $e) {
-            return back()->withInput()->withErrors(['error' => 'Terjadi kesalahan. Silakan coba lagi.']);
+            return back()->withInput()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
         }
     }
 
@@ -241,7 +241,7 @@ class PublicBookingController extends Controller
                 'code' => $booking->booking_code
             ]);
         } catch (\Exception $e) {
-            return back()->withInput()->withErrors(['error' => 'Terjadi kesalahan. Silakan coba lagi.']);
+            return back()->withInput()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
         }
     }
 

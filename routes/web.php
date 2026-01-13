@@ -15,15 +15,15 @@ Route::get('/msc-hub', [LandingController::class, 'index'])->name('landing.alias
 Route::get('/announcements', [AnnouncementPublicController::class, 'index'])->name('announcements.index');
 Route::get('/announcements/{slug}', [AnnouncementPublicController::class, 'show'])->name('announcements.show');
 
-// Google OAuth for Public Requester
-Route::prefix('auth/google')->name('auth.google.')->group(function () {
+// Google OAuth for Public Requester (rate limited)
+Route::prefix('auth/google')->name('auth.google.')->middleware('throttle:10,1')->group(function () {
     Route::get('/redirect', [GoogleAuthController::class, 'redirect'])->name('redirect');
     Route::get('/callback', [GoogleAuthController::class, 'callback'])->name('callback');
     Route::post('/logout', [GoogleAuthController::class, 'logout'])->name('logout');
 });
 
-// Google OAuth for Admin
-Route::prefix('admin/auth/google')->name('admin.google.')->group(function () {
+// Google OAuth for Admin (rate limited)
+Route::prefix('admin/auth/google')->name('admin.google.')->middleware('throttle:5,1')->group(function () {
     Route::get('/redirect', [\App\Http\Controllers\Auth\AdminGoogleAuthController::class, 'redirect'])->name('redirect');
     Route::get('/callback', [\App\Http\Controllers\Auth\AdminGoogleAuthController::class, 'callback'])->name('callback');
 });
@@ -31,13 +31,19 @@ Route::prefix('admin/auth/google')->name('admin.google.')->group(function () {
 // Content Request (Public)
 Route::prefix('request')->name('request.')->group(function () {
     Route::get('/content', [ContentRequestController::class, 'showForm'])->name('content');
-    Route::post('/content', [ContentRequestController::class, 'submitForm'])->name('content.submit');
+    Route::post('/content', [ContentRequestController::class, 'submitForm'])
+        ->middleware('throttle:10,1')
+        ->name('content.submit');
     Route::get('/success', [ContentRequestController::class, 'showSuccess'])->name('success');
     
     Route::get('/status', [ContentRequestController::class, 'showStatus'])->name('status');
-    Route::post('/status', [ContentRequestController::class, 'checkStatus'])->name('status.check');
+    Route::post('/status', [ContentRequestController::class, 'checkStatus'])
+        ->middleware('throttle:30,1')
+        ->name('status.check');
     Route::get('/status/{request_code}', [ContentRequestController::class, 'checkStatus'])->name('status.detail');
-    Route::post('/status/{contentRequest}/comment', [ContentRequestController::class, 'addComment'])->name('status.comment');
+    Route::post('/status/{contentRequest}/comment', [ContentRequestController::class, 'addComment'])
+        ->middleware('throttle:20,1')
+        ->name('status.comment');
 });
 
 // Shortcut for Google OAuth

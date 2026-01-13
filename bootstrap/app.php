@@ -11,7 +11,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        $middleware->web(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
+
+        // Rate limiting aliases
+        $middleware->alias([
+            'throttle.auth' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1',
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
