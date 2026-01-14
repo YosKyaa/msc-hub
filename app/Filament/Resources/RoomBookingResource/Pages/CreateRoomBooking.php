@@ -60,6 +60,33 @@ class CreateRoomBooking extends CreateRecord
         }
     }
 
+    protected function afterCreate(): void
+    {
+        // Handle inventory items relationship manually
+        $data = $this->form->getState();
+        
+        // Check if inventoryItems exists and is not empty
+        if (isset($data['inventoryItems']) && is_array($data['inventoryItems']) && count($data['inventoryItems']) > 0) {
+            // Filter out any empty or invalid items
+            $validItems = array_filter($data['inventoryItems'], function ($item) {
+                return isset($item['inventory_item_id']) && !empty($item['inventory_item_id']);
+            });
+            
+            // Only sync if there are valid items
+            if (count($validItems) > 0) {
+                $syncData = [];
+                foreach ($validItems as $item) {
+                    $syncData[$item['inventory_item_id']] = [
+                        'quantity' => $item['quantity'] ?? 1,
+                        'notes' => $item['notes'] ?? null,
+                    ];
+                }
+                
+                $this->record->inventoryItems()->sync($syncData);
+            }
+        }
+    }
+
     protected function getRedirectUrl(): string
     {
         return $this->getResource()::getUrl('index');

@@ -122,7 +122,6 @@ class RoomBookingResource extends Resource
                 ->schema([
                     Repeater::make('inventoryItems')
                         ->label('')
-                        ->relationship()
                         ->schema([
                             Select::make('inventory_item_id')
                                 ->label('Peralatan')
@@ -166,7 +165,11 @@ class RoomBookingResource extends Resource
                             isset($state['inventory_item_id']) 
                                 ? InventoryItem::find($state['inventory_item_id'])?->name 
                                 : null
-                        ),
+                        )
+                        ->saveRelationshipsUsing(function () {
+                            // Do nothing - we handle this manually in afterCreate/afterSave
+                        })
+                        ->dehydrated(true),
                 ])
                 ->collapsible()
                 ->collapsed(fn ($operation) => $operation === 'edit'),
