@@ -39,6 +39,26 @@ class CreateInventoryBooking extends CreateRecord
             $this->halt();
         }
 
+        // Check maximum bookings per month (2x per month per unit)
+        $currentMonth = $startAt->format('Y-m');
+        $bookingsThisMonth = InventoryBooking::where('requester_email', $data['requester_email'])
+            ->whereRaw('DATE_FORMAT(start_at, "%Y-%m") = ?', [$currentMonth])
+            ->whereIn('status', [
+                BookingStatus::PENDING,
+                BookingStatus::APPROVED_STAFF,
+                BookingStatus::APPROVED_HEAD,
+            ])
+            ->count();
+
+        if ($bookingsThisMonth >= 2) {
+            Notification::make()
+                ->title('Batas Booking Tercapai')
+                ->body('Anda sudah melakukan 2x booking pada bulan ini. Maksimal booking per bulan adalah 2x.')
+                ->danger()
+                ->send();
+            $this->halt();
+        }
+
         // Check for overlapping bookings
         $itemIds = $data['items'] ?? [];
         if (!empty($itemIds)) {

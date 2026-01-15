@@ -71,9 +71,23 @@ class InventoryBookingResource extends Resource
                         ->email()
                         ->required()
                         ->maxLength(255),
-                    TextInput::make('unit')
+                    Select::make('unit')
                         ->label('Unit/Fakultas')
-                        ->maxLength(255),
+                        ->options([
+                            'HIMATIF' => 'HIMATIF',
+                            'HME' => 'HME',
+                            'HMS' => 'HMS',
+                            'HMTI' => 'HMTI',
+                            'HIMAMEN' => 'HIMAMEN',
+                            'HIMABID' => 'HIMABID',
+                            'HIMFA' => 'HIMFA',
+                            'Mahasiswa' => 'Mahasiswa',
+                            'Dosen' => 'Dosen',
+                            'Staff' => 'Staff',
+                        ])
+                        ->required()
+                        ->searchable()
+                        ->native(false),
                     Textarea::make('purpose')
                         ->label('Tujuan Peminjaman')
                         ->rows(2)
@@ -88,13 +102,33 @@ class InventoryBookingResource extends Resource
                         ->required()
                         ->seconds(false)
                         ->minDate(now())
-                        ->native(false),
+                        ->native(false)
+                        ->helperText('Hanya hari Senin - Jumat')
+                        ->rules([
+                            fn (): \Closure => function (string $attribute, $value, \Closure $fail) {
+                                $date = new \DateTime($value);
+                                $dayOfWeek = (int) $date->format('N');
+                                if ($dayOfWeek > 5) {
+                                    $fail('Booking hanya dapat dilakukan pada hari Senin - Jumat.');
+                                }
+                            },
+                        ]),
                     DateTimePicker::make('end_at')
                         ->label('Waktu Selesai')
                         ->required()
                         ->seconds(false)
                         ->after('start_at')
-                        ->native(false),
+                        ->native(false)
+                        ->helperText('Hanya hari Senin - Jumat')
+                        ->rules([
+                            fn (): \Closure => function (string $attribute, $value, \Closure $fail) {
+                                $date = new \DateTime($value);
+                                $dayOfWeek = (int) $date->format('N');
+                                if ($dayOfWeek > 5) {
+                                    $fail('Booking hanya dapat dilakukan pada hari Senin - Jumat.');
+                                }
+                            },
+                        ]),
                     Select::make('items')
                         ->label('Item yang Dipinjam')
                         ->multiple()

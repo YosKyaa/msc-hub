@@ -15,7 +15,7 @@ class RoomSeeder extends Seeder
                 'location' => 'Studio Multimedia Lt. 2',
                 'open_time' => '08:00',
                 'close_time' => '16:00',
-                'capacity' => 10,
+                'capacity' => 7,
                 'facilities' => 'Proyektor, Sound System, Whiteboard, AC',
                 'is_active' => true,
             ]
