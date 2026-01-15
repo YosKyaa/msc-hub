@@ -59,13 +59,14 @@ class PublicBookingController extends Controller
 
         $validated = $request->validate([
             'requester_name' => 'required|string|max:255',
-            'unit' => 'nullable|string|max:255',
+            'unit' => 'required|string|max:255',
             'purpose' => 'nullable|string|max:1000',
             'start_at' => 'required|date|after:now',
             'end_at' => 'required|date|after:start_at',
             'items' => 'required|array|min:1',
             'items.*' => 'exists:inventory_items,id',
         ], [
+            'unit.required' => 'Unit/Fakultas harus dipilih.',
             'items.required' => 'Pilih minimal 1 item untuk dipinjam.',
             'items.min' => 'Pilih minimal 1 item untuk dipinjam.',
             'start_at.after' => 'Waktu mulai harus lebih dari sekarang.',
@@ -75,10 +76,36 @@ class PublicBookingController extends Controller
         $startAt = new \DateTime($validated['start_at']);
         $endAt = new \DateTime($validated['end_at']);
 
+        // Validate weekday only (Monday-Friday)
+        $startDay = (int) $startAt->format('N');
+        $endDay = (int) $endAt->format('N');
+        if ($startDay > 5 || $endDay > 5) {
+            return back()->withInput()->withErrors([
+                'time' => 'Peminjaman hanya dapat dilakukan pada hari Senin - Jumat.'
+            ]);
+        }
+
         // Validate operating hours (08:00 - 16:00)
         $hourErrors = InventoryBooking::validateOperatingHours($startAt, $endAt);
         if (!empty($hourErrors)) {
             return back()->withInput()->withErrors(['time' => implode(' ', $hourErrors)]);
+        }
+
+        // Check maximum bookings per month (2x per month)
+        $currentMonth = $startAt->format('Y-m');
+        $bookingsThisMonth = InventoryBooking::where('requester_email', $requester['email'])
+            ->whereRaw('DATE_FORMAT(start_at, "%Y-%m") = ?', [$currentMonth])
+            ->whereIn('status', [
+                BookingStatus::PENDING,
+                BookingStatus::APPROVED_STAFF,
+                BookingStatus::APPROVED_HEAD,
+            ])
+            ->count();
+
+        if ($bookingsThisMonth >= 2) {
+            return back()->withInput()->withErrors([
+                'error' => 'Anda sudah melakukan 2x peminjaman pada bulan ini. Maksimal peminjaman per bulan adalah 2x.'
+            ]);
         }
 
         // Check only active items
@@ -126,6 +153,9 @@ class PublicBookingController extends Controller
                 'code' => $booking->booking_code
             ]);
         } catch (\Exception $e) {
+            \Log::error('Inventory booking error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
             return back()->withInput()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
         }
     }
@@ -174,14 +204,17 @@ class PublicBookingController extends Controller
 
         $validated = $request->validate([
             'requester_name' => 'required|string|max:255',
-            'unit' => 'nullable|string|max:255',
+            'unit' => 'required|string|max:255',
             'purpose' => 'nullable|string|max:1000',
-            'attendees' => 'nullable|integer|min:1',
+            'attendees' => 'required|integer|min:1|max:7',
             'start_at' => 'required|date|after:now',
             'end_at' => 'required|date|after:start_at',
             'inventory_items' => 'nullable|array',
             'inventory_items.*' => 'exists:inventory_items,id',
         ], [
+            'unit.required' => 'Unit/Fakultas harus dipilih.',
+            'attendees.required' => 'Jumlah peserta harus diisi.',
+            'attendees.max' => 'Jumlah peserta maksimal 7 orang.',
             'start_at.after' => 'Waktu mulai harus lebih dari sekarang.',
             'end_at.after' => 'Waktu selesai harus setelah waktu mulai.',
         ]);
@@ -194,10 +227,36 @@ class PublicBookingController extends Controller
         $startAt = new \DateTime($validated['start_at']);
         $endAt = new \DateTime($validated['end_at']);
 
+        // Validate weekday only (Monday-Friday)
+        $startDay = (int) $startAt->format('N');
+        $endDay = (int) $endAt->format('N');
+        if ($startDay > 5 || $endDay > 5) {
+            return back()->withInput()->withErrors([
+                'time' => 'Booking hanya dapat dilakukan pada hari Senin - Jumat.'
+            ]);
+        }
+
         // Validate operating hours
         $hourErrors = $room->validateOperatingHours($startAt, $endAt);
         if (!empty($hourErrors)) {
             return back()->withInput()->withErrors(['time' => implode(' ', $hourErrors)]);
+        }
+
+        // Check maximum bookings per month (2x per month)
+        $currentMonth = $startAt->format('Y-m');
+        $bookingsThisMonth = RoomBooking::where('requester_email', $requester['email'])
+            ->whereRaw('DATE_FORMAT(start_at, "%Y-%m") = ?', [$currentMonth])
+            ->whereIn('status', [
+                BookingStatus::PENDING,
+                BookingStatus::APPROVED_STAFF,
+                BookingStatus::APPROVED_HEAD,
+            ])
+            ->count();
+
+        if ($bookingsThisMonth >= 2) {
+            return back()->withInput()->withErrors([
+                'error' => 'Anda sudah melakukan 2x booking pada bulan ini. Maksimal booking per bulan adalah 2x.'
+            ]);
         }
 
         // Check for overlapping bookings
@@ -228,9 +287,12 @@ class PublicBookingController extends Controller
                 if (!empty($validated['inventory_items'])) {
                     $itemsData = [];
                     foreach ($validated['inventory_items'] as $itemId) {
-                        $itemsData[$itemId] = ['quantity' => 1];
+                        $itemsData[$itemId] = [
+                            'quantity' => 1,
+                            'notes' => null
+                        ];
                     }
-                    $booking->inventoryItems()->attach($itemsData);
+                    $booking->inventoryItems()->sync($itemsData);
                 }
 
                 return $booking;
@@ -241,6 +303,9 @@ class PublicBookingController extends Controller
                 'code' => $booking->booking_code
             ]);
         } catch (\Exception $e) {
+            \Log::error('Room booking error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
             return back()->withInput()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
         }
     }

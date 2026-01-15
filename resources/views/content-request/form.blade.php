@@ -179,4 +179,53 @@
         </form>
     @endif
 </div>
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            Swal.fire({
+                title: 'Konfirmasi Request Konten',
+                html: `
+                    <div class="text-left space-y-2">
+                        <p class="text-sm text-gray-600">Pastikan data request sudah benar:</p>
+                        <ul class="text-sm text-gray-700 list-disc list-inside space-y-1 mt-3">
+                            <li>Jenis konten sesuai kebutuhan</li>
+                            <li>Deadline realistis (min. H-3)</li>
+                            <li>Detail dan materi pendukung sudah lengkap</li>
+                        </ul>
+                    </div>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#2563EB', // Blue-600
+                cancelButtonColor: '#6B7280',
+                confirmButtonText: 'Ya, Kirim Request',
+                cancelButtonText: 'Batal',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Mengirim...',
+                        text: 'Mohon tunggu sebentar',
+                        allowOutsideClick: false,
+                        allowEscapeKey: false,
+                        didOpen: () => {
+                            Swal.showLoading();
+                        }
+                    });
+                    
+                    form.submit();
+                }
+            });
+        });
+    }
+});
+</script>
+@endpush
 @endsection

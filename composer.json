@@ -9,10 +9,11 @@
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "*",
         "filament/filament": "4.0",
+        "guava/calendar": "^2.1",
         "laravel/framework": "^12.0",
         "laravel/socialite": "^5.24",
         "laravel/tinker": "^2.10.1",
-        "rap2hpoutre/laravel-log-viewer": "*",
+        "rap2hpoutre/laravel-log-viewer": "^2.5",
         "spatie/laravel-activitylog": "*",
         "spatie/laravel-permission": "^6.23"
     },

@@ -46,11 +46,23 @@
             </div>
 
             <div>
-                <label for="unit" class="block text-sm font-medium text-gray-700 mb-1">Unit / Fakultas</label>
-                <input type="text" name="unit" id="unit" 
-                    value="{{ old('unit') }}"
-                    placeholder="Contoh: Fakultas Teknik"
+                <label for="unit" class="block text-sm font-medium text-gray-700 mb-1">
+                    Unit / Fakultas <span class="text-red-500">*</span>
+                </label>
+                <select name="unit" id="unit" required
                     class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    <option value="">Pilih Unit/Fakultas</option>
+                    <option value="HIMATIF" {{ old('unit') == 'HIMATIF' ? 'selected' : '' }}>HIMATIF</option>
+                    <option value="HME" {{ old('unit') == 'HME' ? 'selected' : '' }}>HME</option>
+                    <option value="HMS" {{ old('unit') == 'HMS' ? 'selected' : '' }}>HMS</option>
+                    <option value="HMTI" {{ old('unit') == 'HMTI' ? 'selected' : '' }}>HMTI</option>
+                    <option value="HIMAMEN" {{ old('unit') == 'HIMAMEN' ? 'selected' : '' }}>HIMAMEN</option>
+                    <option value="HIMABID" {{ old('unit') == 'HIMABID' ? 'selected' : '' }}>HIMABID</option>
+                    <option value="HIMFA" {{ old('unit') == 'HIMFA' ? 'selected' : '' }}>HIMFA</option>
+                    <option value="Mahasiswa" {{ old('unit') == 'Mahasiswa' ? 'selected' : '' }}>Mahasiswa</option>
+                    <option value="Dosen" {{ old('unit') == 'Dosen' ? 'selected' : '' }}>Dosen</option>
+                    <option value="Staff" {{ old('unit') == 'Staff' ? 'selected' : '' }}>Staff</option>
+                </select>
             </div>
 
             <div>
@@ -66,20 +78,23 @@
                     <label for="start_at" class="block text-sm font-medium text-gray-700 mb-1">
                         Waktu Mulai <span class="text-red-500">*</span>
                     </label>
-                    <input type="datetime-local" name="start_at" id="start_at" 
+                    <input type="text" name="start_at" id="start_at" 
                         value="{{ old('start_at') }}"
-                        min="{{ now()->format('Y-m-d\TH:i') }}"
+                        placeholder="Pilih tanggal dan waktu"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        required>
+                        required
+                        readonly>
                 </div>
                 <div>
                     <label for="end_at" class="block text-sm font-medium text-gray-700 mb-1">
                         Waktu Selesai <span class="text-red-500">*</span>
                     </label>
-                    <input type="datetime-local" name="end_at" id="end_at" 
+                    <input type="text" name="end_at" id="end_at" 
                         value="{{ old('end_at') }}"
+                        placeholder="Pilih tanggal dan waktu"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        required>
+                        required
+                        readonly>
                 </div>
             </div>
 
@@ -132,4 +147,100 @@
         </form>
     </div>
 </div>
+
+@push('scripts')
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Flatpickr
+    const startPicker = flatpickr("#start_at", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        time_24hr: true,
+        minDate: "today",
+        minuteIncrement: 30,
+        disable: [
+            function(date) {
+                return (date.getDay() === 0 || date.getDay() === 6);
+            }
+        ],
+        locale: {
+            firstDayOfWeek: 1
+        },
+        onChange: function(selectedDates, dateStr, instance) {
+            if (selectedDates.length > 0) {
+                endPicker.set('minDate', selectedDates[0]);
+            }
+        }
+    });
+
+    const endPicker = flatpickr("#end_at", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        time_24hr: true,
+        minDate: "today",
+        minuteIncrement: 30,
+        disable: [
+            function(date) {
+                return (date.getDay() === 0 || date.getDay() === 6);
+            }
+        ],
+        locale: {
+            firstDayOfWeek: 1
+        }
+    });
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    
+    // Form submission with SweetAlert
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        Swal.fire({
+            title: 'Konfirmasi Peminjaman Alat',
+            html: `
+                <div class="text-left space-y-2">
+                    <p class="text-sm text-gray-600">Pastikan semua data sudah benar:</p>
+                    <ul class="text-sm text-gray-700 list-disc list-inside space-y-1 mt-3">
+                        <li>Unit/Fakultas sudah dipilih</li>
+                        <li>Alat yang dipinjam sudah dipilih</li>
+                        <li>Waktu peminjaman pada hari Senin - Jumat</li>
+                        <li>Maksimal 2x peminjaman per bulan</li>
+                    </ul>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#4F46E5',
+            cancelButtonColor: '#6B7280',
+            confirmButtonText: 'Ya, Submit',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Memproses...',
+                    text: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                form.submit();
+            }
+        });
+    });
+});
+</script>
+@endpush
 @endsection

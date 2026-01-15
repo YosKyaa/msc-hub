@@ -56,20 +56,36 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label for="unit" class="block text-sm font-medium text-gray-700 mb-1">Unit / Fakultas</label>
-                    <input type="text" name="unit" id="unit" 
-                        value="{{ old('unit') }}"
-                        placeholder="Contoh: Fakultas Teknik"
+                    <label for="unit" class="block text-sm font-medium text-gray-700 mb-1">
+                        Unit / Fakultas <span class="text-red-500">*</span>
+                    </label>
+                    <select name="unit" id="unit" required
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        <option value="">Pilih Unit/Fakultas</option>
+                        <option value="HIMATIF" {{ old('unit') == 'HIMATIF' ? 'selected' : '' }}>HIMATIF</option>
+                        <option value="HME" {{ old('unit') == 'HME' ? 'selected' : '' }}>HME</option>
+                        <option value="HMS" {{ old('unit') == 'HMS' ? 'selected' : '' }}>HMS</option>
+                        <option value="HMTI" {{ old('unit') == 'HMTI' ? 'selected' : '' }}>HMTI</option>
+                        <option value="HIMAMEN" {{ old('unit') == 'HIMAMEN' ? 'selected' : '' }}>HIMAMEN</option>
+                        <option value="HIMABID" {{ old('unit') == 'HIMABID' ? 'selected' : '' }}>HIMABID</option>
+                        <option value="HIMFA" {{ old('unit') == 'HIMFA' ? 'selected' : '' }}>HIMFA</option>
+                        <option value="Mahasiswa" {{ old('unit') == 'Mahasiswa' ? 'selected' : '' }}>Mahasiswa</option>
+                        <option value="Dosen" {{ old('unit') == 'Dosen' ? 'selected' : '' }}>Dosen</option>
+                        <option value="Staff" {{ old('unit') == 'Staff' ? 'selected' : '' }}>Staff</option>
+                    </select>
                 </div>
                 <div>
-                    <label for="attendees" class="block text-sm font-medium text-gray-700 mb-1">Jumlah Peserta</label>
+                    <label for="attendees" class="block text-sm font-medium text-gray-700 mb-1">
+                        Jumlah Peserta <span class="text-red-500">*</span>
+                    </label>
                     <input type="number" name="attendees" id="attendees" 
                         value="{{ old('attendees') }}"
                         min="1"
-                        @if($room->capacity) max="{{ $room->capacity }}" @endif
-                        placeholder="Jumlah peserta"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                        max="7"
+                        placeholder="Maksimal 7 orang"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        required>
+                    <p class="text-xs text-gray-500 mt-1">Maksimal 7 orang</p>
                 </div>
             </div>
 
@@ -117,20 +133,23 @@
                     <label for="start_at" class="block text-sm font-medium text-gray-700 mb-1">
                         Waktu Mulai <span class="text-red-500">*</span>
                     </label>
-                    <input type="datetime-local" name="start_at" id="start_at" 
+                    <input type="text" name="start_at" id="start_at" 
                         value="{{ old('start_at') }}"
-                        min="{{ now()->format('Y-m-d\TH:i') }}"
+                        placeholder="Pilih tanggal dan waktu"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        required>
+                        required
+                        readonly>
                 </div>
                 <div>
                     <label for="end_at" class="block text-sm font-medium text-gray-700 mb-1">
                         Waktu Selesai <span class="text-red-500">*</span>
                     </label>
-                    <input type="datetime-local" name="end_at" id="end_at" 
+                    <input type="text" name="end_at" id="end_at" 
                         value="{{ old('end_at') }}"
+                        placeholder="Pilih tanggal dan waktu"
                         class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        required>
+                        required
+                        readonly>
                 </div>
             </div>
 
@@ -147,4 +166,106 @@
         </form>
     </div>
 </div>
+
+@push('scripts')
+<!-- Flatpickr CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize Flatpickr for datetime inputs
+    const startPicker = flatpickr("#start_at", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        time_24hr: true,
+        minDate: "today",
+        minuteIncrement: 30,
+        disable: [
+            function(date) {
+                // Disable weekends (0 = Sunday, 6 = Saturday)
+                return (date.getDay() === 0 || date.getDay() === 6);
+            }
+        ],
+        locale: {
+            firstDayOfWeek: 1 // Start week on Monday
+        },
+        onChange: function(selectedDates, dateStr, instance) {
+            // Set minDate for end_at picker
+            if (selectedDates.length > 0) {
+                endPicker.set('minDate', selectedDates[0]);
+            }
+        }
+    });
+
+    const endPicker = flatpickr("#end_at", {
+        enableTime: true,
+        dateFormat: "Y-m-d H:i",
+        time_24hr: true,
+        minDate: "today",
+        minuteIncrement: 30,
+        disable: [
+            function(date) {
+                // Disable weekends
+                return (date.getDay() === 0 || date.getDay() === 6);
+            }
+        ],
+        locale: {
+            firstDayOfWeek: 1
+        }
+    });
+});
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    
+    // Form submission with SweetAlert confirmation
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        Swal.fire({
+            title: 'Konfirmasi Booking Ruangan',
+            html: `
+                <div class="text-left space-y-2">
+                    <p class="text-sm text-gray-600">Pastikan semua data sudah benar sebelum submit:</p>
+                    <ul class="text-sm text-gray-700 list-disc list-inside space-y-1 mt-3">
+                        <li>Unit/Fakultas sudah dipilih</li>
+                        <li>Jumlah peserta maksimal 7 orang</li>
+                        <li>Waktu booking pada hari Senin - Jumat</li>
+                        <li>Maksimal 2x booking per bulan</li>
+                    </ul>
+                </div>
+            `,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#4F46E5',
+            cancelButtonColor: '#6B7280',
+            confirmButtonText: 'Ya, Submit Booking',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Show loading
+                Swal.fire({
+                    title: 'Memproses...',
+                    text: 'Mohon tunggu sebentar',
+                    allowOutsideClick: false,
+                    allowEscapeKey: false,
+                    didOpen: () => {
+                        Swal.showLoading();
+                    }
+                });
+                
+                // Submit form
+                form.submit();
+            }
+        });
+    });
+});
+</script>
+@endpush
 @endsection
