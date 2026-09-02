@@ -15,7 +15,9 @@ use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Actions as FormActions;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
@@ -86,20 +88,22 @@ class CertificateEventResource extends Resource
                         ->live()
                         ->columnSpanFull(),
 
-                    TextInput::make('attendance_url')
+                    TextEntry::make('attendance_url')
                         ->label('Tautan absensi')
-                        ->disabled()
-                        ->dehydrated(false)
-                        ->formatStateUsing(fn (?CertificateEvent $record) => $record?->attendanceUrl())
+                        ->state(fn (?CertificateEvent $record) => $record?->attendanceUrl())
+                        ->copyable()
+                        ->copyMessage('Tautan absensi disalin.')
                         ->helperText('Bagikan tautan ini atau cetak QR-nya untuk ditempel di lokasi kegiatan.')
-                        ->suffixAction(
-                            Actions\Action::make('openPoster')
-                                ->label('Tampilkan QR layar penuh')
-                                ->icon('heroicon-o-qr-code')
-                                ->url(fn (?CertificateEvent $record) => $record ? route('attendance.poster', $record) : null)
-                                ->openUrlInNewTab()
-                                ->visible(fn (?CertificateEvent $record) => (bool) $record?->attendance_token),
-                        )
+                        ->visible(fn (?CertificateEvent $record) => (bool) $record?->attendance_token)
+                        ->columnSpanFull(),
+
+                    FormActions::make([
+                        Actions\Action::make('openPoster')
+                            ->label('Tampilkan QR Layar Penuh')
+                            ->icon('heroicon-o-qr-code')
+                            ->url(fn (?CertificateEvent $record) => $record ? route('attendance.poster', $record) : null)
+                            ->openUrlInNewTab(),
+                    ])
                         ->visible(fn (?CertificateEvent $record) => (bool) $record?->attendance_token)
                         ->columnSpanFull(),
                 ])->columns(2),
