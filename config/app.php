@@ -60,12 +60,14 @@ return [
     |--------------------------------------------------------------------------
     |
     | Here you may specify the default timezone for your application, which
-    | will be used by the PHP date and date-time functions. The timezone
-    | is set to "UTC" by default as it is suitable for most use cases.
+    | will be used by the PHP date and date-time functions. MSC Hub beroperasi
+    | di Jakarta, sehingga seluruh tampilan dan window waktu memakai WIB.
+    | Catatan: timestamp yang tersimpan sebelum 2026-09-03 dibuat saat aplikasi
+    | masih memakai UTC. Lihat docs/timezone-cutoff.md.
     |
     */
 
-    'timezone' => 'UTC',
+    'timezone' => env('APP_TIMEZONE', 'Asia/Jakarta'),
 
     /*
     |--------------------------------------------------------------------------

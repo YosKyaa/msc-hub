@@ -45,6 +45,28 @@ Use Supervisor to keep the queue worker running.
    sudo supervisorctl start msc-hub-worker:*
    ```
 
+## Menjalankan Test
+
+Test suite memakai **database MySQL khusus**, bukan SQLite in-memory: migration
+`assets` membuat fulltext index yang tidak didukung driver SQLite.
+
+Siapkan sekali saja:
+
+```sql
+CREATE DATABASE msc_hub_testing CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+```
+
+Kredensial database test diatur di `phpunit.xml` (`DB_DATABASE=msc_hub_testing`).
+Ubah `DB_USERNAME`/`DB_PASSWORD` di sana bila server MySQL lokal Anda berbeda.
+
+```bash
+php artisan test          # seluruh test
+vendor/bin/phpunit --testdox --filter AttendanceTest
+```
+
+Isi database test akan di-reset (`RefreshDatabase`) setiap test — jangan
+mengarahkannya ke database pengembangan.
+
 ---
 
 <p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>

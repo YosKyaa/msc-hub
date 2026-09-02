@@ -1,10 +1,12 @@
 <?php
 
 use App\Http\Controllers\AnnouncementPublicController;
+use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\GoogleAuthController;
 use App\Http\Controllers\ContentRequestController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PublicBookingController;
+use App\Http\Controllers\CertificatePublicController;
 use Illuminate\Support\Facades\Route;
 
 // Landing Page
@@ -69,5 +71,24 @@ Route::get('/my-bookings', [PublicBookingController::class, 'myBookings'])->name
 Route::get('/my-bookings/{type}/{code}', [PublicBookingController::class, 'showBookingDetail'])->name('my.bookings.detail');
 Route::post('/booking/logout', [PublicBookingController::class, 'logout'])->name('booking.logout');
 
-// Log Viewer
-Route::get('logs', [\Rap2hpoutre\LaravelLogViewer\LogViewerController::class, 'index'])->middleware(['web']);
+// Attendance (public, satu URL untuk check-in dan check-out)
+Route::get('/attend/{token}', [AttendanceController::class, 'show'])
+    ->middleware('throttle:60,1')
+    ->name('attendance.show');
+Route::post('/attend/{token}', [AttendanceController::class, 'store'])
+    ->middleware('throttle:30,1')
+    ->name('attendance.store');
+
+// Poster QR absensi untuk diproyeksikan di venue (khusus pengelola sertifikat)
+Route::get('/admin/attendance/{event}/qr', [AttendanceController::class, 'poster'])
+    ->middleware(['auth', 'permission:certificates.view'])
+    ->name('attendance.poster');
+
+// Public certificate authenticity and download
+Route::get('/verify/certificate/{token}', [CertificatePublicController::class, 'verify'])->name('certificates.verify');
+Route::get('/certificates/{token}/download', [CertificatePublicController::class, 'download'])->name('certificates.download');
+
+// Log Viewer — hanya untuk admin yang sudah login ke panel.
+Route::get('logs', [\Rap2hpoutre\LaravelLogViewer\LogViewerController::class, 'index'])
+    ->middleware(['web', 'auth', 'role:admin'])
+    ->name('logs.viewer');
