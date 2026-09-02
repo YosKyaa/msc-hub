@@ -4,6 +4,7 @@ namespace App\Filament\Resources\CertificateEventResource\RelationManagers;
 
 use App\Enums\ParticipantRole;
 use App\Enums\ParticipantSource;
+use App\Filament\Actions\ImportParticipantsAction;
 use App\Models\CertificateEvent;
 use App\Models\CertificateEventParticipant;
 use App\Services\Certificates\ParticipantRegistry;
@@ -110,6 +111,8 @@ class ParticipationsRelationManager extends RelationManager
                         TextInput::make('institutional_id')->label('NIM/NIP'),
                     ])
                     ->action(fn (array $data) => $this->addParticipantManually($data)),
+
+                ImportParticipantsAction::make(),
             ])
             ->actions([
                 Actions\Action::make('toggleEligible')
