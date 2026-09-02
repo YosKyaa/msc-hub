@@ -1,0 +1,164 @@
+# Sistem Sertifikat MSC Hub
+
+## Stack
+
+- Laravel 12 + MySQL untuk domain, token verifikasi, dan route publik.
+- Filament 4 untuk template, event, penerima, import, publikasi, dan pencabutan.
+- Dompdf untuk PDF satu halaman dengan elemen posisi absolut dan font TTF.
+- chillerlan/php-qrcode 5.0.5 untuk QR PNG; paket sudah tersedia pada proyek.
+- Alpine.js untuk editor visual drag-and-drop tanpa SPA tambahan.
+- maatwebsite/excel 3.1 untuk import peserta dari .xlsx/.csv.
+- Laravel queue (driver database) untuk penerbitan batch dan pengiriman email sertifikat.
+
+Fabric.js tidak digunakan pada MVP karena state canvas Fabric harus dirender ulang secara identik di server. Editor koordinat menghasilkan JSON sederhana dan PDF yang lebih deterministik. Jika kebutuhan desain berkembang menjadi rotasi, shape, curved text, atau layer kompleks, Fabric.js dapat ditambahkan sebagai editor sambil mempertahankan schema elemen internal.
+
+## Identitas dan peran
+
+Master `Participant` menyimpan identitas orang, sedangkan `CertificateEventParticipant` menyimpan perannya pada satu kegiatan. Satu orang dapat menjadi peserta pada satu kegiatan dan panitia atau pembicara pada kegiatan lain tanpa membuat identitas ganda.
+
+Tipe identitas: mahasiswa, dosen, staf, dan guest. Peran kegiatan bawaan: peserta, panitia, pembicara, moderator, penyelenggara, juri, mentor, relawan, dan label custom seperti Ketua Pelaksana.
+
+## Pipeline
+
+```
+[Tiga jalur masuk]                       [Inti]                    [Keluaran]
+1. Absensi QR + login Google  ┐
+2. Input manual admin         ├─► CertificateEventParticipant ─► review admin
+3. Import Excel               ┘            │
+                                           ▼
+                        Bus::batch(IssueCertificateJob) ─► Certificate + nomor + UUID
+                                           │
+                                           ▼
+                              SendCertificateEmailJob (antre)
+                                           │
+                                           ▼
+                          verifikasi publik /verify/certificate/{token}
+```
+
+## Absensi
+
+Setiap kegiatan dapat mengaktifkan absensi. Saat diaktifkan pertama kali sistem
+membuat `attendance_token` (ULID) yang tidak pernah berubah, sehingga QR yang
+sudah dicetak tetap berlaku.
+
+- Halaman peserta: `GET|POST /attend/{token}`, mobile-first, wajib login Google
+  domain `@jgu.ac.id` atau `@student.jgu.ac.id`.
+- Satu URL melayani dua aksi: belum ada catatan → check-in; sudah check-in →
+  check-out; keduanya terisi → tidak melakukan apa-apa.
+- Window waktu (`attendance_open_at`, `attendance_close_at`) divalidasi di
+  server. Batas yang dikosongkan berarti tidak dibatasi dari sisi itu.
+- Poster QR layar penuh untuk venue: `GET /admin/attendance/{event}/qr`
+  (wajib login panel + permission `certificates.view`).
+
+Anti titip-absen pada tahap ini bertumpu pada QR statis, window waktu, dan
+review admin. Rotating QR belum dikerjakan.
+
+### Aturan kelayakan
+
+Dipilih per kegiatan dan dievaluasi di satu tempat
+(`CertificateEventParticipant::syncEligibility()`):
+
+| Aturan | Peserta berhak ketika |
+|---|---|
+| `checkin_only` | `checked_in_at` terisi |
+| `checkin_and_checkout` | `checked_in_at` dan `checked_out_at` terisi |
+| `manual` | hanya ketika admin menandainya; absensi tidak mengubah flag |
+
+Admin selalu dapat menimpa flag kelayakan untuk ketiga aturan.
+
+## Alur staf
+
+1. Buat desain latar PNG/JPG tanpa nama, nomor, dan QR.
+2. Buat Template Sertifikat dan unggah desain.
+3. Setelah template disimpan, sistem otomatis membuka Editor Visual.
+4. Tambahkan variabel dari toolbar, lalu drag, resize, dan atur tipografi langsung di atas desain. Gunakan Preview Bersih untuk memeriksa hasil tanpa garis editor.
+5. Buat event sertifikat dan pilih template.
+6. Isi peserta lewat salah satu jalur: aktifkan absensi QR, tambahkan manual
+   per email, atau import Excel.
+7. Tandai kehadiran dan kelayakan secara individual atau bulk.
+8. Tekan "Terbitkan Semua Eligible" (atau pilih baris lalu bulk action).
+   Penerbitan berjalan di antrean; hasilnya dikabarkan lewat notifikasi panel.
+9. Periksa contoh PDF, lalu ubah event menjadi `Dipublikasikan`.
+10. Publikasi membuat QR valid dan otomatis mengirim email yang masih tertunda.
+    Sertifikat dapat dicabut sewaktu-waktu tanpa mengubah QR.
+
+Antrean wajib berjalan (`php artisan queue:work`) agar langkah 8 dan 10
+menghasilkan sertifikat dan email.
+
+## Variabel bawaan
+
+- `recipient_name`
+- `recipient_role`
+- `certificate_number`
+- `event_name`
+- `event_date`
+- `organizer`
+- `signatory_name`
+- `signatory_title`
+- `verification_url`
+- `qr_code`
+- `custom_text`
+
+Variabel tambahan per penerima disimpan dalam field `variables` dan dapat dikembangkan menjadi pilihan editor pada iterasi berikutnya.
+
+## Editor visual
+
+Editor mendukung penambahan elemen dari toolbar, drag-and-drop, resize dengan handle, layer selection, duplicate, delete, custom text, custom font TTF, warna, alignment, keyboard arrow untuk nudging, preview bersih, dan koordinat numerik sebagai kontrol presisi. Maksimal 50 elemen per template dan seluruh payload divalidasi ulang di server sebelum disimpan.
+
+## Import peserta
+
+Berkas `.xlsx` atau `.csv`, header di baris 1, maksimal 500 baris data, maksimal
+2 MB. Kolom dicocokkan berdasarkan **nama** sehingga urutannya bebas; kolom yang
+tidak dikenal diabaikan dengan peringatan.
+
+| Kolom | Wajib | Dipetakan ke |
+|---|---|---|
+| `nama_sertifikat` | ya | `participants.name` (nama yang dicetak) |
+| `email` | ya | `participants.email` — kunci dedup |
+| `peran` | tidak | `certificate_event_participants.role` (default Peserta) |
+| `nim_nip` | tidak | `participants.institutional_id` |
+| `unit_prodi` | tidak | `participants.study_program` |
+| `nomor_sertifikat` | tidak | dipakai saat penerbitan; kosong → nomor otomatis |
+
+Nilai `peran` yang diterima: Peserta, Panitia, Pembicara, Moderator,
+Penyelenggara, Juri, Mentor, Relawan, Lainnya.
+
+Alur dua langkah: unggah menghasilkan **pratinjau** (tidak menulis apa pun,
+hasilnya di-cache 30 menit), lalu konfirmasi menulis dalam satu transaksi dan
+membuang berkas sementara.
+
+Aturan dedup: email dinormalkan (lowercase + trim). Email yang sudah ada di
+master dipakai ulang dan **namanya tidak pernah ditimpa** — perbedaannya
+dilaporkan sebagai peringatan. Peserta yang sudah terdaftar di kegiatan yang
+sama dilewati dan dihitung pada laporan hasil.
+
+Email di luar domain JGU diperbolehkan lewat import dan input manual (tipe
+`guest`); jalur absensi QR tetap ketat domain JGU.
+
+## Aturan validitas
+
+Sertifikat valid hanya jika event berstatus `published`, `issued_at` terisi, dan `revoked_at` kosong. QR berisi URL dengan UUID acak, bukan primary key database. Halaman verifikasi tetap menampilkan status tidak berlaku untuk sertifikat yang dicabut.
+
+Definisi ini hidup di satu tempat, `Certificate::isValid()`, dan dipakai oleh
+route unduh, aksi panel, serta job pengiriman email.
+
+## Penerbitan dan email
+
+Penerbitan berjalan asinkron: satu `IssueCertificateJob` per peserta eligible di
+dalam satu `Bus::batch`. Setiap job idempotent — keikutsertaan yang sudah punya
+sertifikat dilewati, dan unique index pada `certificates.event_participant_id`
+menjaga hal itu di level database. Nomor sertifikat khusus dari import dipakai
+apa adanya; selebihnya dibuat otomatis dan diperiksa keunikannya.
+
+`SendCertificateEmailJob` mengirim satu email per sertifikat berisi tautan unduh
+dan tautan verifikasi (PDF tidak dilampirkan, agar penerima selalu mendapat
+versi terbaru). Idempotensinya dijaga kolom `emailed_at`; kegagalan final
+dicatat pada `email_failed_at` dan `email_error`, dan dapat ditindaklanjuti
+dengan aksi "Kirim Ulang Email".
+
+Email hanya dikirim untuk sertifikat valid. Bila penerbitan dilakukan sebelum
+publikasi, email menyusul otomatis saat kegiatan diubah menjadi
+`Dipublikasikan` (`CertificateEventObserver`).
+
+`APP_URL` wajib menunjuk domain produksi karena dipakai membentuk URL absolut
+pada QR dan tombol email.

@@ -23,8 +23,9 @@ class CertificateBatchIssuer
     public function __construct(private readonly CertificateIssuer $issuer) {}
 
     /**
+     * Kosongkan $participations untuk menerbitkan bagi seluruh peserta eligible.
+     *
      * @param  Collection<int, CertificateEventParticipant>|null  $participations
-     *        Kosongkan untuk menerbitkan bagi seluruh peserta eligible.
      *
      * @throws CertificateBatchException
      */
