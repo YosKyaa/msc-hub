@@ -4,7 +4,6 @@ namespace App\Filament\Resources\CertificateEventResource\RelationManagers;
 
 use Filament\Actions;
 use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Select;
@@ -13,6 +12,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use App\Support\CertificatePermission;
 use Illuminate\Support\Str;
 
 class CertificatesRelationManager extends RelationManager
@@ -47,32 +47,7 @@ class CertificatesRelationManager extends RelationManager
             IconColumn::make('valid')->label('Valid')->state(fn ($record) => $record->isValid())->boolean(),
             TextColumn::make('issued_at')->label('Terbit')->dateTime('d M Y H:i'),
         ])->headerActions([
-            Actions\CreateAction::make()->label('Tambah Penerima'),
-            Actions\Action::make('importCsv')->label('Import CSV')->icon('heroicon-o-arrow-up-tray')
-                ->form([
-                    FileUpload::make('csv')->label('File CSV')->disk('local')->directory('certificate-imports')->acceptedFileTypes(['text/csv', 'text/plain'])->required()->helperText('Kolom: name,email,role,role_label,certificate_number. Nomor boleh dikosongkan.'),
-                ])->action(function (array $data): void {
-                    $path = \Illuminate\Support\Facades\Storage::disk('local')->path($data['csv']);
-                    $handle = fopen($path, 'r');
-                    $headers = array_map(fn ($value) => strtolower(trim($value)), fgetcsv($handle) ?: []);
-                    $created = 0;
-
-                    while (($row = fgetcsv($handle)) !== false) {
-                        $item = array_combine($headers, array_pad($row, count($headers), null));
-                        if (empty($item['name'])) continue;
-                        $this->getOwnerRecord()->certificates()->create([
-                            'recipient_name' => trim($item['name']),
-                            'recipient_email' => trim($item['email'] ?? '') ?: null,
-                            'recipient_role' => trim($item['role'] ?? '') ?: 'participant',
-                            'recipient_role_label' => trim($item['role_label'] ?? '') ?: null,
-                            'certificate_number' => trim($item['certificate_number'] ?? '') ?: 'CERT-'.now()->format('Ymd').'-'.strtoupper(Str::random(6)),
-                        ]);
-                        $created++;
-                    }
-                    fclose($handle);
-                    \Illuminate\Support\Facades\Storage::disk('local')->delete($data['csv']);
-                    \Filament\Notifications\Notification::make()->title("{$created} penerima berhasil diimport")->success()->send();
-                }),
+            Actions\CreateAction::make()->label('Tambah Penerima')->visible(fn () => CertificatePermission::allows('create')),
         ])
         ->actions([
             Actions\Action::make('verify')->label('Verifikasi')->icon('heroicon-o-qr-code')->url(fn ($record) => route('certificates.verify', $record->verification_token))->openUrlInNewTab(),
