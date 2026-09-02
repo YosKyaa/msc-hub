@@ -55,7 +55,7 @@ class ParticipantRegistry
      * Ambil participant berdasarkan email, atau buat baru bila belum ada.
      *
      * @param  array<string, mixed>  $attributes  Nilai untuk record yang baru dibuat.
-     * @param  array<string, mixed>  $fillIfEmpty Nilai yang hanya diisi bila kolomnya masih kosong.
+     * @param  array<string, mixed>  $fillIfEmpty  Nilai yang hanya diisi bila kolomnya masih kosong.
      */
     public function findOrCreateByEmail(string $email, array $attributes, array $fillIfEmpty = []): Participant
     {

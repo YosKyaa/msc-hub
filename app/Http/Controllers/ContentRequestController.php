@@ -78,7 +78,9 @@ class ContentRequestController extends Controller
             'status' => RequestStatus::INCOMING,
         ]);
 
-        return redirect()->route('request.success', ['code' => $requestCode]);
+        return redirect()
+            ->route('request.success', ['code' => $requestCode])
+            ->with('success', 'Request konten berhasil dikirim. Simpan kode request untuk memantau progresnya.');
     }
 
     public function showSuccess(Request $request)
@@ -95,8 +97,15 @@ class ContentRequestController extends Controller
     public function showStatus()
     {
         $requester = Session::get('requester');
+        $contentRequests = collect();
 
-        return view('content-request.status', compact('requester'));
+        if ($requester) {
+            $contentRequests = ContentRequest::where('requester_email', $requester['email'])
+                ->latest()
+                ->get();
+        }
+
+        return view('content-request.status', compact('requester', 'contentRequests'));
     }
 
     public function checkStatus(Request $request)
@@ -107,6 +116,11 @@ class ContentRequestController extends Controller
             return redirect()->route('request.status')
                 ->with('error', 'Silakan login dengan Google terlebih dahulu.');
         }
+
+        // Support both the search form and direct links from the request history.
+        $request->merge([
+            'request_code' => $request->route('request_code') ?? $request->input('request_code'),
+        ]);
 
         $validated = $request->validate([
             'request_code' => 'required|string|max:20',

@@ -15,6 +15,10 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SecurityHeaders::class,
         ]);
 
+        // Route non-Filament yang butuh login (mis. /logs) diarahkan ke
+        // halaman login panel, bukan route `login` bawaan yang tidak ada.
+        $middleware->redirectGuestsTo(fn () => route('filament.admin.auth.login'));
+
         $middleware->alias([
             // Rate limiting
             'throttle.auth' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1',

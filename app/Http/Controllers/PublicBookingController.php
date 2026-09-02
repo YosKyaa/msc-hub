@@ -301,12 +301,14 @@ class PublicBookingController extends Controller
             return redirect()->route('booking.success', [
                 'type' => 'room',
                 'code' => $booking->booking_code
-            ]);
+            ])->with('success', 'Booking ruangan berhasil diajukan. Tim MSC akan meninjau jadwal Anda.');
         } catch (\Exception $e) {
             \Log::error('Room booking error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString()
             ]);
-            return back()->withInput()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
+            return back()->withInput()->withErrors([
+                'error' => 'Booking belum dapat diproses. Silakan coba lagi dalam beberapa saat.'
+            ]);
         }
     }
 

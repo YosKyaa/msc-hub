@@ -95,7 +95,7 @@ class NewBookingNotification extends Notification implements ShouldQueue
             ->body("Kode: {$code}\nPeminjam: {$this->booking->requester_name}")
             ->warning() // or ->success(), ->danger()
             ->actions([
-                \Filament\Notifications\Actions\Action::make('view')
+                \Filament\Actions\Action::make('view')
                     ->button()
                     ->url(url('/panel'), shouldOpenInNewTab: true),
             ])

@@ -93,7 +93,7 @@ class NewContentRequestNotification extends Notification implements ShouldQueue
             ->body("Kode: {$code}\nJenis: {$contentType}\nPeminjam: {$this->contentRequest->requester_name}")
             ->info()
             ->actions([
-                \Filament\Notifications\Actions\Action::make('view')
+                \Filament\Actions\Action::make('view')
                     ->button()
                     ->url(url('/panel'), shouldOpenInNewTab: true),
             ])
