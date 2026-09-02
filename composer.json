@@ -8,11 +8,13 @@
     "require": {
         "php": "^8.2",
         "barryvdh/laravel-dompdf": "*",
+        "chillerlan/php-qrcode": "^5.0",
         "filament/filament": "4.0",
         "guava/calendar": "^2.1",
         "laravel/framework": "^12.0",
         "laravel/socialite": "^5.24",
         "laravel/tinker": "^2.10.1",
+        "maatwebsite/excel": "^3.1",
         "rap2hpoutre/laravel-log-viewer": "^2.5",
         "spatie/laravel-activitylog": "*",
         "spatie/laravel-permission": "^6.23"

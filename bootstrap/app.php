@@ -15,9 +15,14 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\SecurityHeaders::class,
         ]);
 
-        // Rate limiting aliases
         $middleware->alias([
+            // Rate limiting
             'throttle.auth' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1',
+
+            // Spatie permission guards (dipakai untuk route non-Filament seperti /logs)
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
