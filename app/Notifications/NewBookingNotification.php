@@ -2,11 +2,11 @@
 
 namespace App\Notifications;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\HtmlString;
 
 use Filament\Notifications\Notification as FilamentNotification;
 
@@ -36,7 +36,18 @@ class NewBookingNotification extends Notification implements ShouldQueue
      */
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        if (! $notifiable instanceof User) {
+            return ['mail'];
+        }
+
+        $channels = ['database'];
+        $operationalEmails = array_map('strtolower', config('msc.notification_recipients', []));
+
+        if (in_array(strtolower($notifiable->email), $operationalEmails, true)) {
+            $channels[] = 'mail';
+        }
+
+        return $channels;
     }
 
     /**
@@ -54,20 +65,24 @@ class NewBookingNotification extends Notification implements ShouldQueue
 
         return (new MailMessage)
             ->subject("[MSC Hub] Permintaan Baru #{$code} - {$typeName}")
-            ->greeting("Yth. Tim Administrator MSC Hub,")
-            ->line("Sistem telah menerima permintaan peminjaman {$typeName} baru dengan rincian sebagai berikut:")
-            ->line(new HtmlString("
-                <div style='margin-bottom: 10px;'>
-                    <p style='margin: 5px 0;'><strong>Kode Booking:</strong> {$code}</p>
-                    <p style='margin: 5px 0;'><strong>Nama Peminjam:</strong> {$requester}</p>
-                    <p style='margin: 5px 0;'><strong>Unit/Instansi:</strong> {$this->booking->unit}</p>
-                    <p style='margin: 5px 0;'><strong>Waktu Penggunaan:</strong><br>{$date}</p>
-                    <p style='margin: 5px 0;'><strong>Keperluan:</strong><br>{$purpose}</p>
-                </div>
-            "))
-            ->action('Tinjau & Verifikasi', $url)
-            ->line('Mohon segera dilakukan pengecekan untuk persetujuan atau penolakan permintaan ini.')
-            ->salutation('Hormat kami,');
+            ->view('emails.notification', [
+                'badge' => 'Tindakan diperlukan',
+                'title' => "Ada booking {$typeName} baru",
+                'greeting' => 'Halo, Tim MSC',
+                'intro' => 'Booking baru telah masuk. Periksa ketersediaan fasilitas dan jadwal sebelum memberikan keputusan.',
+                'details' => [
+                    'Kode booking' => $code,
+                    'Pemohon' => $requester,
+                    'Unit' => $this->booking->unit,
+                    'Waktu penggunaan' => $date,
+                    'Keperluan' => $purpose,
+                ],
+                'status' => 'Perlu ditinjau',
+                'statusTone' => 'warning',
+                'note' => 'Berikan persetujuan atau penolakan melalui panel MSC Hub.',
+                'actionUrl' => $url,
+                'actionText' => 'Tinjau booking',
+            ]);
     }
 
     public function toDatabase(object $notifiable): array

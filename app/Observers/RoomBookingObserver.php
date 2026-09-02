@@ -3,13 +3,15 @@
 namespace App\Observers;
 
 use App\Models\RoomBooking;
-use App\Models\User;
+use App\Notifications\BookingSubmitted;
 use App\Notifications\BookingStatusUpdated;
 use App\Notifications\NewBookingNotification;
-use Illuminate\Support\Facades\Notification;
+use App\Observers\Concerns\DispatchesMscNotifications;
 
 class RoomBookingObserver
 {
+    use DispatchesMscNotifications;
+
     /**
      * Handle events after all transactions are committed.
      *
@@ -22,16 +24,15 @@ class RoomBookingObserver
      */
     public function created(RoomBooking $roomBooking): void
     {
-        // Send notification to Staff/Head/Admin
-        $recipients = User::role(['admin', 'staff_msc', 'head_msc'])->get();
-        
-        // Loop and add delay to avoid Mailtrap Rate Limiting (Too many emails per second)
-        foreach ($recipients as $index => $recipient) {
-            $recipient->notify(
-                (new NewBookingNotification($roomBooking, 'ROOM'))
-                    ->delay(now()->addSeconds(($index + 1) * 10)) // Increased delay to 10s
-            );
-        }
+        $context = ['room_booking_id' => $roomBooking->id];
+
+        $this->notifyRequester(
+            $roomBooking->requester_email,
+            new BookingSubmitted($roomBooking, 'ROOM'),
+            $context,
+        );
+
+        $this->notifyMscTeam(new NewBookingNotification($roomBooking, 'ROOM'), $context);
     }
 
     /**
@@ -40,12 +41,16 @@ class RoomBookingObserver
     public function updated(RoomBooking $roomBooking): void
     {
         // Check if status changed
-        if ($roomBooking->isDirty('status')) {
-            // Send notification to requester
-            if ($roomBooking->requester_email) {
-                Notification::route('mail', $roomBooking->requester_email)
-                    ->notify(new BookingStatusUpdated($roomBooking, 'ROOM'));
-            }
+        $notifiableStatuses = ['approved_head', 'rejected', 'cancelled', 'completed'];
+
+        if ($roomBooking->isDirty('status')
+            && $roomBooking->requester_email
+            && in_array($roomBooking->status->value, $notifiableStatuses, true)) {
+            $this->notifyRequester(
+                $roomBooking->requester_email,
+                new BookingStatusUpdated($roomBooking, 'ROOM'),
+                ['room_booking_id' => $roomBooking->id],
+            );
         }
     }
 

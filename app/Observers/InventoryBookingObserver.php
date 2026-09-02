@@ -3,13 +3,15 @@
 namespace App\Observers;
 
 use App\Models\InventoryBooking;
-use App\Models\User;
+use App\Notifications\BookingSubmitted;
 use App\Notifications\BookingStatusUpdated;
 use App\Notifications\NewBookingNotification;
-use Illuminate\Support\Facades\Notification;
+use App\Observers\Concerns\DispatchesMscNotifications;
 
 class InventoryBookingObserver
 {
+    use DispatchesMscNotifications;
+
     /**
      * Handle events after all transactions are committed.
      *
@@ -22,16 +24,15 @@ class InventoryBookingObserver
      */
     public function created(InventoryBooking $inventoryBooking): void
     {
-        // Send notification to Staff/Head/Admin
-        $recipients = User::role(['admin', 'staff_msc', 'head_msc'])->get();
-        
-        // Loop and add delay to avoid Mailtrap Rate Limiting
-        foreach ($recipients as $index => $recipient) {
-            $recipient->notify(
-                (new NewBookingNotification($inventoryBooking, 'INVENTORY'))
-                    ->delay(now()->addSeconds(($index + 1) * 10))
-            );
-        }
+        $context = ['inventory_booking_id' => $inventoryBooking->id];
+
+        $this->notifyRequester(
+            $inventoryBooking->requester_email,
+            new BookingSubmitted($inventoryBooking, 'INVENTORY'),
+            $context,
+        );
+
+        $this->notifyMscTeam(new NewBookingNotification($inventoryBooking, 'INVENTORY'), $context);
     }
 
     /**
@@ -40,12 +41,16 @@ class InventoryBookingObserver
     public function updated(InventoryBooking $inventoryBooking): void
     {
         // Check if status changed
-        if ($inventoryBooking->isDirty('status')) {
-            // Send notification to requester
-            if ($inventoryBooking->requester_email) {
-                Notification::route('mail', $inventoryBooking->requester_email)
-                    ->notify(new BookingStatusUpdated($inventoryBooking, 'INVENTORY'));
-            }
+        $notifiableStatuses = ['approved_head', 'rejected', 'cancelled', 'checked_out', 'returned'];
+
+        if ($inventoryBooking->isDirty('status')
+            && $inventoryBooking->requester_email
+            && in_array($inventoryBooking->status->value, $notifiableStatuses, true)) {
+            $this->notifyRequester(
+                $inventoryBooking->requester_email,
+                new BookingStatusUpdated($inventoryBooking, 'INVENTORY'),
+                ['inventory_booking_id' => $inventoryBooking->id],
+            );
         }
     }
 

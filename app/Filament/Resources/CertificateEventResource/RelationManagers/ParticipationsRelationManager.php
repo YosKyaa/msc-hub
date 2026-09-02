@@ -7,6 +7,8 @@ use App\Enums\ParticipantSource;
 use App\Filament\Actions\ImportParticipantsAction;
 use App\Models\CertificateEvent;
 use App\Models\CertificateEventParticipant;
+use App\Services\Certificates\CertificateBatchException;
+use App\Services\Certificates\CertificateBatchIssuer;
 use App\Services\Certificates\ParticipantRegistry;
 use App\Support\CertificatePermission;
 use Filament\Actions;
@@ -23,6 +25,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 
 class ParticipationsRelationManager extends RelationManager
 {
@@ -113,6 +116,15 @@ class ParticipationsRelationManager extends RelationManager
                     ->action(fn (array $data) => $this->addParticipantManually($data)),
 
                 ImportParticipantsAction::make(),
+
+                Actions\Action::make('issueAllEligible')
+                    ->label('Terbitkan Semua Eligible')
+                    ->icon('heroicon-o-academic-cap')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalDescription('Sertifikat diterbitkan di latar belakang. Email dikirim setelah kegiatan berstatus Dipublikasikan.')
+                    ->visible(fn () => CertificatePermission::allowsIssuing())
+                    ->action(fn () => $this->dispatchIssuing()),
             ])
             ->actions([
                 Actions\Action::make('toggleEligible')
@@ -148,8 +160,41 @@ class ParticipationsRelationManager extends RelationManager
                     ->requiresConfirmation()
                     ->visible(fn () => CertificatePermission::allows('edit'))
                     ->action(fn ($records) => $records->each->update(['attendance_status' => 'attended', 'eligible_at' => now()])),
+                Actions\BulkAction::make('issueCertificates')
+                    ->label('Terbitkan Sertifikat')
+                    ->icon('heroicon-o-academic-cap')
+                    ->requiresConfirmation()
+                    ->visible(fn () => CertificatePermission::allowsIssuing())
+                    ->action(fn (Collection $records) => $this->dispatchIssuing($records)),
                 Actions\DeleteBulkAction::make(),
             ]);
+    }
+
+    /**
+     * Antrekan penerbitan sertifikat. Validasi ringan dilakukan langsung agar
+     * admin segera tahu bila tidak ada yang bisa diterbitkan.
+     *
+     * @param  Collection<int, CertificateEventParticipant>|null  $records
+     */
+    private function dispatchIssuing(?Collection $records = null): void
+    {
+        try {
+            $batch = app(CertificateBatchIssuer::class)->dispatchFor(
+                $this->getOwnerRecord(),
+                $records,
+                auth()->user(),
+            );
+        } catch (CertificateBatchException $exception) {
+            Notification::make()->title('Penerbitan dibatalkan')->body($exception->getMessage())->warning()->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title('Penerbitan diantrekan')
+            ->body("{$batch->totalJobs} sertifikat sedang diproses di latar belakang.")
+            ->success()
+            ->send();
     }
 
     /**

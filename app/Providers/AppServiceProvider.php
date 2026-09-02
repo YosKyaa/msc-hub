@@ -3,11 +3,13 @@
 namespace App\Providers;
 
 use App\Models\Asset;
+use App\Models\CertificateEvent;
 use App\Models\ContentRequest;
 use App\Models\InventoryBooking;
 use App\Models\Project;
 use App\Models\RoomBooking;
 use App\Models\Tag;
+use App\Observers\CertificateEventObserver;
 use App\Observers\ContentRequestObserver;
 use App\Observers\InventoryBookingObserver;
 use App\Observers\RoomBookingObserver;
@@ -42,5 +44,6 @@ class AppServiceProvider extends ServiceProvider
         RoomBooking::observe(RoomBookingObserver::class);
         InventoryBooking::observe(InventoryBookingObserver::class);
         ContentRequest::observe(ContentRequestObserver::class);
+        CertificateEvent::observe(CertificateEventObserver::class);
     }
 }
