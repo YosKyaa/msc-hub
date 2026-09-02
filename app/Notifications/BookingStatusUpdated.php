@@ -6,7 +6,6 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\HtmlString;
 
 class BookingStatusUpdated extends Notification implements ShouldQueue
 {
@@ -44,33 +43,41 @@ class BookingStatusUpdated extends Notification implements ShouldQueue
     {
         $typeName = $this->type === 'ROOM' ? 'Ruangan' : 'Inventaris';
         $code = $this->booking->booking_code;
-        $status = $this->booking->status->getLabel();
+        $status = match ($this->booking->status->value) {
+            'approved_head' => 'Disetujui final',
+            'rejected' => 'Ditolak',
+            'cancelled' => 'Dibatalkan',
+            'checked_out' => 'Sedang dipinjam',
+            'returned' => 'Sudah dikembalikan',
+            'completed' => 'Selesai',
+            default => $this->booking->status->getLabel(),
+        };
 
-        $rejectReason = '';
-        if ($this->booking->status->value === 'rejected' && $this->booking->reject_reason) {
-            $rejectReason = "<div style='margin-top: 10px; padding: 10px; background-color: #f8d7da; border: 1px solid #f5c6cb; border-radius: 4px; color: #721c24;'><strong>Alasan Penolakan:</strong><br>" . $this->booking->reject_reason . "</div>";
-        }
-
-        $url = route('booking.success', ['type' => strtolower($this->type), 'code' => $code]);
+        $url = route('my.bookings.detail', ['type' => strtolower($this->type), 'code' => $code]);
+        $tone = match ($this->booking->status->value) {
+            'approved_head', 'returned', 'completed' => 'success',
+            'rejected', 'cancelled' => 'danger',
+            default => 'info',
+        };
 
         return (new MailMessage)
             ->subject("[MSC Hub] Update Status Peminjaman #{$code}")
-            ->greeting("Yth. {$this->booking->requester_name},")
-            ->line("Kami informasikan bahwa status permohonan peminjaman {$typeName} Anda telah diperbarui.")
-            ->line(new HtmlString("
-                <div style='margin-bottom: 15px;'>
-                    <p style='margin: 5px 0;'><strong>Kode Booking:</strong> {$code}</p>
-                    <p style='margin: 5px 0;'><strong>Unit/Instansi:</strong> {$this->booking->unit}</p>
-                    <p style='margin: 5px 0;'><strong>Waktu Penggunaan:</strong> {$this->booking->start_at->format('d F Y, H:i')}</p>
-                    <div style='margin-top: 10px; padding: 10px; background-color: #e2e3e5; border-radius: 4px;'>
-                        <strong>Status Terbaru:</strong> <span style='font-size: 1.1em; font-weight: bold;'>{$status}</span>
-                    </div>
-                    {$rejectReason}
-                </div>
-            "))
-            ->action('Lihat Detail Peminjaman', $url)
-            ->line('Terima kasih telah menggunakan layanan MSC Hub.')
-            ->salutation('Hormat kami,');
+            ->view('emails.notification', [
+                'badge' => 'Pembaruan booking',
+                'title' => "Status booking {$typeName} Anda berubah",
+                'greeting' => "Halo, {$this->booking->requester_name}",
+                'intro' => 'Periksa status terbaru dan detail jadwal booking Anda di bawah ini.',
+                'details' => [
+                    'Kode booking' => $code,
+                    'Layanan' => $typeName,
+                    'Unit' => $this->booking->unit,
+                    'Jadwal' => $this->booking->start_at->format('d M Y, H:i').' WIB',
+                ],
+                'status' => $status,
+                'statusTone' => $tone,
+                'note' => $this->booking->reject_reason,
+                'actionUrl' => $url,
+                'actionText' => 'Lihat detail booking',
+            ]);
     }
 }
-
