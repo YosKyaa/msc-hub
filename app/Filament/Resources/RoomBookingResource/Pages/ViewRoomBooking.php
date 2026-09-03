@@ -6,6 +6,7 @@ use App\Enums\BookingStatus;
 use App\Filament\Resources\RoomBookingResource;
 use Filament\Actions;
 use Filament\Forms\Components\Textarea;
+use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
@@ -62,6 +63,37 @@ class ViewRoomBooking extends ViewRecord
                 ])
                 ->columns(2),
 
+            // Peralatan yang dipinjam bersama ruangan. Sebelumnya hanya terlihat
+            // sebagai angka di tabel, sehingga petugas tidak tahu alat apa yang
+            // harus disiapkan tanpa membuka halaman ubah.
+            Section::make('Peralatan Multimedia yang Dipinjam')
+                ->description(fn ($record) => $record->inventoryItems->isEmpty()
+                    ? null
+                    : $record->inventoryItems->sum(fn ($item) => $item->pivot->quantity).' unit dari '.$record->inventoryItems->count().' jenis peralatan.')
+                ->schema([
+                    RepeatableEntry::make('inventoryItems')
+                        ->hiddenLabel()
+                        ->contained(false)
+                        ->schema([
+                            TextEntry::make('code')->label('Kode')->badge()->color('gray'),
+                            TextEntry::make('name')->label('Peralatan'),
+                            TextEntry::make('pivot.quantity')->label('Jumlah')->suffix(' unit'),
+                            TextEntry::make('pivot.notes')->label('Catatan')->placeholder('—'),
+                        ])
+                        ->columns(4)
+                        ->columnSpanFull(),
+                ])
+                ->visible(fn ($record) => $record->inventoryItems->isNotEmpty()),
+
+            Section::make('Peralatan Multimedia yang Dipinjam')
+                ->schema([
+                    TextEntry::make('tanpa_peralatan')
+                        ->hiddenLabel()
+                        ->state('Pemohon tidak meminjam peralatan apa pun untuk booking ini.')
+                        ->color('gray'),
+                ])
+                ->visible(fn ($record) => $record->inventoryItems->isEmpty()),
+
             Section::make('Approval History')
                 ->schema([
                     TextEntry::make('staff_approved_at')
@@ -100,6 +132,14 @@ class ViewRoomBooking extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            // Halaman detail memuat alur lengkap: di sini peralatan yang
+            // dipinjam terlihat sebelum booking disetujui.
+            Actions\Action::make('export_pdf')
+                ->label('Unduh Bukti (PDF)')
+                ->icon('heroicon-o-document-arrow-down')
+                ->color('gray')
+                ->action(fn () => RoomBookingResource::downloadPdf($this->record)),
+
             Actions\EditAction::make()
                 ->visible(fn () => $this->record->status === BookingStatus::PENDING),
 
@@ -166,6 +206,21 @@ class ViewRoomBooking extends ViewRecord
                         'status' => BookingStatus::COMPLETED,
                     ]);
                     Notification::make()->title('Booking selesai')->success()->send();
+                }),
+
+            Actions\Action::make('cancel')
+                ->label('Batalkan')
+                ->icon('heroicon-o-x-mark')
+                ->color('gray')
+                ->visible(fn () => $this->record->canCancel())
+                ->requiresConfirmation()
+                ->modalHeading('Batalkan Booking')
+                ->action(function () {
+                    $this->record->update([
+                        'cancelled_at' => now(),
+                        'status' => BookingStatus::CANCELLED,
+                    ]);
+                    Notification::make()->title('Booking dibatalkan')->success()->send();
                 }),
         ];
     }

@@ -59,7 +59,7 @@ class EditRoomBooking extends EditRecord
     {
         // Store inventoryItems data before removing it
         $this->inventoryItemsData = $data['inventoryItems'] ?? [];
-        
+
         // Remove inventoryItems from data as it's not a column in room_bookings table
         // We'll handle this relationship manually in afterSave
         unset($data['inventoryItems']);
@@ -72,7 +72,7 @@ class EditRoomBooking extends EditRecord
         $data = $this->form->getState();
 
         $room = Room::find($data['room_id']);
-        if (!$room) {
+        if (! $room) {
             Notification::make()
                 ->title('Error')
                 ->body('Ruangan tidak ditemukan')
@@ -86,7 +86,7 @@ class EditRoomBooking extends EditRecord
         $endAt = new \DateTime($data['end_at']);
 
         $errors = $room->validateOperatingHours($startAt, $endAt);
-        if (!empty($errors)) {
+        if (! empty($errors)) {
             Notification::make()
                 ->title('Validasi Gagal')
                 ->body(implode("\n", $errors))
@@ -132,14 +132,14 @@ class EditRoomBooking extends EditRecord
         try {
             // Handle inventory items relationship manually using stored data
             $inventoryItems = $this->inventoryItemsData;
-            
+
             // Check if inventoryItems exists and is not empty
             if (is_array($inventoryItems) && count($inventoryItems) > 0) {
                 // Filter out any empty or invalid items
                 $validItems = array_filter($inventoryItems, function ($item) {
-                    return isset($item['inventory_item_id']) && !empty($item['inventory_item_id']);
+                    return isset($item['inventory_item_id']) && ! empty($item['inventory_item_id']);
                 });
-                
+
                 // Only sync if there are valid items
                 if (count($validItems) > 0) {
                     $syncData = [];
@@ -149,18 +149,18 @@ class EditRoomBooking extends EditRecord
                             'notes' => $item['notes'] ?? null,
                         ];
                     }
-                    
+
                     $this->record->inventoryItems()->sync($syncData);
-                    
+
                     Notification::make()
                         ->title('Booking Berhasil Diupdate')
-                        ->body('Booking ruangan dengan ' . count($validItems) . ' peralatan berhasil diupdate.')
+                        ->body('Booking ruangan dengan '.count($validItems).' peralatan berhasil diupdate.')
                         ->success()
                         ->send();
                 } else {
                     // If no valid items, detach all
                     $this->record->inventoryItems()->detach();
-                    
+
                     Notification::make()
                         ->title('Booking Berhasil Diupdate')
                         ->body('Booking ruangan berhasil diupdate. Semua peralatan telah dihapus.')
@@ -170,7 +170,7 @@ class EditRoomBooking extends EditRecord
             } else {
                 // If inventoryItems is not set or empty, detach all
                 $this->record->inventoryItems()->detach();
-                
+
                 Notification::make()
                     ->title('Booking Berhasil Diupdate')
                     ->body('Booking ruangan berhasil diupdate tanpa peralatan.')
@@ -180,13 +180,13 @@ class EditRoomBooking extends EditRecord
         } catch (\Exception $e) {
             Notification::make()
                 ->title('Error')
-                ->body('Terjadi kesalahan saat menyimpan peralatan: ' . $e->getMessage())
+                ->body('Terjadi kesalahan saat menyimpan peralatan: '.$e->getMessage())
                 ->danger()
                 ->send();
-            
-            \Log::error('Error saving room booking items: ' . $e->getMessage(), [
+
+            \Log::error('Error saving room booking items: '.$e->getMessage(), [
                 'booking_id' => $this->record->id,
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
         }
     }

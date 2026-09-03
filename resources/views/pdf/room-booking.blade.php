@@ -1,294 +1,136 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="utf-8">
-    <title>Bukti Booking Ruangan - {{ $booking->booking_code }}</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: 'DejaVu Sans', Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.5;
-            color: #333;
-        }
-        .container {
-            padding: 20px;
-        }
-        .header {
-            text-align: center;
-            border-bottom: 2px solid #333;
-            padding-bottom: 15px;
-            margin-bottom: 20px;
-        }
-        .header h1 {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .header h2 {
-            font-size: 14px;
-            font-weight: normal;
-            color: #666;
-        }
-        .booking-code {
-            text-align: center;
-            margin: 15px 0;
-        }
-        .booking-code span {
-            background: #f3f4f6;
-            padding: 8px 20px;
-            border-radius: 5px;
-            font-size: 16px;
-            font-weight: bold;
-            letter-spacing: 2px;
-        }
-        .section {
-            margin-bottom: 20px;
-        }
-        .section-title {
-            font-size: 13px;
-            font-weight: bold;
-            background: #f3f4f6;
-            padding: 8px 12px;
-            margin-bottom: 10px;
-            border-left: 4px solid #7c3aed;
-        }
-        .info-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .info-table td {
-            padding: 6px 0;
-            vertical-align: top;
-        }
-        .info-table td:first-child {
-            width: 35%;
-            color: #666;
-        }
-        .info-table td:last-child {
-            font-weight: 500;
-        }
-        .room-box {
-            background: #f3f4f6;
-            border: 1px solid #e5e7eb;
-            border-radius: 8px;
-            padding: 15px;
-            margin: 10px 0;
-        }
-        .room-box h3 {
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-        .room-box p {
-            color: #666;
-            font-size: 11px;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 11px;
-            font-weight: bold;
-            text-transform: uppercase;
-        }
-        .status-pending { background: #fef3c7; color: #92400e; }
-        .status-approved_staff { background: #dbeafe; color: #1e40af; }
-        .status-approved_head { background: #d1fae5; color: #065f46; }
-        .status-rejected { background: #fee2e2; color: #991b1b; }
-        .status-completed { background: #d1fae5; color: #065f46; }
-        .status-cancelled { background: #f3f4f6; color: #6b7280; }
-        .footer {
-            margin-top: 30px;
-            padding-top: 15px;
-            border-top: 1px solid #ddd;
-            font-size: 10px;
-            color: #666;
-        }
-        .signature-area {
-            margin-top: 40px;
-            display: table;
-            width: 100%;
-        }
-        .signature-box {
-            display: table-cell;
-            width: 33%;
-            text-align: center;
-            padding: 10px;
-        }
-        .signature-line {
-            border-top: 1px solid #333;
-            margin-top: 60px;
-            padding-top: 5px;
-        }
-        .notice-box {
-            background: #fef3c7;
-            border: 1px solid #fcd34d;
-            border-radius: 8px;
-            padding: 12px;
-            margin-top: 20px;
-        }
-        .notice-box p {
-            font-size: 11px;
-            color: #92400e;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <div class="header">
-            <h1>JAKARTA GLOBAL UNIVERSITY</h1>
-            <h2>Media & Strategic Communications</h2>
-            <p style="margin-top: 10px; font-size: 14px; font-weight: bold;">BUKTI BOOKING RUANGAN</p>
-        </div>
+@php
+    use App\Enums\BookingStatus;
 
-        <div class="booking-code">
-            <span>{{ $booking->booking_code }}</span>
-        </div>
+    $tone = match ($booking->status) {
+        BookingStatus::APPROVED_HEAD, BookingStatus::COMPLETED => 'success',
+        BookingStatus::APPROVED_STAFF => 'info',
+        BookingStatus::PENDING => 'warning',
+        BookingStatus::REJECTED => 'danger',
+        default => 'neutral',
+    };
 
-        <div class="section">
-            <div class="section-title">Informasi Pemohon</div>
-            <table class="info-table">
-                <tr>
-                    <td>Nama Pemohon</td>
-                    <td>{{ $booking->requester_name }}</td>
-                </tr>
-                <tr>
-                    <td>Email</td>
-                    <td>{{ $booking->requester_email }}</td>
-                </tr>
-                <tr>
-                    <td>Unit/Fakultas</td>
-                    <td>{{ $booking->unit ?? '-' }}</td>
-                </tr>
-                <tr>
-                    <td>Jumlah Peserta</td>
-                    <td>{{ $booking->attendees ?? '-' }} orang</td>
-                </tr>
-                <tr>
-                    <td>Keperluan</td>
-                    <td>{{ $booking->purpose ?? '-' }}</td>
-                </tr>
-            </table>
-        </div>
+    $items = $booking->inventoryItems;
+    $durationHours = round($booking->duration_hours, 1);
+@endphp
 
-        <div class="section">
-            <div class="section-title">Informasi Ruangan</div>
-            <div class="room-box">
-                <h3>{{ $booking->room->name }}</h3>
-                <p>{{ $booking->room->location ?? 'Lokasi tidak tersedia' }}</p>
-                @if($booking->room->capacity)
-                <p>Kapasitas: {{ $booking->room->capacity }} orang</p>
-                @endif
-            </div>
-        </div>
+<x-pdf.document
+    title="Bukti Booking Ruangan"
+    :code="$booking->booking_code"
+    :status="$booking->status->getLabel()"
+    :status-tone="$tone"
+    :meta="[
+        'Ruangan' => $booking->room->name,
+        'Tanggal' => $booking->start_at->translatedFormat('d M Y'),
+        'Waktu' => $booking->start_at->format('H:i').'–'.$booking->end_at->format('H:i').' WIB',
+        'Peserta' => ($booking->attendees ?? '—').' orang',
+    ]"
+    :terms="[
+        'Hadir 15 menit sebelum jadwal dan konfirmasi kepada petugas MSC.',
+        'Peralatan yang dipinjam dikembalikan lengkap segera setelah kegiatan selesai.',
+        'Jaga kebersihan ruangan, matikan AC dan lampu setelah digunakan.',
+        'Kerusakan atau kehilangan fasilitas menjadi tanggung jawab pemohon.',
+    ]"
+    :signatories="[
+        'Pemohon' => ['name' => $booking->requester_name, 'caption' => $booking->unit],
+        'Staff MSC' => ['name' => $booking->staffApprover?->name, 'caption' => $booking->staff_approved_at?->translatedFormat('d M Y')],
+        'Kepala MSC' => ['name' => $booking->headApprover?->name, 'caption' => $booking->head_approved_at?->translatedFormat('d M Y')],
+    ]"
+>
 
-        <div class="section">
-            <div class="section-title">Jadwal Booking</div>
-            <table class="info-table">
-                <tr>
-                    <td>Tanggal</td>
-                    <td>{{ $booking->start_at->format('l, d F Y') }}</td>
-                </tr>
-                <tr>
-                    <td>Waktu Mulai</td>
-                    <td>{{ $booking->start_at->format('H:i') }} WIB</td>
-                </tr>
-                <tr>
-                    <td>Waktu Selesai</td>
-                    <td>{{ $booking->end_at->format('H:i') }} WIB</td>
-                </tr>
-                <tr>
-                    <td>Durasi</td>
-                    <td>{{ $booking->start_at->diffForHumans($booking->end_at, true) }}</td>
-                </tr>
-                <tr>
-                    <td>Status</td>
-                    <td>
-                        <span class="status-badge status-{{ strtolower(str_replace('_', '_', $booking->status->value)) }}">
-                            {{ $booking->status->getLabel() }}
-                        </span>
-                    </td>
-                </tr>
-            </table>
-        </div>
+    <div class="section">
+        <div class="section-title">Pemohon</div>
+        <table class="info-table">
+            <tr><td class="key">Nama</td><td class="val">{{ $booking->requester_name }}</td></tr>
+            <tr><td class="key">Email</td><td class="val">{{ $booking->requester_email }}</td></tr>
+            <tr><td class="key">Unit / Fakultas</td><td class="val">{{ $booking->unit ?: '—' }}</td></tr>
+            <tr><td class="key">Keperluan</td><td class="val">{{ $booking->purpose ?: '—' }}</td></tr>
+        </table>
+    </div>
 
-        @if($booking->inventoryItems->count() > 0)
-        <div class="section">
-            <div class="section-title">Peralatan Multimedia yang Dipinjam</div>
-            <table style="width: 100%; border-collapse: collapse; margin-top: 10px;">
+    <div class="section">
+        <div class="section-title">Ruangan &amp; Jadwal</div>
+        <table class="info-table">
+            <tr><td class="key">Ruangan</td><td class="val">{{ $booking->room->name }}</td></tr>
+            <tr><td class="key">Lokasi</td><td class="val">{{ $booking->room->location ?: '—' }}</td></tr>
+            @if($booking->room->capacity)
+                <tr><td class="key">Kapasitas</td><td class="val">{{ $booking->room->capacity }} orang</td></tr>
+            @endif
+            <tr><td class="key">Hari, tanggal</td><td class="val">{{ $booking->start_at->translatedFormat('l, d F Y') }}</td></tr>
+            <tr>
+                <td class="key">Waktu</td>
+                <td class="val">
+                    {{ $booking->start_at->format('H:i') }} – {{ $booking->end_at->format('H:i') }} WIB
+                    ({{ $durationHours == (int) $durationHours ? (int) $durationHours : $durationHours }} jam)
+                </td>
+            </tr>
+        </table>
+    </div>
+
+    {{-- Daftar peralatan selalu dicetak, termasuk saat kosong, agar petugas
+         tahu bedanya "tidak meminjam" dengan "data belum terisi". --}}
+    <div class="section">
+        <div class="section-title">Peralatan Multimedia yang Dipinjam</div>
+
+        @if($items->isEmpty())
+            <p class="empty-note">Pemohon tidak meminjam peralatan apa pun untuk booking ini.</p>
+        @else
+            <table class="data-table">
                 <thead>
-                    <tr style="background: #f3f4f6;">
-                        <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Kode</th>
-                        <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Nama Peralatan</th>
-                        <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: center;">Jumlah</th>
-                        <th style="border: 1px solid #e5e7eb; padding: 8px; text-align: left;">Catatan</th>
+                    <tr>
+                        <th class="num">No</th>
+                        <th>Kode</th>
+                        <th>Nama Peralatan</th>
+                        <th class="qty">Jumlah</th>
+                        <th>Catatan</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($booking->inventoryItems as $item)
-                    <tr>
-                        <td style="border: 1px solid #e5e7eb; padding: 8px;">{{ $item->code }}</td>
-                        <td style="border: 1px solid #e5e7eb; padding: 8px;">{{ $item->name }}</td>
-                        <td style="border: 1px solid #e5e7eb; padding: 8px; text-align: center;">{{ $item->pivot->quantity }}</td>
-                        <td style="border: 1px solid #e5e7eb; padding: 8px;">{{ $item->pivot->notes ?? '-' }}</td>
-                    </tr>
+                    @foreach($items as $item)
+                        <tr>
+                            <td class="num">{{ $loop->iteration }}</td>
+                            <td>{{ $item->code }}</td>
+                            <td>{{ $item->name }}</td>
+                            <td class="qty">{{ $item->pivot->quantity }}</td>
+                            <td>{{ $item->pivot->notes ?: '—' }}</td>
+                        </tr>
                     @endforeach
                 </tbody>
+                <tfoot>
+                    <tr>
+                        <td colspan="3">Total {{ $items->count() }} jenis peralatan</td>
+                        <td class="qty">{{ $items->sum(fn ($item) => $item->pivot->quantity) }}</td>
+                        <td>unit</td>
+                    </tr>
+                </tfoot>
             </table>
-        </div>
         @endif
+    </div>
 
-        @if($booking->staff_approved_at || $booking->head_approved_at)
+    @if($booking->staff_approved_at || $booking->head_approved_at || $booking->rejected_at)
         <div class="section">
-            <div class="section-title">Riwayat Approval</div>
+            <div class="section-title">Riwayat Persetujuan</div>
             <table class="info-table">
                 @if($booking->staff_approved_at)
-                <tr>
-                    <td>Approval Staff</td>
-                    <td>{{ $booking->staffApprover?->name }} - {{ $booking->staff_approved_at->format('d M Y, H:i') }}</td>
-                </tr>
+                    <tr>
+                        <td class="key">Disetujui Staff</td>
+                        <td class="val">{{ $booking->staffApprover?->name ?: '—' }} · {{ $booking->staff_approved_at->translatedFormat('d M Y, H:i') }} WIB</td>
+                    </tr>
                 @endif
                 @if($booking->head_approved_at)
-                <tr>
-                    <td>Approval Head</td>
-                    <td>{{ $booking->headApprover?->name }} - {{ $booking->head_approved_at->format('d M Y, H:i') }}</td>
-                </tr>
+                    <tr>
+                        <td class="key">Disetujui Kepala MSC</td>
+                        <td class="val">{{ $booking->headApprover?->name ?: '—' }} · {{ $booking->head_approved_at->translatedFormat('d M Y, H:i') }} WIB</td>
+                    </tr>
+                @endif
+                @if($booking->rejected_at)
+                    <tr>
+                        <td class="key">Ditolak</td>
+                        <td class="val">{{ $booking->rejectedByUser?->name ?: '—' }} · {{ $booking->rejected_at->translatedFormat('d M Y, H:i') }} WIB</td>
+                    </tr>
+                    <tr><td class="key">Alasan</td><td class="val">{{ $booking->reject_reason ?: '—' }}</td></tr>
                 @endif
             </table>
         </div>
-        @endif
+    @endif
 
-        <div class="notice-box">
-            <p><strong>Ketentuan Penggunaan Ruangan:</strong></p>
-            <p>1. Harap datang 15 menit sebelum waktu yang dijadwalkan</p>
-            <p>2. Jaga kebersihan dan kerapian ruangan</p>
-            <p>3. Matikan AC dan lampu setelah selesai menggunakan</p>
-            <p>4. Laporkan jika ada kerusakan fasilitas</p>
-        </div>
-
-        <div class="signature-area">
-            <div class="signature-box">
-                <p>Pemohon</p>
-                <div class="signature-line">{{ $booking->requester_name }}</div>
-            </div>
-            <div class="signature-box">
-                <p>Staff MSC</p>
-                <div class="signature-line">{{ $booking->staffApprover?->name ?? '________________' }}</div>
-            </div>
-            <div class="signature-box">
-                <p>Kepala MSC</p>
-                <div class="signature-line">{{ $booking->headApprover?->name ?? '________________' }}</div>
-            </div>
-        </div>
-
-        <div class="footer">
-            <p>Dicetak pada: {{ now()->format('d F Y, H:i') }} WIB</p>
-            <p>Dokumen ini digenerate secara otomatis oleh sistem MSC Hub.</p>
-        </div>
-    </div>
-</body>
-</html>
+</x-pdf.document>
