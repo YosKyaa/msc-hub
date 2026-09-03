@@ -171,6 +171,26 @@ sama dilewati dan dihitung pada laporan hasil.
 Email di luar domain JGU diperbolehkan lewat import dan input manual (tipe
 `guest`); jalur absensi QR tetap ketat domain JGU.
 
+## Halaman verifikasi publik
+
+`/verify/certificate/{token}` menampilkan **pratinjau sertifikat**, bukan sekadar
+tabel data, sehingga pemeriksa langsung melihat dokumen yang dimaksud.
+
+Pratinjau dirender oleh komponen `x-molecules.certificate-preview` memakai
+template, koordinat elemen, dan variabel yang **sama persis** dengan berkas PDF —
+satu sumber data, dua keluaran. Ukurannya relatif seluruhnya: posisi dan dimensi
+dalam persen, tipografi dalam `cqw` terhadap container kanvas. Hasilnya sebangun
+dengan PDF di lebar layar mana pun tanpa JavaScript dan tanpa render gambar di
+server.
+
+Sertifikat yang tidak berlaku tetap ditampilkan, tetapi diredupkan dan diberi
+cap "Tidak Berlaku", disertai keterangan apakah kegiatannya belum dipublikasikan
+atau sertifikatnya dicabut beserta tanggalnya. Tombol unduh hanya muncul untuk
+sertifikat yang valid.
+
+Halaman juga menyediakan QR dan tombol salin tautan agar mudah dibagikan, serta
+diberi `noindex` supaya nama penerima tidak terindeks mesin pencari.
+
 ## Aturan validitas
 
 Sertifikat valid hanya jika event berstatus `published`, `issued_at` terisi, dan `revoked_at` kosong. QR berisi URL dengan UUID acak, bukan primary key database. Halaman verifikasi tetap menampilkan status tidak berlaku untuk sertifikat yang dicabut.

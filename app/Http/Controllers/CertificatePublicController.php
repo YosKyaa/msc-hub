@@ -7,16 +7,26 @@ use App\Services\CertificateRenderService;
 
 class CertificatePublicController extends Controller
 {
-    public function verify(string $token)
+    public function verify(string $token, CertificateRenderService $renderer)
     {
-        $certificate = Certificate::with('event.template')->where('verification_token', $token)->firstOrFail();
+        $certificate = Certificate::with('event.template')
+            ->where('verification_token', $token)
+            ->firstOrFail();
 
-        return view('certificates.verify', compact('certificate'));
+        // Pratinjau memakai variabel dan QR yang sama dengan PDF, sehingga yang
+        // terlihat di halaman verifikasi identik dengan berkas yang diunduh.
+        return view('certificates.verify', [
+            'certificate' => $certificate,
+            'values' => $renderer->variables($certificate),
+            'qrDataUri' => $renderer->qrDataUri($certificate),
+        ]);
     }
 
     public function download(string $token, CertificateRenderService $renderer)
     {
-        $certificate = Certificate::with('event.template')->where('verification_token', $token)->firstOrFail();
+        $certificate = Certificate::with('event.template')
+            ->where('verification_token', $token)
+            ->firstOrFail();
 
         abort_unless($certificate->isValid(), 404);
 
