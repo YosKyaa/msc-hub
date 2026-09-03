@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\AttendanceAction;
 use App\Filament\Resources\CertificateEventResource;
 use App\Filament\Resources\ParticipantResource;
 use App\Models\CertificateEvent;
@@ -50,8 +51,13 @@ class CertificatePanelRendersTest extends TestCase
         $this->get(CertificateEventResource::getUrl('index'))->assertOk();
         $this->get(CertificateEventResource::getUrl('edit', ['record' => $event]))
             ->assertOk()
-            ->assertSee('Absensi Peserta')
-            ->assertSee('Aturan kelayakan sertifikat');
+            ->assertSee('Absensi & QR')
+            ->assertSee('Aturan kelayakan sertifikat')
+            // Kedua kartu window harus tampil berdampingan.
+            ->assertSee('Dipindai saat peserta tiba di lokasi.')
+            ->assertSee('Dipindai saat acara selesai. Buka menjelang acara bubar.')
+            ->assertSee($event->attendanceUrl(AttendanceAction::CHECK_IN))
+            ->assertSee($event->attendanceUrl(AttendanceAction::CHECK_OUT));
     }
 
     public function test_the_participant_master_list_renders(): void

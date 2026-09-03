@@ -43,13 +43,28 @@ class AttendanceService
         });
     }
 
-    /**
-     * Peserta belum dikenal bila emailnya belum ada di master; hanya pada
-     * keadaan itu ia diminta mengetik nama lengkapnya.
-     */
     public function knownParticipant(string $email): ?Participant
     {
         return Participant::where('email', ParticipantRegistry::normaliseEmail($email))->first();
+    }
+
+    /**
+     * Peserta berhak mengetik namanya sendiri ketika ia belum tercatat pada
+     * kegiatan mana pun dan record masternya memang lahir dari jalur absensi.
+     *
+     * Menghapus keikutsertaan lewat panel mengembalikan peserta ke keadaan ini,
+     * sehingga panitia dapat menyuruhnya check-in ulang untuk memperbaiki nama.
+     * Nama yang diketik admin (input manual, import, master participant) tidak
+     * ikut terbuka, agar koreksi resmi tidak tertimpa peserta.
+     */
+    public function mayDeclareName(?Participant $participant): bool
+    {
+        if ($participant === null) {
+            return true;
+        }
+
+        return $participant->source === ParticipantSource::ATTENDANCE->value
+            && $participant->participations()->doesntExist();
     }
 
     /**
@@ -124,19 +139,26 @@ class AttendanceService
     {
         $email = ParticipantRegistry::normaliseEmail($googleProfile['email']);
         $googleName = trim((string) ($googleProfile['name'] ?? ''));
-        $printedName = trim((string) $declaredName) ?: ($googleName ?: $email);
+        $declaredName = trim((string) $declaredName);
+        $printedName = $declaredName ?: ($googleName ?: $email);
 
-        return $this->participants->findOrCreateByEmail(
+        $participant = $this->participants->findOrCreateByEmail(
             $email,
             [
                 'name' => $printedName,
                 'google_display_name' => $googleName ?: null,
                 'source' => ParticipantSource::ATTENDANCE->value,
             ],
-            // Nama yang sudah tersimpan tidak pernah ditimpa: peserta hanya
-            // berkesempatan mengisinya sekali, koreksi berikutnya lewat admin.
             ['google_display_name' => $googleName ?: null],
         );
+
+        // Nama hanya boleh diperbarui selama peserta masih berhak mengisinya;
+        // di luar itu record master menang dan koreksi menjadi tugas admin.
+        if (! $participant->wasRecentlyCreated && $declaredName !== '' && $this->mayDeclareName($participant)) {
+            $participant->forceFill(['name' => $declaredName])->save();
+        }
+
+        return $participant;
     }
 
     private function resolveParticipation(CertificateEvent $event, Participant $participant): CertificateEventParticipant

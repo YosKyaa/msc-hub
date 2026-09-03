@@ -12,7 +12,7 @@
     $checkedIn = $participation?->checked_in_at;
     $checkedOut = $participation?->checked_out_at;
     $alreadyDone = $isCheckIn ? $checkedIn : $checkedOut;
-    $needsName = $requester !== null && $isCheckIn && $participant === null;
+    $needsName = $isCheckIn && $mayDeclareName;
 @endphp
 
 @section('content')

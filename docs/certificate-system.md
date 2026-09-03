@@ -71,10 +71,17 @@ review admin. Rotating QR belum dikerjakan.
 Peserta yang **belum ada di master** diminta mengetik nama lengkapnya saat
 check-in, lengkap dengan gelar bila ada. Nama itu yang dicetak di sertifikat.
 
-- Nama hanya dapat diisi **sekali**. Setelah tersimpan, halaman absensi
-  menampilkannya sebagai teks mati beserta arahan menghubungi panitia.
-- Nama peserta yang sudah ada — dari import, input manual, atau absensi
-  sebelumnya — tidak pernah ditimpa oleh jalur otomatis mana pun.
+- Nama hanya dapat diisi **sekali**. Setelah peserta tercatat pada sebuah
+  kegiatan, halaman absensi menampilkannya sebagai teks mati beserta arahan
+  menghubungi panitia.
+- **Menghapus baris peserta dari panel mengembalikan haknya mengisi nama.**
+  Bila nama telanjur salah ketik, panitia cukup menghapus barisnya lalu meminta
+  peserta check-in ulang. Syaratnya record master itu memang lahir dari jalur
+  absensi dan peserta tidak lagi tercatat di kegiatan mana pun.
+- Nama yang diketik admin — input manual, import Excel, atau Master Participant
+  — tetap terkunci walau peserta belum tercatat di kegiatan mana pun, agar
+  koreksi resmi tidak tertimpa peserta.
+- Peserta yang masih tercatat di kegiatan lain tetap terkunci namanya.
 - Nama dari profil Google tetap disimpan terpisah di `google_display_name`
   sebagai bahan pembanding saat admin mengoreksi.
 - Koreksi dilakukan admin lewat aksi "Koreksi Nama" pada tabel peserta.
