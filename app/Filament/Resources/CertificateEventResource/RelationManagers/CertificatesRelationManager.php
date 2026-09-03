@@ -74,28 +74,30 @@ class CertificatesRelationManager extends RelationManager
                     ->visible(fn () => CertificatePermission::allows('create')),
             ])
             ->actions([
-                Actions\Action::make('verify')->label('Verifikasi')->icon('heroicon-o-qr-code')
-                    ->url(fn (Certificate $record) => $record->verificationUrl())->openUrlInNewTab(),
-                Actions\Action::make('download')->label('PDF')->icon('heroicon-o-arrow-down-tray')
-                    ->url(fn (Certificate $record) => $record->downloadUrl())->openUrlInNewTab()
-                    ->visible(fn (Certificate $record) => $record->isValid()),
-                Actions\Action::make('resendEmail')->label('Kirim Ulang Email')->icon('heroicon-o-envelope')
-                    ->requiresConfirmation()
-                    ->modalDescription('Penanda pengiriman direset lalu email diantrekan ulang.')
-                    ->visible(fn (Certificate $record) => CertificatePermission::allowsIssuing() && filled($record->recipient_email))
-                    ->action(fn (Certificate $record) => $this->resendEmail($record)),
-                Actions\Action::make('revoke')->label('Cabut')->icon('heroicon-o-no-symbol')->color('danger')->requiresConfirmation()
-                    ->schema([Textarea::make('reason')->label('Alasan pencabutan')->required()])
-                    ->visible(fn (Certificate $record) => CertificatePermission::allowsIssuing() && $record->revoked_at === null)
-                    ->action(fn (Certificate $record, array $data) => $record->update([
-                        'revoked_at' => now(),
-                        'revocation_reason' => $data['reason'],
-                    ])),
-                Actions\Action::make('restore')->label('Pulihkan')->icon('heroicon-o-arrow-path')->color('success')->requiresConfirmation()
-                    ->visible(fn (Certificate $record) => CertificatePermission::allowsIssuing() && $record->revoked_at !== null)
-                    ->action(fn (Certificate $record) => $record->update(['revoked_at' => null, 'revocation_reason' => null])),
-                Actions\EditAction::make(),
-                Actions\DeleteAction::make(),
+                Actions\ActionGroup::make([
+                    Actions\Action::make('verify')->label('Verifikasi')->icon('heroicon-o-qr-code')
+                        ->url(fn (Certificate $record) => $record->verificationUrl())->openUrlInNewTab(),
+                    Actions\Action::make('download')->label('PDF')->icon('heroicon-o-arrow-down-tray')
+                        ->url(fn (Certificate $record) => $record->downloadUrl())->openUrlInNewTab()
+                        ->visible(fn (Certificate $record) => $record->isValid()),
+                    Actions\Action::make('resendEmail')->label('Kirim Ulang Email')->icon('heroicon-o-envelope')
+                        ->requiresConfirmation()
+                        ->modalDescription('Penanda pengiriman direset lalu email diantrekan ulang.')
+                        ->visible(fn (Certificate $record) => CertificatePermission::allowsIssuing() && filled($record->recipient_email))
+                        ->action(fn (Certificate $record) => $this->resendEmail($record)),
+                    Actions\Action::make('revoke')->label('Cabut')->icon('heroicon-o-no-symbol')->color('danger')->requiresConfirmation()
+                        ->schema([Textarea::make('reason')->label('Alasan pencabutan')->required()])
+                        ->visible(fn (Certificate $record) => CertificatePermission::allowsIssuing() && $record->revoked_at === null)
+                        ->action(fn (Certificate $record, array $data) => $record->update([
+                            'revoked_at' => now(),
+                            'revocation_reason' => $data['reason'],
+                        ])),
+                    Actions\Action::make('restore')->label('Pulihkan')->icon('heroicon-o-arrow-path')->color('success')->requiresConfirmation()
+                        ->visible(fn (Certificate $record) => CertificatePermission::allowsIssuing() && $record->revoked_at !== null)
+                        ->action(fn (Certificate $record) => $record->update(['revoked_at' => null, 'revocation_reason' => null])),
+                    Actions\EditAction::make(),
+                    Actions\DeleteAction::make(),
+                ]),
             ])
             ->bulkActions([Actions\DeleteBulkAction::make()]);
     }

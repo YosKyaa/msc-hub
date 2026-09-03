@@ -31,6 +31,7 @@ class AttendanceController extends Controller
             'windowState' => $event->attendanceWindowState($action),
             'requester' => $requester,
             'participant' => $participant,
+            'mayDeclareName' => $requester !== null && $this->attendance->mayDeclareName($participant),
             'loginUrl' => route('google.redirect', ['redirect' => $event->attendanceUrl($action)]),
             'participation' => $requester
                 ? $this->attendance->findParticipation($event, $requester['email'])
@@ -86,12 +87,16 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Nama lengkap hanya diminta — dan hanya diterima — ketika peserta belum
-     * ada di master. Sesudah tersimpan, koreksi menjadi wewenang admin.
+     * Nama lengkap hanya diminta — dan hanya diterima — selama peserta masih
+     * berhak mengisinya. Sesudah terkunci, koreksi menjadi wewenang admin.
      */
     private function validatedName(Request $request, string $email, AttendanceAction $action): ?string
     {
-        if ($action !== AttendanceAction::CHECK_IN || $this->attendance->knownParticipant($email) !== null) {
+        if ($action !== AttendanceAction::CHECK_IN) {
+            return null;
+        }
+
+        if (! $this->attendance->mayDeclareName($this->attendance->knownParticipant($email))) {
             return null;
         }
 

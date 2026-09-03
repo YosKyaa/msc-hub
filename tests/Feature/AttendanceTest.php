@@ -261,6 +261,59 @@ class AttendanceTest extends TestCase
             ->assertDontSee('hanya dapat diisi sekali');
     }
 
+    public function test_deleting_the_participation_lets_the_participant_retype_their_name(): void
+    {
+        $event = $this->event();
+        $this->loginAs('budi@student.jgu.ac.id');
+        $this->checkIn($event, 'Nama Salah Ketik');
+
+        // Panitia menghapus barisnya dari tabel peserta.
+        CertificateEventParticipant::sole()->delete();
+
+        $this->get($this->url($event, AttendanceAction::CHECK_IN))
+            ->assertOk()
+            ->assertSee('Nama lengkap');
+
+        $this->checkIn($event, 'Budi Santoso, S.Kom.')->assertSessionHas('success');
+
+        $this->assertSame(1, Participant::count());
+        $this->assertSame('Budi Santoso, S.Kom.', Participant::sole()->name);
+        $this->assertNotNull(CertificateEventParticipant::sole()->checked_in_at);
+    }
+
+    public function test_a_participant_recorded_in_another_event_keeps_their_locked_name(): void
+    {
+        $first = $this->event();
+        $second = $this->event();
+        $this->loginAs('budi@student.jgu.ac.id');
+
+        $this->checkIn($first, 'Budi Santoso');
+        // Masih tercatat di kegiatan pertama, jadi namanya tetap terkunci.
+        $this->checkIn($second, 'Nama Baru');
+
+        $this->assertSame('Budi Santoso', Participant::sole()->name);
+    }
+
+    public function test_a_name_typed_by_an_admin_stays_locked_even_without_any_participation(): void
+    {
+        $event = $this->event();
+        Participant::factory()->create([
+            'email' => 'budi@student.jgu.ac.id',
+            'name' => 'Budi Santoso, S.Kom.',
+            'source' => 'admin',
+        ]);
+
+        $this->loginAs('budi@student.jgu.ac.id');
+
+        $this->get($this->url($event, AttendanceAction::CHECK_IN))
+            ->assertOk()
+            ->assertDontSee('hanya dapat diisi sekali');
+
+        $this->checkIn($event, 'Nama Palsu');
+
+        $this->assertSame('Budi Santoso, S.Kom.', Participant::sole()->name);
+    }
+
     public function test_a_name_already_in_the_master_is_never_overwritten(): void
     {
         $event = $this->event();

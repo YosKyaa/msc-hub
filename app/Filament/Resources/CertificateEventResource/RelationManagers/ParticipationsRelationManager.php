@@ -70,9 +70,11 @@ class ParticipationsRelationManager extends RelationManager
             ->recordTitleAttribute('id')
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['participant', 'certificate']))
             ->columns([
-                TextColumn::make('participant.name')->label('Nama')->searchable()->sortable(),
-                TextColumn::make('participant.email')->label('Email')->searchable()->toggleable(),
-                TextColumn::make('participant.type')->label('Tipe')->badge()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('participant.name')
+                    ->label('Nama')
+                    ->description(fn (CertificateEventParticipant $record) => $record->participant?->email)
+                    ->searchable()
+                    ->sortable(),
                 TextColumn::make('role')->label('Peran')->badge()->formatStateUsing(fn (CertificateEventParticipant $record) => $record->resolvedRoleLabel()),
                 TextColumn::make('source')
                     ->label('Asal')
@@ -81,8 +83,10 @@ class ParticipationsRelationManager extends RelationManager
                     ->color(fn (?ParticipantSource $state) => $state?->getColor() ?? 'gray'),
                 TextColumn::make('checked_in_at')->label('Check-in')->dateTime('d M H:i')->placeholder('—')->sortable(),
                 TextColumn::make('checked_out_at')->label('Check-out')->dateTime('d M H:i')->placeholder('—')->sortable(),
-                IconColumn::make('eligible')->label('Eligible')->state(fn (CertificateEventParticipant $record) => $record->isEligible())->boolean(),
-                IconColumn::make('issued')->label('Sertifikat')->state(fn (CertificateEventParticipant $record) => $record->certificate !== null)->boolean(),
+                IconColumn::make('eligible')->label('Eligible')->state(fn (CertificateEventParticipant $record) => $record->isEligible())->boolean()->alignCenter(),
+                IconColumn::make('issued')->label('Sertifikat')->state(fn (CertificateEventParticipant $record) => $record->certificate !== null)->boolean()->alignCenter(),
+                TextColumn::make('participant.email')->label('Email')->searchable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('participant.type')->label('Tipe')->badge()->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 SelectFilter::make('source')->label('Asal pendaftaran')->options(ParticipantSource::options()),
@@ -127,31 +131,33 @@ class ParticipationsRelationManager extends RelationManager
                     ->action(fn () => $this->dispatchIssuing()),
             ])
             ->actions([
-                Actions\Action::make('toggleEligible')
-                    ->label(fn (CertificateEventParticipant $record) => $record->isEligible() ? 'Batalkan Eligible' : 'Jadikan Eligible')
-                    ->icon(fn (CertificateEventParticipant $record) => $record->isEligible() ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
-                    ->color(fn (CertificateEventParticipant $record) => $record->isEligible() ? 'gray' : 'success')
-                    ->visible(fn () => CertificatePermission::allows('edit'))
-                    ->action(fn (CertificateEventParticipant $record) => $record->update(
-                        $record->isEligible()
-                            ? ['eligible_at' => null]
-                            : ['eligible_at' => now(), 'attendance_status' => 'attended'],
-                    )),
-                Actions\Action::make('correctName')
-                    ->label('Koreksi Nama')
-                    ->icon('heroicon-o-pencil-square')
-                    ->visible(fn () => CertificatePermission::allows('edit'))
-                    ->fillForm(fn (CertificateEventParticipant $record) => [
-                        'name' => $record->participant?->name,
-                        'google_display_name' => $record->participant?->google_display_name,
-                    ])
-                    ->schema([
-                        TextInput::make('name')->label('Nama yang dicetak di sertifikat')->required(),
-                        TextInput::make('google_display_name')->label('Nama dari akun Google')->disabled()->dehydrated(false),
-                    ])
-                    ->action(fn (CertificateEventParticipant $record, array $data) => $record->participant?->update(['name' => $data['name']])),
-                Actions\EditAction::make(),
-                Actions\DeleteAction::make(),
+                Actions\ActionGroup::make([
+                    Actions\Action::make('toggleEligible')
+                        ->label(fn (CertificateEventParticipant $record) => $record->isEligible() ? 'Batalkan Eligible' : 'Jadikan Eligible')
+                        ->icon(fn (CertificateEventParticipant $record) => $record->isEligible() ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
+                        ->color(fn (CertificateEventParticipant $record) => $record->isEligible() ? 'gray' : 'success')
+                        ->visible(fn () => CertificatePermission::allows('edit'))
+                        ->action(fn (CertificateEventParticipant $record) => $record->update(
+                            $record->isEligible()
+                                ? ['eligible_at' => null]
+                                : ['eligible_at' => now(), 'attendance_status' => 'attended'],
+                        )),
+                    Actions\Action::make('correctName')
+                        ->label('Koreksi Nama')
+                        ->icon('heroicon-o-pencil-square')
+                        ->visible(fn () => CertificatePermission::allows('edit'))
+                        ->fillForm(fn (CertificateEventParticipant $record) => [
+                            'name' => $record->participant?->name,
+                            'google_display_name' => $record->participant?->google_display_name,
+                        ])
+                        ->schema([
+                            TextInput::make('name')->label('Nama yang dicetak di sertifikat')->required(),
+                            TextInput::make('google_display_name')->label('Nama dari akun Google')->disabled()->dehydrated(false),
+                        ])
+                        ->action(fn (CertificateEventParticipant $record, array $data) => $record->participant?->update(['name' => $data['name']])),
+                    Actions\EditAction::make(),
+                    Actions\DeleteAction::make(),
+                ]),
             ])
             ->bulkActions([
                 Actions\BulkAction::make('markEligible')
