@@ -2,6 +2,7 @@
 
 namespace App\Services\Certificates;
 
+use App\Enums\AttendanceAction;
 use App\Enums\ParticipantRole;
 use App\Enums\ParticipantSource;
 use App\Models\CertificateEvent;
@@ -13,9 +14,10 @@ use Illuminate\Support\Facades\DB;
 /**
  * Mencatat check-in dan check-out peserta dari halaman absensi publik.
  *
- * Satu URL melayani dua aksi: state peserta yang menentukan aksi berikutnya
- * (keputusan D2). Seluruh mutasi dibungkus transaksi dan aman terhadap
- * pengiriman ganda.
+ * Check-in dan check-out adalah dua aksi terpisah dengan QR dan window waktu
+ * masing-masing, sehingga peserta tidak bisa langsung check-out sesaat setelah
+ * check-in. Seluruh mutasi dibungkus transaksi dan aman terhadap pengiriman
+ * ganda.
  */
 class AttendanceService
 {
@@ -23,20 +25,31 @@ class AttendanceService
 
     /**
      * @param  array{email: string, name?: string|null, google_id?: string|null}  $googleProfile
+     * @param  string|null  $declaredName  Nama lengkap yang diketik peserta; hanya
+     *                                     dipakai ketika ia belum ada di master.
      */
-    public function record(CertificateEvent $event, array $googleProfile): AttendanceOutcome
-    {
-        return DB::transaction(function () use ($event, $googleProfile) {
-            $participant = $this->resolveParticipant($googleProfile);
-            $participation = $this->resolveParticipation($event, $participant);
+    public function record(
+        CertificateEvent $event,
+        AttendanceAction $action,
+        array $googleProfile,
+        ?string $declaredName = null,
+    ): AttendanceOutcome {
+        return DB::transaction(function () use ($event, $action, $googleProfile, $declaredName) {
+            if ($action === AttendanceAction::CHECK_OUT) {
+                return $this->recordCheckOut($event, $googleProfile['email']);
+            }
 
-            $outcome = $this->advance($participation);
-
-            $participation->setRelation('event', $event);
-            $participation->syncEligibility();
-
-            return $outcome;
+            return $this->recordCheckIn($event, $googleProfile, $declaredName);
         });
+    }
+
+    /**
+     * Peserta belum dikenal bila emailnya belum ada di master; hanya pada
+     * keadaan itu ia diminta mengetik nama lengkapnya.
+     */
+    public function knownParticipant(string $email): ?Participant
+    {
+        return Participant::where('email', ParticipantRegistry::normaliseEmail($email))->first();
     }
 
     /**
@@ -45,45 +58,90 @@ class AttendanceService
      */
     public function findParticipation(CertificateEvent $event, string $email): ?CertificateEventParticipant
     {
-        $participantId = Participant::where('email', ParticipantRegistry::normaliseEmail($email))->value('id');
+        $participant = $this->knownParticipant($email);
 
-        if ($participantId === null) {
+        if ($participant === null) {
             return null;
         }
 
-        return CertificateEventParticipant::where('certificate_event_id', $event->id)
-            ->where('participant_id', $participantId)
-            ->orderBy('id')
-            ->first();
+        return $this->participationQuery($event, $participant->id)->first();
     }
 
     /**
      * @param  array{email: string, name?: string|null, google_id?: string|null}  $googleProfile
      */
-    private function resolveParticipant(array $googleProfile): Participant
+    private function recordCheckIn(
+        CertificateEvent $event,
+        array $googleProfile,
+        ?string $declaredName,
+    ): AttendanceOutcome {
+        $participant = $this->resolveParticipant($googleProfile, $declaredName);
+        $participation = $this->resolveParticipation($event, $participant);
+
+        if ($participation->checked_in_at !== null) {
+            return new AttendanceOutcome(AttendanceOutcome::ALREADY_CHECKED_IN, $participation);
+        }
+
+        $participation->forceFill([
+            'checked_in_at' => now(),
+            'attendance_status' => 'attended',
+        ])->save();
+
+        $participation->setRelation('event', $event);
+        $participation->syncEligibility();
+
+        return new AttendanceOutcome(AttendanceOutcome::CHECKED_IN, $participation);
+    }
+
+    private function recordCheckOut(CertificateEvent $event, string $email): AttendanceOutcome
+    {
+        $participant = $this->knownParticipant($email);
+        $participation = $participant
+            ? $this->participationQuery($event, $participant->id)->lockForUpdate()->first()
+            : null;
+
+        // Check-out hanya sah sebagai penutup check-in yang sudah tercatat.
+        if ($participation === null || $participation->checked_in_at === null) {
+            return new AttendanceOutcome(AttendanceOutcome::NOT_CHECKED_IN, $participation);
+        }
+
+        if ($participation->checked_out_at !== null) {
+            return new AttendanceOutcome(AttendanceOutcome::ALREADY_CHECKED_OUT, $participation);
+        }
+
+        $participation->forceFill(['checked_out_at' => now()])->save();
+
+        $participation->setRelation('event', $event);
+        $participation->syncEligibility();
+
+        return new AttendanceOutcome(AttendanceOutcome::CHECKED_OUT, $participation);
+    }
+
+    /**
+     * @param  array{email: string, name?: string|null, google_id?: string|null}  $googleProfile
+     */
+    private function resolveParticipant(array $googleProfile, ?string $declaredName): Participant
     {
         $email = ParticipantRegistry::normaliseEmail($googleProfile['email']);
-        $displayName = trim((string) ($googleProfile['name'] ?? '')) ?: $email;
+        $googleName = trim((string) ($googleProfile['name'] ?? ''));
+        $printedName = trim((string) $declaredName) ?: ($googleName ?: $email);
 
         return $this->participants->findOrCreateByEmail(
             $email,
             [
-                'name' => $displayName,
-                'google_display_name' => $displayName,
-                'source' => 'attendance',
+                'name' => $printedName,
+                'google_display_name' => $googleName ?: null,
+                'source' => ParticipantSource::ATTENDANCE->value,
             ],
-            // Nama formal yang mungkin sudah dikoreksi admin tidak boleh tertimpa.
-            ['google_display_name' => $displayName],
+            // Nama yang sudah tersimpan tidak pernah ditimpa: peserta hanya
+            // berkesempatan mengisinya sekali, koreksi berikutnya lewat admin.
+            ['google_display_name' => $googleName ?: null],
         );
     }
 
     private function resolveParticipation(CertificateEvent $event, Participant $participant): CertificateEventParticipant
     {
-        $existing = CertificateEventParticipant::where('certificate_event_id', $event->id)
-            ->where('participant_id', $participant->id)
-            ->orderBy('id')
-            ->lockForUpdate()
-            ->first();
+        $existing = $this->participationQuery($event, $participant->id)->lockForUpdate()->first();
 
         if ($existing) {
             return $existing;
@@ -111,23 +169,10 @@ class AttendanceService
         }
     }
 
-    private function advance(CertificateEventParticipant $participation): AttendanceOutcome
+    private function participationQuery(CertificateEvent $event, int $participantId): \Illuminate\Database\Eloquent\Builder
     {
-        if ($participation->checked_in_at === null) {
-            $participation->forceFill([
-                'checked_in_at' => now(),
-                'attendance_status' => 'attended',
-            ])->save();
-
-            return new AttendanceOutcome(AttendanceOutcome::CHECKED_IN, $participation);
-        }
-
-        if ($participation->checked_out_at === null) {
-            $participation->forceFill(['checked_out_at' => now()])->save();
-
-            return new AttendanceOutcome(AttendanceOutcome::CHECKED_OUT, $participation);
-        }
-
-        return new AttendanceOutcome(AttendanceOutcome::ALREADY_COMPLETE, $participation);
+        return CertificateEventParticipant::where('certificate_event_id', $event->id)
+            ->where('participant_id', $participantId)
+            ->orderBy('id');
     }
 }

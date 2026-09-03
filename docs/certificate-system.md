@@ -38,20 +38,48 @@ Tipe identitas: mahasiswa, dosen, staf, dan guest. Peran kegiatan bawaan: pesert
 ## Absensi
 
 Setiap kegiatan dapat mengaktifkan absensi. Saat diaktifkan pertama kali sistem
-membuat `attendance_token` (ULID) yang tidak pernah berubah, sehingga QR yang
-sudah dicetak tetap berlaku.
+membuat dua token ULID yang tidak pernah berubah, sehingga QR yang sudah dicetak
+tetap berlaku.
 
-- Halaman peserta: `GET|POST /attend/{token}`, mobile-first, wajib login Google
-  domain `@jgu.ac.id` atau `@student.jgu.ac.id`.
-- Satu URL melayani dua aksi: belum ada catatan → check-in; sudah check-in →
-  check-out; keduanya terisi → tidak melakukan apa-apa.
-- Window waktu (`attendance_open_at`, `attendance_close_at`) divalidasi di
-  server. Batas yang dikosongkan berarti tidak dibatasi dari sisi itu.
-- Poster QR layar penuh untuk venue: `GET /admin/attendance/{event}/qr`
-  (wajib login panel + permission `certificates.view`).
+**Check-in dan check-out sengaja dipisah** menjadi dua QR, dua URL, dan dua
+window waktu. Tanpa pemisahan itu peserta dapat menutup kehadirannya sesaat
+setelah membukanya, sehingga catatan kehadiran tidak mencerminkan keikutsertaan
+yang sebenarnya.
 
-Anti titip-absen pada tahap ini bertumpu pada QR statis, window waktu, dan
+| Aksi | URL peserta | Window | Poster QR |
+|---|---|---|---|
+| Check-in | `/attend/checkin/{checkin_token}` | `checkin_open_at` … `checkin_close_at` | `/admin/attendance/{event}/qr/checkin` |
+| Check-out | `/attend/checkout/{checkout_token}` | `checkout_open_at` … `checkout_close_at` | `/admin/attendance/{event}/qr/checkout` |
+
+- Peserta wajib login Google domain `@jgu.ac.id` atau `@student.jgu.ac.id`.
+- Window divalidasi di server. Batas yang dikosongkan berarti tidak dibatasi
+  dari sisi itu. Isi `checkout_open_at` mendekati akhir acara agar QR check-out
+  tetap ditolak walau tautannya bocor lebih awal.
+- Token yang dipakai pada aksi yang salah menghasilkan 404, karena setiap aksi
+  hanya mencari pada kolom tokennya sendiri.
+- Check-out hanya sah sebagai penutup check-in yang sudah tercatat; memindai QR
+  check-out tanpa check-in ditolak dan diberi pesan agar menghubungi panitia.
+- Mengulang aksi yang sama tidak menggeser jam yang sudah tercatat.
+- Halaman poster memakai warna berbeda per aksi (biru untuk check-in, hijau
+  untuk check-out) supaya panitia langsung sadar bila QR yang terpasang keliru.
+
+Anti titip-absen pada tahap ini bertumpu pada QR statis, dua window waktu, dan
 review admin. Rotating QR belum dikerjakan.
+
+### Nama yang dicetak di sertifikat
+
+Peserta yang **belum ada di master** diminta mengetik nama lengkapnya saat
+check-in, lengkap dengan gelar bila ada. Nama itu yang dicetak di sertifikat.
+
+- Nama hanya dapat diisi **sekali**. Setelah tersimpan, halaman absensi
+  menampilkannya sebagai teks mati beserta arahan menghubungi panitia.
+- Nama peserta yang sudah ada — dari import, input manual, atau absensi
+  sebelumnya — tidak pernah ditimpa oleh jalur otomatis mana pun.
+- Nama dari profil Google tetap disimpan terpisah di `google_display_name`
+  sebagai bahan pembanding saat admin mengoreksi.
+- Koreksi dilakukan admin lewat aksi "Koreksi Nama" pada tabel peserta.
+- Validasi: 3–150 karakter, hanya huruf, spasi, titik, koma, apostrof, dan
+  tanda hubung — angka dan simbol lain ditolak.
 
 ### Aturan kelayakan
 
@@ -73,8 +101,9 @@ Admin selalu dapat menimpa flag kelayakan untuk ketiga aturan.
 3. Setelah template disimpan, sistem otomatis membuka Editor Visual.
 4. Tambahkan variabel dari toolbar, lalu drag, resize, dan atur tipografi langsung di atas desain. Gunakan Preview Bersih untuk memeriksa hasil tanpa garis editor.
 5. Buat event sertifikat dan pilih template.
-6. Isi peserta lewat salah satu jalur: aktifkan absensi QR, tambahkan manual
-   per email, atau import Excel.
+6. Isi peserta lewat salah satu jalur: aktifkan absensi QR (pasang QR check-in
+   di pintu masuk dan QR check-out menjelang acara bubar), tambahkan manual per
+   email, atau import Excel.
 7. Tandai kehadiran dan kelayakan secara individual atau bulk.
 8. Tekan "Terbitkan Semua Eligible" (atau pilih baris lalu bulk action).
    Penerbitan berjalan di antrean; hasilnya dikabarkan lewat notifikasi panel.

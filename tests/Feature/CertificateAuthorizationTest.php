@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\AttendanceAction;
 use App\Filament\Resources\CertificateEventResource;
 use App\Filament\Resources\CertificateTemplateResource;
 use App\Filament\Resources\ParticipantResource;
@@ -95,17 +96,29 @@ class CertificateAuthorizationTest extends TestCase
     public function test_the_attendance_poster_requires_a_signed_in_user_with_certificate_access(): void
     {
         $event = CertificateEvent::factory()->withOpenAttendance()->create();
+        $poster = route('attendance.poster', ['event' => $event, 'action' => AttendanceAction::CHECK_IN->value]);
 
-        $this->get(route('attendance.poster', $event))->assertRedirect(route('filament.admin.auth.login'));
+        $this->get($poster)->assertRedirect(route('filament.admin.auth.login'));
 
-        $this->actingAs($this->userWith('department'))
-            ->get(route('attendance.poster', $event))
-            ->assertForbidden();
+        $this->actingAs($this->userWith('department'))->get($poster)->assertForbidden();
 
         $this->actingAs($this->userWith('staff_msc', ['certificates.view']))
-            ->get(route('attendance.poster', $event))
+            ->get($poster)
             ->assertOk()
-            ->assertSee($event->attendanceUrl());
+            ->assertSee($event->attendanceUrl(AttendanceAction::CHECK_IN));
+    }
+
+    public function test_each_attendance_action_has_its_own_poster(): void
+    {
+        $event = CertificateEvent::factory()->withOpenAttendance()->create();
+        $this->actingAs($this->userWith('staff_msc', ['certificates.view']));
+
+        foreach (AttendanceAction::cases() as $action) {
+            $this->get(route('attendance.poster', ['event' => $event, 'action' => $action->value]))
+                ->assertOk()
+                ->assertSee($event->attendanceUrl($action))
+                ->assertSee($action->getLabel());
+        }
     }
 
     public function test_the_poster_is_hidden_when_attendance_is_disabled(): void
@@ -113,7 +126,7 @@ class CertificateAuthorizationTest extends TestCase
         $event = CertificateEvent::factory()->create();
 
         $this->actingAs($this->userWith('admin', ['certificates.view']))
-            ->get(route('attendance.poster', $event))
+            ->get(route('attendance.poster', ['event' => $event, 'action' => AttendanceAction::CHECK_IN->value]))
             ->assertNotFound();
     }
 }
