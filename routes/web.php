@@ -71,16 +71,17 @@ Route::get('/my-bookings', [PublicBookingController::class, 'myBookings'])->name
 Route::get('/my-bookings/{type}/{code}', [PublicBookingController::class, 'showBookingDetail'])->name('my.bookings.detail');
 Route::post('/booking/logout', [PublicBookingController::class, 'logout'])->name('booking.logout');
 
-// Attendance (public, satu URL untuk check-in dan check-out)
-Route::get('/attend/{token}', [AttendanceController::class, 'show'])
+// Absensi publik. Check-in dan check-out punya path, token, dan window
+// terpisah; token yang tertukar antar aksi otomatis menghasilkan 404.
+Route::get('/attend/{action}/{token}', [AttendanceController::class, 'show'])
     ->middleware('throttle:60,1')
     ->name('attendance.show');
-Route::post('/attend/{token}', [AttendanceController::class, 'store'])
+Route::post('/attend/{action}/{token}', [AttendanceController::class, 'store'])
     ->middleware('throttle:30,1')
     ->name('attendance.store');
 
-// Poster QR absensi untuk diproyeksikan di venue (khusus pengelola sertifikat)
-Route::get('/admin/attendance/{event}/qr', [AttendanceController::class, 'poster'])
+// Poster QR untuk diproyeksikan di venue (khusus pengelola sertifikat)
+Route::get('/admin/attendance/{event}/qr/{action}', [AttendanceController::class, 'poster'])
     ->middleware(['auth', 'permission:certificates.view'])
     ->name('attendance.poster');
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Enums\AttendanceAction;
 use App\Enums\EligibilityRule;
 use App\Filament\Concerns\AuthorizesCertificateModule;
 use App\Filament\Resources\CertificateEventResource\Pages;
@@ -55,29 +56,13 @@ class CertificateEventResource extends Resource
             ])->columns(2),
 
             Section::make('Absensi Peserta')
-                ->description('Peserta mencatat kehadiran lewat QR statis, login Google JGU, dalam rentang waktu yang Anda tentukan.')
+                ->description('Check-in dan check-out memakai QR terpisah. Buka window check-out mendekati akhir acara agar peserta tidak menutup kehadiran sesaat setelah membukanya.')
                 ->schema([
                     Toggle::make('attendance_enabled')
                         ->label('Aktifkan absensi untuk kegiatan ini')
-                        ->helperText('Tautan dan QR dibuat otomatis saat pertama kali diaktifkan, lalu tidak berubah.')
+                        ->helperText('Dua tautan dan dua QR dibuat otomatis saat pertama kali diaktifkan, lalu tidak pernah berubah.')
                         ->live()
                         ->columnSpanFull(),
-
-                    DateTimePicker::make('attendance_open_at')
-                        ->label('Absensi dibuka')
-                        ->native(false)
-                        ->seconds(false)
-                        ->helperText('Kosongkan bila tidak ada batas awal.')
-                        ->visible(fn (Get $get) => (bool) $get('attendance_enabled')),
-
-                    DateTimePicker::make('attendance_close_at')
-                        ->label('Absensi ditutup')
-                        ->native(false)
-                        ->seconds(false)
-                        ->after('attendance_open_at')
-                        ->validationMessages(['after' => 'Waktu tutup harus setelah waktu buka.'])
-                        ->helperText('Kosongkan bila tidak ada batas akhir.')
-                        ->visible(fn (Get $get) => (bool) $get('attendance_enabled')),
 
                     Select::make('eligibility_rule')
                         ->label('Aturan kelayakan sertifikat')
@@ -86,28 +71,64 @@ class CertificateEventResource extends Resource
                         ->required()
                         ->helperText(fn ($state) => (EligibilityRule::tryFrom((string) $state) ?? EligibilityRule::MANUAL)->getDescription())
                         ->live()
+                        ->visible(fn (Get $get) => (bool) $get('attendance_enabled'))
                         ->columnSpanFull(),
 
-                    TextEntry::make('attendance_url')
-                        ->label('Tautan absensi')
-                        ->state(fn (?CertificateEvent $record) => $record?->attendanceUrl())
-                        ->copyable()
-                        ->copyMessage('Tautan absensi disalin.')
-                        ->helperText('Bagikan tautan ini atau cetak QR-nya untuk ditempel di lokasi kegiatan.')
-                        ->visible(fn (?CertificateEvent $record) => (bool) $record?->attendance_token)
-                        ->columnSpanFull(),
-
-                    FormActions::make([
-                        Actions\Action::make('openPoster')
-                            ->label('Tampilkan QR Layar Penuh')
-                            ->icon('heroicon-o-qr-code')
-                            ->url(fn (?CertificateEvent $record) => $record ? route('attendance.poster', $record) : null)
-                            ->openUrlInNewTab(),
-                    ])
-                        ->visible(fn (?CertificateEvent $record) => (bool) $record?->attendance_token)
-                        ->columnSpanFull(),
+                    ...static::attendanceWindow(AttendanceAction::CHECK_IN),
+                    ...static::attendanceWindow(AttendanceAction::CHECK_OUT),
                 ])->columns(2),
         ]);
+    }
+
+    /**
+     * Satu blok pengaturan per aksi absensi: window waktu, tautan, dan QR.
+     *
+     * @return array<int, \Filament\Schemas\Components\Component>
+     */
+    protected static function attendanceWindow(AttendanceAction $action): array
+    {
+        $label = $action->getLabel();
+        $visible = fn (Get $get) => (bool) $get('attendance_enabled');
+        $hasToken = fn (?CertificateEvent $record) => (bool) $record?->attendanceToken($action);
+
+        return [
+            DateTimePicker::make($action->openColumn())
+                ->label("{$label} dibuka")
+                ->native(false)
+                ->seconds(false)
+                ->helperText('Kosongkan bila tidak ada batas awal.')
+                ->visible($visible),
+
+            DateTimePicker::make($action->closeColumn())
+                ->label("{$label} ditutup")
+                ->native(false)
+                ->seconds(false)
+                ->after($action->openColumn())
+                ->validationMessages(['after' => "Waktu tutup {$label} harus setelah waktu bukanya."])
+                ->helperText('Kosongkan bila tidak ada batas akhir.')
+                ->visible($visible),
+
+            TextEntry::make($action->value.'_url')
+                ->label("Tautan {$label}")
+                ->state(fn (?CertificateEvent $record) => $record?->attendanceUrl($action))
+                ->copyable()
+                ->copyMessage("Tautan {$label} disalin.")
+                ->visible($hasToken)
+                ->columnSpanFull(),
+
+            FormActions::make([
+                Actions\Action::make('poster'.ucfirst($action->value))
+                    ->label("Tampilkan QR {$label} Layar Penuh")
+                    ->icon('heroicon-o-qr-code')
+                    ->color($action === AttendanceAction::CHECK_IN ? 'primary' : 'success')
+                    ->url(fn (?CertificateEvent $record) => $record
+                        ? route('attendance.poster', ['event' => $record, 'action' => $action->value])
+                        : null)
+                    ->openUrlInNewTab(),
+            ])
+                ->visible($hasToken)
+                ->columnSpanFull(),
+        ];
     }
 
     public static function table(Table $table): Table
@@ -121,12 +142,16 @@ class CertificateEventResource extends Resource
             IconColumn::make('attendance_enabled')->label('Absensi')->boolean(),
             TextColumn::make('status')->badge()->color(fn ($state) => match($state) {'published'=>'success','archived'=>'gray',default=>'warning'}),
         ])->actions([
-            Actions\Action::make('poster')
-                ->label('QR Absensi')
-                ->icon('heroicon-o-qr-code')
-                ->url(fn (CertificateEvent $record) => route('attendance.poster', $record))
-                ->openUrlInNewTab()
-                ->visible(fn (CertificateEvent $record) => $record->attendance_enabled && $record->attendance_token),
+            Actions\ActionGroup::make(
+                array_map(fn (AttendanceAction $action) => Actions\Action::make('poster'.ucfirst($action->value))
+                    ->label('QR '.$action->getLabel())
+                    ->icon('heroicon-o-qr-code')
+                    ->url(fn (CertificateEvent $record) => route('attendance.poster', ['event' => $record, 'action' => $action->value]))
+                    ->openUrlInNewTab()
+                    ->visible(fn (CertificateEvent $record) => (bool) $record->attendanceToken($action)),
+                    AttendanceAction::cases(),
+                ),
+            )->label('QR Absensi')->icon('heroicon-o-qr-code')->button(),
             Actions\EditAction::make(),
             Actions\DeleteAction::make(),
         ]);
