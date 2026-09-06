@@ -375,6 +375,7 @@ class InventoryBookingResource extends Resource
             'create' => Pages\CreateInventoryBooking::route('/create'),
             'view' => Pages\ViewInventoryBooking::route('/{record}'),
             'edit' => Pages\EditInventoryBooking::route('/{record}/edit'),
+            'form' => Pages\InventoryBookingForm::route('/{record}/form'),
         ];
     }
 }

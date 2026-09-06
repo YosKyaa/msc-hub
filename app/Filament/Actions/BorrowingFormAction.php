@@ -2,14 +2,16 @@
 
 namespace App\Filament\Actions;
 
+use App\Models\RoomBooking;
 use Filament\Actions\Action;
 use Illuminate\Database\Eloquent\Model;
 
 /**
- * Buka formulir resmi FM/JGU/L.89 sebagai pratinjau, bukan unduhan langsung.
+ * Buka formulir resmi FM/JGU/L.89 pada halamannya sendiri.
  *
- * Petugas biasanya ingin memastikan isinya benar sebelum mencetak; mengunduh
- * lebih dulu hanya menumpuk berkas yang salah di folder unduhan.
+ * Dokumennya lembar A4 penuh; ditampilkan di dalam modal ukurannya menyusut
+ * sampai tidak terbaca, jadi aksi ini menuju halaman tersendiri yang memuat
+ * pratinjau besar beserta tombol unduh.
  */
 class BorrowingFormAction extends Action
 {
@@ -25,33 +27,15 @@ class BorrowingFormAction extends Action
         $this->label('Form Peminjaman')
             ->icon('heroicon-o-document-text')
             ->color('gray')
-            ->modalHeading('Form Peminjaman Ruangan / Fasilitas Multimedia JGU')
-            ->modalDescription(fn (Model $record) => 'Kode booking '.$record->booking_code)
-            ->modalWidth('5xl')
-            ->modalContent(fn (Model $record) => view('filament.actions.borrowing-form-preview', [
-                'previewUrl' => $this->urlFor($record),
-            ]))
-            ->modalSubmitAction(false)
-            ->modalCancelActionLabel('Tutup')
-            ->extraModalFooterActions(fn (Model $record) => [
-                Action::make('download')
-                    ->label('Unduh PDF')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->url($this->urlFor($record, download: true))
-                    ->openUrlInNewTab(),
-            ]);
+            ->url(fn (Model $record) => $this->pageUrl($record));
     }
 
-    private function urlFor(Model $record, bool $download = false): string
+    private function pageUrl(Model $record): string
     {
-        $route = $record instanceof \App\Models\RoomBooking
-            ? 'borrowing-form.room'
-            : 'borrowing-form.inventory';
+        $resource = $record instanceof RoomBooking
+            ? \App\Filament\Resources\RoomBookingResource::class
+            : \App\Filament\Resources\InventoryBookingResource::class;
 
-        $parameter = $record instanceof \App\Models\RoomBooking
-            ? ['roomBooking' => $record]
-            : ['inventoryBooking' => $record];
-
-        return route($route, $download ? [...$parameter, 'unduh' => 1] : $parameter);
+        return $resource::getUrl('form', ['record' => $record]);
     }
 }

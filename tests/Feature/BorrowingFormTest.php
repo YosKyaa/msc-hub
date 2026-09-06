@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\BookingStatus;
+use App\Filament\Resources\InventoryBookingResource;
+use App\Filament\Resources\RoomBookingResource;
 use App\Models\InventoryBooking;
 use App\Models\InventoryItem;
 use App\Models\Room;
@@ -187,6 +189,41 @@ class BorrowingFormTest extends TestCase
         $disposition = $response->headers->get('content-disposition');
         $this->assertStringStartsWith('attachment', $disposition);
         $this->assertStringContainsString($booking->booking_code, $disposition);
+    }
+
+    public function test_the_preview_opens_as_a_full_page_not_a_modal(): void
+    {
+        $booking = $this->roomBooking();
+
+        $response = $this->actingAs($this->staff())
+            ->get(RoomBookingResource::getUrl('form', ['record' => $booking]))
+            ->assertOk();
+
+        // Dokumen dibingkai sehalaman penuh, bukan diperkecil ke dalam dialog.
+        $response->assertSee('Form Peminjaman Ruangan / Fasilitas Multimedia JGU');
+        $response->assertSee($booking->booking_code);
+        $response->assertSee('h-[calc(100vh-16rem)]', false);
+        $response->assertSee(route('borrowing-form.room', $booking).'#view=FitH', false);
+        $response->assertSee('Unduh PDF');
+    }
+
+    public function test_the_inventory_preview_page_renders_too(): void
+    {
+        $booking = InventoryBooking::create([
+            'booking_code' => 'INV-2026-0012',
+            'requester_name' => 'Siti Aminah',
+            'requester_email' => 'siti@jgu.ac.id',
+            'unit' => 'HIMATIF',
+            'purpose' => 'Dokumentasi',
+            'start_at' => now()->addDay(),
+            'end_at' => now()->addDays(2),
+            'status' => BookingStatus::PENDING,
+        ]);
+
+        $this->actingAs($this->staff())
+            ->get(InventoryBookingResource::getUrl('form', ['record' => $booking]))
+            ->assertOk()
+            ->assertSee('INV-2026-0012');
     }
 
     public function test_the_form_is_closed_to_guests(): void

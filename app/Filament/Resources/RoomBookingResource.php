@@ -389,6 +389,7 @@ class RoomBookingResource extends Resource
             'create' => Pages\CreateRoomBooking::route('/create'),
             'view' => Pages\ViewRoomBooking::route('/{record}'),
             'edit' => Pages\EditRoomBooking::route('/{record}/edit'),
+            'form' => Pages\RoomBookingForm::route('/{record}/form'),
         ];
     }
 }
