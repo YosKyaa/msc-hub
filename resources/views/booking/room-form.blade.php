@@ -252,54 +252,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
-    
-    // Form submission with SweetAlert confirmation
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        Swal.fire({
-            title: 'Konfirmasi Booking Ruangan',
-            html: `
-                <div class="text-left space-y-2">
-                    <p class="text-sm text-gray-600">Pastikan semua data sudah benar sebelum submit:</p>
-                    <ul class="text-sm text-gray-700 list-disc list-inside space-y-1 mt-3">
-                        <li>Unit/Fakultas sudah dipilih</li>
-                        <li>Jumlah peserta maksimal 7 orang</li>
-                        <li>Waktu booking pada hari Senin - Jumat</li>
-                        <li>Maksimal 2x booking per bulan</li>
-                    </ul>
-                </div>
-            `,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#4F46E5',
-            cancelButtonColor: '#6B7280',
-            confirmButtonText: 'Ya, Submit Booking',
-            cancelButtonText: 'Batal',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                // Show loading
-                Swal.fire({
-                    title: 'Memproses...',
-                    text: 'Mohon tunggu sebentar',
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-                
-                // Submit form
-                form.submit();
-            }
-        });
-    });
-});
-</script>
 @endpush
 @endsection

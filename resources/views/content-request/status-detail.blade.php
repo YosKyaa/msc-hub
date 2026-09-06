@@ -5,12 +5,12 @@
 @section('content')
 <div class="space-y-6">
     {{-- Header --}}
-    <div class="flex items-center justify-between">
-        <div>
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div class="min-w-0">
             <a href="{{ route('request.status') }}" class="text-sm text-blue-600 hover:underline">&larr; Kembali</a>
-            <h1 class="text-2xl font-bold text-gray-900 mt-1">{{ $contentRequest->request_code }}</h1>
+            <h1 class="mt-1 break-all text-xl font-bold text-gray-900 sm:text-2xl">{{ $contentRequest->request_code }}</h1>
         </div>
-        <div class="px-4 py-2 rounded-full text-sm font-medium
+        <div class="self-start rounded-full px-4 py-2 text-sm font-medium
             @switch($contentRequest->status->value)
                 @case('incoming') bg-blue-100 text-blue-700 @break
                 @case('assigned') bg-purple-100 text-purple-700 @break

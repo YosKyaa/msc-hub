@@ -40,6 +40,10 @@
                 </div>
             </div>
         </div>
+    {{-- Halaman yang meng-extend layout ini sempat mendorong script ke
+         stack yang tidak ada, sehingga diam-diam tidak pernah jalan. --}}
+    @stack('scripts')
+
     </footer>
 </body>
 </html>
