@@ -10,8 +10,6 @@
 
     $logo = PdfLetterhead::logoDataUri();
     $footer = PdfLetterhead::footerDataUri();
-
-    $line = fn (?string $value) => filled($value) ? e($value) : '';
 @endphp
 <!DOCTYPE html>
 <html lang="id">
@@ -19,125 +17,120 @@
     <meta charset="utf-8">
     <title>Form Peminjaman Ruangan / Fasilitas — {{ $form->bookingCode }}</title>
     <style>
-        @page { margin: 26px 40px 92px; }
+        /* Dompdf mengabaikan marjin pada @page, jadi marjin cetak dipasang
+           sebagai padding body. Kertas dibiarkan tanpa marjin supaya pita kaki
+           surat dapat menempel penuh ke tepi bawah seperti lembar aslinya. */
+        @page { margin: 0; }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         body {
-            font-family: 'DejaVu Sans', sans-serif;
-            font-size: 9.5px;
-            line-height: 1.45;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 11pt;
+            line-height: 1.35;
             color: #000;
+            padding: 30pt 40pt 82pt;
         }
 
-        .form-code { font-size: 9px; margin-bottom: 6px; }
+        .form-code { font-size: 9pt; }
 
-        .head { width: 100%; margin-bottom: 4px; }
-        .head td { vertical-align: middle; }
-        .head .logo { width: 130px; }
-        .head .logo img { width: 120px; }
+        .logo { width: 96pt; margin: 6pt 0 2pt; }
 
         h1 {
-            font-size: 13px;
+            font-size: 13pt;
             font-weight: bold;
             text-align: center;
             text-transform: uppercase;
-            margin: 10px 0 14px;
+            margin: 4pt 0 10pt;
         }
 
         /* ------------------------------------------------------ isian atas */
-        .fields { width: 100%; border-collapse: collapse; margin-bottom: 14px; }
-        .fields td { padding: 3px 0; vertical-align: bottom; font-size: 9.5px; }
-        .fields .label { width: 24%; }
+        .fields { width: 100%; border-collapse: collapse; margin-bottom: 12pt; }
+        .fields td { padding: 4pt 0 2pt; vertical-align: bottom; }
+        .fields .label { width: 26%; }
         .fields .value {
-            width: 26%;
+            width: 22%;
             border-bottom: 1px dotted #000;
-            padding-left: 4px;
+            padding-left: 5pt;
             font-weight: bold;
         }
-        .fields .gap { width: 4%; }
+        .fields .gap { width: 2%; }
 
         /* -------------------------------------------------- daftar fasilitas */
-        .facilities { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
-        .facilities .caption { width: 24%; vertical-align: top; padding-top: 2px; }
+        .facilities { width: 100%; border-collapse: collapse; margin-bottom: 12pt; }
+        .facilities .caption { width: 26%; vertical-align: top; padding-top: 3pt; }
         .facilities .list { vertical-align: top; }
+
+        /* Tinggi baris dipatok agar sebelas garis isian selalu muat dalam satu
+           halaman, sekaligus mengisi lembar seperti formulir aslinya. */
         .facility {
+            height: 19pt;
             border-bottom: 1px dotted #000;
-            padding: 2px 4px 1px;
-            min-height: 13px;
+            padding: 3pt 5pt 0;
         }
         .facility .name { font-weight: bold; }
-        .facility .detail { color: #333; }
-        /* Baris sisa hanya menyediakan garis isian, tanpa karakter yang ikut
-           tersalin saat teks PDF disorot. */
-        .facility.blank { height: 13px; }
 
         /* --------------------------------------------------- tanda tangan */
-        .signatures { width: 100%; border-collapse: collapse; margin-top: 4px; }
+        .signatures { width: 100%; border-collapse: collapse; }
         .signatures th, .signatures td {
             border: 1px solid #000;
-            padding: 4px 6px;
+            padding: 4pt 5pt;
             text-align: center;
-            font-size: 8.5px;
+            font-size: 10pt;
         }
-        .signatures th { font-weight: bold; }
-        .signatures .role { height: 46px; font-weight: normal; vertical-align: top; }
-        .signatures .space { height: 58px; vertical-align: bottom; }
-        .signatures .name { font-weight: bold; font-size: 9px; }
+        .signatures .role { height: 30pt; font-weight: normal; vertical-align: top; }
+        .signatures .space { height: 40pt; }
+        .signatures .name { font-weight: bold; }
 
-        .notice { margin-top: 10px; font-size: 9px; font-weight: bold; text-align: center; }
-        .legend { margin-top: 8px; font-size: 8.5px; }
-        .legend p { margin-bottom: 1px; }
+        .notice { margin-top: 8pt; font-weight: bold; text-align: center; }
+
+        .legend { margin-top: 6pt; font-size: 9.5pt; }
+        .legend p { margin-bottom: 1pt; }
 
         /* -------------------------------------------------------- kaki surat */
-        .letterfoot { position: fixed; bottom: -74px; left: 0; right: 0; }
+        .letterfoot { position: fixed; bottom: 0; left: 0; width: 100%; }
         .letterfoot img { width: 100%; }
-        .meta { position: fixed; bottom: -86px; left: 0; right: 0; font-size: 7px; color: #666; }
+        .meta { position: fixed; bottom: 70pt; left: 40pt; font-size: 7pt; color: #555; }
     </style>
 </head>
 <body>
 
 <div class="form-code">{{ BorrowingFormData::FORM_CODE }}</div>
 
-<table class="head">
-    <tr>
-        @if($logo)
-            <td class="logo"><img src="{{ $logo }}" alt="Jakarta Global University"></td>
-        @endif
-        <td></td>
-    </tr>
-</table>
+@if($logo)
+    <img class="logo" src="{{ $logo }}" alt="Jakarta Global University">
+@endif
 
 <h1>Form Peminjaman Ruangan / Fasilitas Multimedia JGU</h1>
 
 <table class="fields">
     <tr>
         <td class="label">Penanggung Jawab (Dosen)*</td>
-        <td class="value">{!! $line($form->supervisorName) !!}</td>
+        <td class="value">{{ $form->supervisorName }}</td>
         <td class="gap"></td>
         <td class="label">Acara / Kegiatan*</td>
-        <td class="value">{!! $line($form->activity) !!}</td>
+        <td class="value">{{ $form->activity }}</td>
     </tr>
     <tr>
         <td class="label">Nama Fakultas / Organisasi*</td>
-        <td class="value">{!! $line($form->unit) !!}</td>
+        <td class="value">{{ $form->unit }}</td>
         <td class="gap"></td>
         <td class="label">Jumlah Peserta*</td>
-        <td class="value">{!! $line($form->attendees) !!}</td>
+        <td class="value">{{ $form->attendees }}</td>
     </tr>
     <tr>
         <td class="label">Nama Peminjam*</td>
-        <td class="value">{!! $line($form->requesterName) !!}</td>
+        <td class="value">{{ $form->requesterName }}</td>
         <td class="gap"></td>
         <td class="label">Hari dan Tgl Peminjaman*</td>
-        <td class="value">{!! $line($form->borrowedOn()) !!}</td>
+        <td class="value">{{ $form->borrowedOn() }}</td>
     </tr>
     <tr>
         <td class="label">No. HP Peminjam*</td>
-        <td class="value">{!! $line($form->requesterPhone) !!}</td>
+        <td class="value">{{ $form->requesterPhone }}</td>
         <td class="gap"></td>
         <td class="label">Waktu*</td>
-        <td class="value">{!! $line($form->timeRange()) !!}</td>
+        <td class="value">{{ $form->timeRange() }}</td>
     </tr>
 </table>
 
@@ -149,13 +142,13 @@
                 <div class="facility">
                     <span class="name">{{ $facility['name'] }}</span>
                     @if($facility['detail'])
-                        <span class="detail">— {{ $facility['detail'] }}</span>
+                        <span>— {{ $facility['detail'] }}</span>
                     @endif
                 </div>
             @endforeach
 
             @for($i = 0; $i < $blankRows; $i++)
-                <div class="facility blank">&nbsp;</div>
+                <div class="facility">&nbsp;</div>
             @endfor
         </td>
     </tr>

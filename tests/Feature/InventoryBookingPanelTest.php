@@ -66,7 +66,7 @@ class InventoryBookingPanelTest extends TestCase
         Livewire::test(ListInventoryBookings::class)
             ->assertSuccessful()
             ->assertTableActionExists('view')
-            ->assertTableActionExists('export_pdf')
+            ->assertTableActionExists('borrowing_form')
             ->assertTableActionExists('staff_approve')
             ->assertTableActionExists('reject');
     }
