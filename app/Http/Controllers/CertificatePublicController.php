@@ -9,7 +9,7 @@ class CertificatePublicController extends Controller
 {
     public function verify(string $token, CertificateRenderService $renderer)
     {
-        $certificate = Certificate::with('event.template')
+        $certificate = Certificate::with(['event.template', 'event.issuer'])
             ->where('verification_token', $token)
             ->firstOrFail();
 
@@ -17,6 +17,7 @@ class CertificatePublicController extends Controller
         // terlihat di halaman verifikasi identik dengan berkas yang diunduh.
         return view('certificates.verify', [
             'certificate' => $certificate,
+            'issuer' => $certificate->event->resolvedIssuer(),
             'values' => $renderer->variables($certificate),
             'qrDataUri' => $renderer->qrDataUri($certificate),
         ]);

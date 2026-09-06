@@ -20,7 +20,8 @@ class CertificateRenderService
             'certificate_number' => $certificate->certificate_number,
             'event_name' => $event->name,
             'event_date' => $event->event_date->translatedFormat('d F Y'),
-            'organizer' => $event->organizer,
+            // Penyelenggara yang dicetak; bila dikosongkan memakai nama penerbit.
+            'organizer' => $event->organizer ?: $event->resolvedIssuer()?->name,
             'signatory_name' => $event->signatory_name,
             'signatory_title' => $event->signatory_title,
             'verification_url' => route('certificates.verify', $certificate->verification_token),

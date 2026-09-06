@@ -9,6 +9,7 @@ use App\Filament\Resources\CertificateEventResource\Pages;
 use App\Filament\Resources\CertificateEventResource\RelationManagers\CertificatesRelationManager;
 use App\Filament\Resources\CertificateEventResource\RelationManagers\ParticipationsRelationManager;
 use App\Models\CertificateEvent;
+use App\Models\Issuer;
 use App\Services\Certificates\CertificateNumberFormat;
 use BackedEnum;
 use Filament\Actions;
@@ -70,7 +71,17 @@ class CertificateEventResource extends Resource
                                 ->required()
                                 ->searchable()
                                 ->preload(),
-                            TextInput::make('organizer')->label('Penyelenggara'),
+                            Select::make('issuer_id')
+                                ->label('Penerbit')
+                                ->relationship('issuer', 'name', fn ($query) => $query->where('is_active', true))
+                                ->searchable()
+                                ->preload()
+                                ->live()
+                                ->default(fn () => Issuer::house()?->id)
+                                ->helperText('Menentukan brand halaman verifikasi, kop email, dan urutan nomor.'),
+                            TextInput::make('organizer')
+                                ->label('Penyelenggara yang dicetak')
+                                ->helperText('Muncul pada sertifikat lewat variabel {organizer}. Kosongkan untuk memakai nama penerbit.'),
                         ])->columns(2),
 
                         Section::make('Penomoran Sertifikat')
@@ -162,9 +173,16 @@ class CertificateEventResource extends Resource
     protected static function numberPreview(Get $get, ?CertificateEvent $record): HtmlString
     {
         $default = CertificateNumberFormat::default();
-        $pattern = (string) ($get('certificate_number_format') ?: $default->pattern);
+        $issuer = Issuer::find($get('issuer_id')) ?? Issuer::house();
 
-        $preview = (new CertificateNumberFormat($pattern, $default->reset, $default->unitCode))
+        $pattern = (string) ($get('certificate_number_format')
+            ?: ($issuer?->number_pattern ?: $default->pattern));
+
+        $preview = (new CertificateNumberFormat(
+            $pattern,
+            $issuer?->number_reset ?? $default->reset,
+            $issuer?->code ?: $default->unitCode,
+        ))
             ->preview(new CertificateEvent([
                 'name' => $get('name') ?: ($record?->name ?? 'Contoh Kegiatan'),
                 'certificate_code' => $get('certificate_code'),
@@ -233,7 +251,8 @@ class CertificateEventResource extends Resource
     {
         return $table->columns([
             TextColumn::make('name')->label('Kegiatan')->searchable()->sortable(),
-            TextColumn::make('template.name')->label('Template'),
+            TextColumn::make('template.name')->label('Template')->toggleable(),
+            TextColumn::make('issuer.name')->label('Penerbit')->placeholder('MSC JGU')->toggleable(),
             TextColumn::make('event_date')->label('Tanggal')->date('d M Y')->sortable(),
             TextColumn::make('participations_count')->label('Terdaftar')->counts('participations'),
             TextColumn::make('certificates_count')->label('Penerima')->counts('certificates'),

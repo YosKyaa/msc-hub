@@ -54,16 +54,20 @@ class CertificateNumberFormat
     }
 
     /**
-     * Pola yang berlaku untuk sebuah kegiatan: pola khususnya bila diisi,
-     * selebihnya mengikuti pola default kampus.
+     * Pola yang berlaku untuk sebuah kegiatan, dari yang paling khusus:
+     * pola kegiatan, lalu pola penerbitnya, lalu pola default sistem.
      */
     public static function for(CertificateEvent $event): self
     {
         $default = static::default();
+        $issuer = $event->resolvedIssuer();
 
-        return filled($event->certificate_number_format)
-            ? new self($event->certificate_number_format, $default->reset, $default->unitCode)
-            : $default;
+        return new self(
+            pattern: $event->certificate_number_format
+                ?: ($issuer?->number_pattern ?: $default->pattern),
+            reset: $issuer?->number_reset ?? $default->reset,
+            unitCode: $issuer?->code ?: $default->unitCode,
+        );
     }
 
     /**
@@ -87,15 +91,20 @@ class CertificateNumberFormat
 
     /**
      * Kunci penghitung nomor urut. Menentukan kapan urutan kembali ke 1.
+     *
+     * Selalu diawali penerbit, sehingga sertifikat mitra tidak menggerus
+     * urutan nomor JGU dan sebaliknya.
      */
     public function sequenceScope(CertificateEvent $event, Carbon $moment): string
     {
-        return match ($this->reset) {
+        $period = match ($this->reset) {
             CertificateNumberReset::YEARLY => 'year-'.$moment->format('Y'),
             CertificateNumberReset::MONTHLY => 'month-'.$moment->format('Y-m'),
             CertificateNumberReset::PER_EVENT => 'event-'.$event->id,
             CertificateNumberReset::NEVER => 'global',
         };
+
+        return 'issuer-'.($event->resolvedIssuer()?->id ?? 0).':'.$period;
     }
 
     /**

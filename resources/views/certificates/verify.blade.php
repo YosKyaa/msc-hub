@@ -3,7 +3,10 @@
     $isValid = $certificate->isValid();
     $verificationUrl = $certificate->verificationUrl();
 
+    $brandName = $issuer?->name ?? 'MSC Hub';
+
     $details = [
+        'Penerbit' => $issuer?->name,
         'Nomor sertifikat' => $certificate->certificate_number,
         'Nama penerima' => $certificate->recipient_name,
         'Peran' => $certificate->recipient_role_label ?: ucfirst($certificate->recipient_role),
@@ -28,9 +31,9 @@
 
 <header class="border-b bg-white">
     <div class="mx-auto flex max-w-5xl items-center gap-3 px-4 py-4">
-        <img src="{{ asset('img/jgu.png') }}" class="h-9 w-auto" alt="Jakarta Global University">
+        <img src="{{ $issuer?->logoUrl() ?? asset('img/jgu.png') }}" class="h-9 w-auto" alt="{{ $brandName }}">
         <div class="border-l pl-3">
-            <p class="text-sm font-semibold leading-tight">MSC Hub</p>
+            <p class="text-sm font-semibold leading-tight">{{ $brandName }}</p>
             <p class="text-xs text-slate-500">Verifikasi Sertifikat</p>
         </div>
     </div>
@@ -57,7 +60,7 @@
                     </svg>
                     Sertifikat valid
                 </p>
-                <p class="mt-1 text-sm">Data sertifikat ini tercatat dan diterbitkan oleh MSC Jakarta Global University.</p>
+                <p class="mt-1 text-sm">{{ $issuer?->verificationStatement() ?? 'Data sertifikat ini tercatat dan diterbitkan oleh MSC Jakarta Global University.' }}</p>
             </div>
         @else
             <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-red-900">
@@ -130,7 +133,7 @@
 
     <p class="mx-auto mt-8 max-w-3xl text-center text-xs text-slate-500">
         Keaslian sertifikat dapat diperiksa kapan saja melalui QR pada dokumen atau tautan halaman ini.<br>
-        Media &amp; Strategic Communications — Jakarta Global University
+        {{ $issuer?->address_line ?? 'Media & Strategic Communications — Jakarta Global University' }}
     </p>
 </main>
 </body>
