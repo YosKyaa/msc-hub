@@ -9,16 +9,16 @@
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
         </svg>
-        Kembali ke Booking Saya
+        Kembali ke Riwayat Booking
     </a>
 
     <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
         {{-- Header --}}
         <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white p-6">
-            <div class="flex items-start justify-between">
-                <div>
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div class="min-w-0">
                     <p class="text-indigo-200 text-sm mb-1">Kode Booking</p>
-                    <h1 class="text-2xl font-mono font-bold">{{ $booking->booking_code }}</h1>
+                    <h1 class="break-all font-mono text-xl font-bold sm:text-2xl">{{ $booking->booking_code }}</h1>
                 </div>
                 @php
                     $statusColors = [
@@ -32,7 +32,7 @@
                         'cancelled' => 'bg-gray-400 text-gray-900',
                     ];
                 @endphp
-                <span class="px-3 py-1 rounded-full text-sm font-medium {{ $statusColors[$booking->status->value] ?? 'bg-gray-400 text-gray-900' }}">
+                <span class="self-start whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium {{ $statusColors[$booking->status->value] ?? 'bg-gray-400 text-gray-900' }}">
                     {{ $booking->status->getLabel() }}
                 </span>
             </div>
@@ -40,7 +40,7 @@
 
         <div class="p-6 space-y-6">
             {{-- Type & Time --}}
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                     <p class="text-sm text-gray-500">Jenis Booking</p>
                     <p class="font-medium">{{ $type === 'inventory' ? 'Peminjaman Alat' : 'Booking Ruangan' }}</p>
@@ -53,7 +53,7 @@
                 @endif
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                     <p class="text-sm text-gray-500">Waktu Mulai</p>
                     <p class="font-medium">{{ $booking->start_at->format('d M Y H:i') }}</p>
@@ -67,14 +67,14 @@
             {{-- Requester Info --}}
             <div class="border-t pt-4">
                 <h3 class="font-semibold text-gray-900 mb-3">Informasi Pemohon</h3>
-                <div class="grid grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
                         <p class="text-sm text-gray-500">Nama</p>
                         <p class="font-medium">{{ $booking->requester_name }}</p>
                     </div>
                     <div>
                         <p class="text-sm text-gray-500">Email</p>
-                        <p class="font-medium">{{ $booking->requester_email }}</p>
+                        <p class="break-words font-medium">{{ $booking->requester_email }}</p>
                     </div>
                     @if($booking->unit)
                         <div>

@@ -366,11 +366,16 @@ class PublicBookingController extends Controller
 
         $requester = $this->getRequester();
 
-        $inventoryBookings = InventoryBooking::where('requester_email', $requester['email'])
+        // Relasinya dimuat sekaligus: daftar ini menampilkan jumlah item dan
+        // nama ruangan tiap baris, yang tanpa ini menghasilkan satu kueri
+        // tambahan per booking.
+        $inventoryBookings = InventoryBooking::with('items')
+            ->where('requester_email', $requester['email'])
             ->orderBy('created_at', 'desc')
             ->get();
 
-        $roomBookings = RoomBooking::where('requester_email', $requester['email'])
+        $roomBookings = RoomBooking::with('room')
+            ->where('requester_email', $requester['email'])
             ->orderBy('created_at', 'desc')
             ->get();
 

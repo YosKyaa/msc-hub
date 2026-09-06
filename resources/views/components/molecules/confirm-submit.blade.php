@@ -23,6 +23,16 @@
             return this.$el.closest('form');
         },
 
+        init() {
+            // Menekan Enter di dalam isian juga mengirim formulir, jadi jalur
+            // itu harus melewati konfirmasi yang sama; send() memakai
+            // form.submit() yang tidak memicu event ini, jadi tidak berulang.
+            this.form()?.addEventListener('submit', (event) => {
+                event.preventDefault();
+                this.open();
+            });
+        },
+
         readable(name) {
             const field = this.form()?.elements[name];
 
