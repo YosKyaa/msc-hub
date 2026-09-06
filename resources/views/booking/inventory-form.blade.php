@@ -164,10 +164,19 @@
                     class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
                     Batal
                 </a>
-                <button type="submit" 
-                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">
-                    Ajukan Peminjaman
-                </button>
+                <x-molecules.confirm-submit
+                    label="Ajukan Peminjaman"
+                    heading="Kirim pengajuan peminjaman alat?"
+                    description="Pengajuan akan dikirim ke tim MSC untuk ditinjau. Periksa kembali sebelum melanjutkan."
+                    confirm-label="Ya, Ajukan"
+                    :summary="[
+                        'Nama peminjam' => 'requester_name',
+                        'Unit / Fakultas' => 'unit',
+                        'Mulai' => 'start_at',
+                        'Selesai' => 'end_at',
+                        'Alat dipinjam' => 'items[]',
+                        'Keperluan' => 'purpose',
+                    ]" />
             </div>
         </form>
     </div>

@@ -41,23 +41,15 @@
                         Booking Ruangan
                     </a>
                     <a href="{{ route('my.bookings') }}" class="text-sm {{ request()->routeIs('my.bookings*') ? 'text-indigo-600 font-medium' : 'text-gray-600 hover:text-gray-900' }}">
-                        Booking Saya
+                        Riwayat Booking
+                    </a>
+                    <a href="{{ route('request.status') }}" class="text-sm text-gray-600 hover:text-gray-900">
+                        Konten Saya
                     </a>
                     
                     @if(session('requester'))
-                        <div class="flex items-center gap-2 pl-4 border-l">
-                            @if(session('requester.avatar'))
-                                <img src="{{ session('requester.avatar') }}" alt="" class="w-8 h-8 rounded-full">
-                            @else
-                                <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                                    <span class="text-indigo-600 text-sm font-medium">{{ substr(session('requester.name'), 0, 1) }}</span>
-                                </div>
-                            @endif
-                            <span class="text-sm text-gray-700">{{ session('requester.name') }}</span>
-                            <form action="{{ route('booking.logout') }}" method="POST" class="inline">
-                                @csrf
-                                <button type="submit" class="text-xs text-gray-400 hover:text-red-500">Logout</button>
-                            </form>
+                        <div class="pl-3 border-l">
+                            <x-molecules.account-menu :requester="session('requester')" logout-route="booking.logout" />
                         </div>
                     @endif
                 </nav>
@@ -65,13 +57,7 @@
                 {{-- Mobile: User + Hamburger --}}
                 <div class="flex items-center gap-3 md:hidden">
                     @if(session('requester'))
-                        @if(session('requester.avatar'))
-                            <img src="{{ session('requester.avatar') }}" alt="" class="w-8 h-8 rounded-full">
-                        @else
-                            <div class="w-8 h-8 bg-indigo-100 rounded-full flex items-center justify-center">
-                                <span class="text-indigo-600 text-sm font-medium">{{ substr(session('requester.name'), 0, 1) }}</span>
-                            </div>
-                        @endif
+                        <x-atoms.avatar :name="session('requester.name')" size="sm" />
                     @endif
                     <button @click="mobileMenuOpen = !mobileMenuOpen" class="p-2 text-gray-600 hover:text-gray-900">
                         <svg x-show="!mobileMenuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -104,7 +90,10 @@
                     🏢 Booking Ruangan
                 </a>
                 <a href="{{ route('my.bookings') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('my.bookings*') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                    📋 Booking Saya
+                    Riwayat Booking
+                </a>
+                <a href="{{ route('request.status') }}" class="block px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                    Konten Saya
                 </a>
                 @if(session('requester'))
                     <form action="{{ route('booking.logout') }}" method="POST" class="pt-2 border-t mt-2">
@@ -118,35 +107,8 @@
         </div>
     </header>
 
-    {{-- Flash Messages --}}
-    @if(session('success'))
-        <div class="max-w-5xl mx-auto px-4 mt-4">
-            <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg text-sm">
-                {{ session('success') }}
-            </div>
-        </div>
-    @endif
-    
-    @if(session('error'))
-        <div class="max-w-5xl mx-auto px-4 mt-4">
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {{ session('error') }}
-            </div>
-        </div>
-    @endif
-
-    {{-- Validation Errors --}}
-    @if($errors->any())
-        <div class="max-w-5xl mx-auto px-4 mt-4">
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                <ul class="list-disc list-inside space-y-1">
-                    @foreach($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            </div>
-        </div>
-    @endif
+    {{-- Organism: reusable shadcn-style feedback notifications --}}
+    <x-organisms.flash-messages />
 
     {{-- Main Content --}}
     <main class="max-w-5xl mx-auto px-4 py-6 flex-grow w-full">

@@ -158,7 +158,7 @@ class PublicBookingController extends Controller
                 'type' => 'inventory',
                 'code' => $booking->booking_code,
             ]);
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Inventory booking error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
@@ -313,7 +313,7 @@ class PublicBookingController extends Controller
                 'type' => 'room',
                 'code' => $booking->booking_code,
             ])->with('success', 'Booking ruangan berhasil diajukan. Tim MSC akan meninjau jadwal Anda.');
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             \Log::error('Room booking error: '.$e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);

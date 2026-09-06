@@ -3,10 +3,11 @@
 namespace App\Observers;
 
 use App\Models\RoomBooking;
-use App\Notifications\BookingSubmitted;
 use App\Notifications\BookingStatusUpdated;
+use App\Notifications\BookingSubmitted;
 use App\Notifications\NewBookingNotification;
 use App\Observers\Concerns\DispatchesMscNotifications;
+use Illuminate\Support\Facades\Log;
 
 class RoomBookingObserver
 {
@@ -24,15 +25,17 @@ class RoomBookingObserver
      */
     public function created(RoomBooking $roomBooking): void
     {
-        $context = ['room_booking_id' => $roomBooking->id];
+        $this->withoutBreakingTheRequest(function () use ($roomBooking) {
+            $context = ['room_booking_id' => $roomBooking->id];
 
-        $this->notifyRequester(
-            $roomBooking->requester_email,
-            new BookingSubmitted($roomBooking, 'ROOM'),
-            $context,
-        );
+            $this->notifyRequester(
+                $roomBooking->requester_email,
+                new BookingSubmitted($roomBooking, 'ROOM'),
+                $context,
+            );
 
-        $this->notifyMscTeam(new NewBookingNotification($roomBooking, 'ROOM'), $context);
+            $this->notifyMscTeam(new NewBookingNotification($roomBooking, 'ROOM'), $context);
+        }, ['roomBooking_id' => $roomBooking->id]);
     }
 
     /**
@@ -76,5 +79,27 @@ class RoomBookingObserver
     public function forceDeleted(RoomBooking $roomBooking): void
     {
         //
+    }
+
+    /**
+     * Efek samping setelah commit tidak boleh menggagalkan permintaan
+     * peminjam: datanya sudah tersimpan, jadi kegagalan mengirim
+     * pemberitahuan cukup dicatat.
+     */
+    private function withoutBreakingTheRequest(callable $work, array $context): void
+    {
+        try {
+            $work();
+        } catch (\Throwable $exception) {
+            try {
+                Log::error('Gagal mengirim pemberitahuan booking.', [
+                    ...$context,
+                    'exception' => $exception,
+                ]);
+            } catch (\Throwable) {
+                // Menulis log pun bisa gagal (mis. izin folder di server).
+                // Diamkan: peminjam tidak boleh menanggung masalah itu.
+            }
+        }
     }
 }
