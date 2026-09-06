@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Enums\BookingStatus;
 use App\Enums\InventoryCategory;
+use App\Filament\Actions\BorrowingFormAction;
 use App\Filament\Resources\RoomBookingResource\Pages;
 use App\Models\InventoryItem;
 use App\Models\Room;
@@ -73,6 +74,15 @@ class RoomBookingResource extends Resource
                         ->email()
                         ->required()
                         ->maxLength(255),
+                    TextInput::make('requester_phone')
+                        ->label('No. HP Peminjam')
+                        ->tel()
+                        ->maxLength(30)
+                        ->helperText('Isian wajib pada formulir resmi kampus.'),
+                    TextInput::make('supervisor_name')
+                        ->label('Penanggung Jawab (Dosen)')
+                        ->maxLength(255)
+                        ->helperText('Isian wajib pada formulir resmi kampus.'),
                     Select::make('unit')
                         ->label('Unit/Fakultas')
                         ->options([
@@ -303,9 +313,12 @@ class RoomBookingResource extends Resource
             ->actions([
                 Actions\ViewAction::make()->iconButton()->tooltip('Lihat detail booking'),
 
+                // Formulir resmi kampus dibuka sebagai pratinjau lebih dulu.
+                BorrowingFormAction::make()->iconButton()->tooltip('Form peminjaman resmi'),
+
                 Actions\Action::make('export_pdf')
                     ->iconButton()
-                    ->tooltip('Unduh bukti booking (PDF)')
+                    ->tooltip('Unduh bukti booking internal (PDF)')
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('gray')
                     ->action(fn ($record) => static::downloadPdf($record)),

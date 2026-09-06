@@ -4,6 +4,7 @@ namespace App\Filament\Resources;
 
 use App\Enums\BookingStatus;
 use App\Enums\InventoryLogType;
+use App\Filament\Actions\BorrowingFormAction;
 use App\Filament\Resources\InventoryBookingResource\Pages;
 use App\Models\InventoryBooking;
 use App\Models\InventoryItem;
@@ -224,9 +225,12 @@ class InventoryBookingResource extends Resource
                     ->visible(fn ($record) => $record->status === BookingStatus::PENDING),
 
                 // Export PDF
+                // Formulir resmi kampus dibuka sebagai pratinjau lebih dulu.
+                BorrowingFormAction::make()->iconButton()->tooltip('Form peminjaman resmi'),
+
                 Actions\Action::make('export_pdf')
                     ->iconButton()
-                    ->tooltip('Unduh bukti peminjaman (PDF)')
+                    ->tooltip('Unduh bukti peminjaman internal (PDF)')
                     ->icon('heroicon-o-document-arrow-down')
                     ->color('gray')
                     ->action(function ($record) {
