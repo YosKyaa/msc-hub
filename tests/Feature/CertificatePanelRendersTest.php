@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\AttendanceAction;
 use App\Filament\Resources\CertificateEventResource;
+use App\Filament\Resources\IssuerResource;
 use App\Filament\Resources\ParticipantResource;
 use App\Models\CertificateEvent;
 use App\Models\CertificateEventParticipant;
@@ -58,6 +59,20 @@ class CertificatePanelRendersTest extends TestCase
             ->assertSee('Dipindai saat acara selesai. Buka menjelang acara bubar.')
             ->assertSee($event->attendanceUrl(AttendanceAction::CHECK_IN))
             ->assertSee($event->attendanceUrl(AttendanceAction::CHECK_OUT));
+    }
+
+    public function test_the_issuer_list_and_form_render(): void
+    {
+        $this->actingAs($this->admin());
+
+        $this->get(IssuerResource::getUrl('index'))
+            ->assertOk()
+            ->assertSee('MSC-JGU');
+
+        $this->get(IssuerResource::getUrl('create'))
+            ->assertOk()
+            ->assertSee('Kode penerbit')
+            ->assertSee('Pola nomor penerbit ini');
     }
 
     public function test_the_participant_master_list_renders(): void

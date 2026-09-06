@@ -16,11 +16,11 @@
                             <table role="presentation" cellspacing="0" cellpadding="0" border="0">
                                 <tr>
                                     <td style="vertical-align:middle;padding-right:12px;">
-                                        <img src="{{ asset('img/jgu.png') }}" width="72" alt="Jakarta Global University" style="display:block;width:72px;height:auto;border:0;">
+                                        <img src="{{ $brandLogo ?? asset('img/jgu.png') }}" width="72" alt="{{ $brandName ?? 'Jakarta Global University' }}" style="display:block;width:72px;height:auto;border:0;">
                                     </td>
                                     <td style="vertical-align:middle;border-left:1px solid #dbe2ea;padding-left:12px;">
-                                        <div style="font-size:17px;font-weight:700;line-height:22px;color:#111827;">MSC Hub</div>
-                                        <div style="font-size:11px;line-height:16px;color:#6b7280;letter-spacing:.04em;">MEDIA &amp; STRATEGIC COMMUNICATIONS</div>
+                                        <div style="font-size:17px;font-weight:700;line-height:22px;color:#111827;">{{ $brandName ?? 'MSC Hub' }}</div>
+                                        <div style="font-size:11px;line-height:16px;color:#6b7280;letter-spacing:.04em;">{{ $brandTagline ?? 'MEDIA & STRATEGIC COMMUNICATIONS' }}</div>
                                     </td>
                                 </tr>
                             </table>
@@ -88,7 +88,7 @@
                     <tr>
                         <td style="padding:20px 12px 0;text-align:center;color:#94a3b8;font-size:11px;line-height:18px;">
                             Email ini dikirim otomatis oleh MSC Hub JGU. Mohon tidak membalas email ini.<br>
-                            &copy; {{ date('Y') }} Jakarta Global University
+                            &copy; {{ date('Y') }} {{ $brandFooter ?? 'Jakarta Global University' }}
                         </td>
                     </tr>
                 </table>

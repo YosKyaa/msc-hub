@@ -191,6 +191,37 @@ sertifikat yang valid.
 Halaman juga menyediakan QR dan tombol salin tautan agar mudah dibagikan, serta
 diberi `noindex` supaya nama penerima tidak terindeks mesin pencari.
 
+## Penerbit sertifikat
+
+MSC dapat menerbitkan sertifikat untuk pihak di luar JGU. Penerbit adalah
+record tersendiri (`issuers`), bukan sekadar teks penyelenggara, sehingga
+identitas dan penomoran dapat menempel padanya.
+
+- **Penerbit rumah** — MSC JGU, ditandai `is_house`. Kegiatan yang tidak
+  menyebut penerbit otomatis memakainya, jadi data lama tidak perlu disentuh
+  dan tampilannya tidak berubah.
+- **Penerbit mitra** — membawa nama, kode, logo, alamat, dan pola nomornya
+  sendiri.
+
+Yang mengikuti penerbit:
+
+| Bagian | Perilaku |
+|---|---|
+| Halaman verifikasi | Logo, nama, alamat, dan kalimat penjaminnya |
+| Kop email sertifikat | Logo dan nama penerbit |
+| Kode `{kode_unit}` | Kode penerbit, mis. `LPPI` |
+| Urutan nomor | Terpisah per penerbit — sertifikat mitra tidak menggerus urutan JGU |
+| Variabel `{organizer}` | Nama penerbit bila kolom penyelenggara dikosongkan |
+
+Untuk penerbit di luar JGU, kalimat bawaan di halaman verifikasi menyebut peran
+MSC secara terpisah: *"Diterbitkan oleh {penerbit}, difasilitasi Media &
+Strategic Communications Jakarta Global University"*. Kalimat ini dapat diubah
+per penerbit lewat kolom **Kalimat pada halaman verifikasi**, karena
+bunyinya adalah keputusan kelembagaan, bukan teknis.
+
+Desain sertifikatnya sendiri sudah netral sejak awal — berupa gambar latar dan
+elemen berkoordinat — jadi mitra cukup mengunggah templatenya sendiri.
+
 ## Penomoran sertifikat
 
 Nomor mengikuti ketentuan kampus, bukan pola acak. Ada tiga tingkat, yang lebih
@@ -201,9 +232,10 @@ khusus selalu menang:
    menghabiskan jatah nomor urut otomatis.
 2. **Pola khusus kegiatan** — kolom "Pola khusus kegiatan ini" pada formulir
    kegiatan. Untuk kegiatan yang penomorannya berbeda dari kebiasaan unit.
-3. **Pola default kampus** — halaman panel *Sertifikat → Penomoran Sertifikat*.
-   Berlaku otomatis untuk seluruh sertifikat yang tidak tercakup dua tingkat di
-   atas.
+3. **Pola penerbit** — kolom pola pada *Sertifikat → Penerbit*. Untuk mitra yang
+   punya ketentuan penomoran sendiri.
+4. **Pola default sistem** — halaman panel *Sertifikat → Penomoran Sertifikat*.
+   Berlaku otomatis untuk seluruh sertifikat yang tidak tercakup di atas.
 
 ### Token pola
 
@@ -225,7 +257,9 @@ setiap sertifikat akan menghasilkan teks yang sama dan bertabrakan.
 ### Nomor urut
 
 Diambil dari tabel `certificate_number_sequences` dengan penguncian baris,
-sehingga dua job dalam satu batch tidak pernah memperoleh nomor sama. Kapan
+sehingga dua job dalam satu batch tidak pernah memperoleh nomor sama. Cakupannya
+selalu diawali penerbit (`issuer-3:year-2026`), jadi setiap penerbit memiliki
+urutan sendiri. Kapan
 urutan kembali ke 1 dapat dipilih: setiap tahun (bawaan), setiap bulan, setiap
 kegiatan, atau tidak pernah.
 

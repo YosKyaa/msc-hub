@@ -18,7 +18,7 @@ class CertificateEvent extends Model
     protected $fillable = [
         'certificate_template_id', 'name', 'slug', 'event_date', 'organizer',
         'signatory_name', 'signatory_title', 'status', 'created_by',
-        'certificate_code', 'certificate_number_format',
+        'certificate_code', 'certificate_number_format', 'issuer_id',
         'attendance_enabled', 'eligibility_rule',
         'checkin_token', 'checkin_open_at', 'checkin_close_at',
         'checkout_token', 'checkout_open_at', 'checkout_close_at',
@@ -69,6 +69,20 @@ class CertificateEvent extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function issuer(): BelongsTo
+    {
+        return $this->belongsTo(Issuer::class);
+    }
+
+    /**
+     * Penerbit kegiatan ini; kegiatan yang tidak menyebut penerbit
+     * memakai penerbit rumah (MSC JGU).
+     */
+    public function resolvedIssuer(): ?Issuer
+    {
+        return $this->issuer ?? Issuer::house();
     }
 
     public function isPublished(): bool
