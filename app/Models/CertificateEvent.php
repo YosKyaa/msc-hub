@@ -18,6 +18,7 @@ class CertificateEvent extends Model
     protected $fillable = [
         'certificate_template_id', 'name', 'slug', 'event_date', 'organizer',
         'signatory_name', 'signatory_title', 'status', 'created_by',
+        'certificate_code', 'certificate_number_format',
         'attendance_enabled', 'eligibility_rule',
         'checkin_token', 'checkin_open_at', 'checkin_close_at',
         'checkout_token', 'checkout_open_at', 'checkout_close_at',

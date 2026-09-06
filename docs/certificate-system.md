@@ -191,6 +191,46 @@ sertifikat yang valid.
 Halaman juga menyediakan QR dan tombol salin tautan agar mudah dibagikan, serta
 diberi `noindex` supaya nama penerima tidak terindeks mesin pencari.
 
+## Penomoran sertifikat
+
+Nomor mengikuti ketentuan kampus, bukan pola acak. Ada tiga tingkat, yang lebih
+khusus selalu menang:
+
+1. **Nomor manual per peserta** — kolom `nomor_sertifikat` pada file import atau
+   kolom "Nomor sertifikat khusus" pada peserta. Dipakai apa adanya dan tidak
+   menghabiskan jatah nomor urut otomatis.
+2. **Pola khusus kegiatan** — kolom "Pola khusus kegiatan ini" pada formulir
+   kegiatan. Untuk kegiatan yang penomorannya berbeda dari kebiasaan unit.
+3. **Pola default kampus** — halaman panel *Sertifikat → Penomoran Sertifikat*.
+   Berlaku otomatis untuk seluruh sertifikat yang tidak tercakup dua tingkat di
+   atas.
+
+### Token pola
+
+| Token | Hasil |
+|---|---|
+| `{nomor}` | Nomor urut, mis. `57`. `{nomor:4}` memberi bantalan nol menjadi `0057` |
+| `{tahun}` / `{tahun_pendek}` | `2026` / `26` |
+| `{bulan}` / `{bulan_romawi}` | `09` / `IX` |
+| `{tanggal}` | `06` |
+| `{kode_kegiatan}` | Kode pada kegiatan; bila kosong memakai nama kegiatan tanpa spasi |
+| `{kode_unit}` | Kode unit penerbit dari pengaturan, mis. `MSC-JGU` |
+
+Contoh: `{nomor:4}/CERT/{kode_unit}/{bulan_romawi}/{tahun}` menghasilkan
+`0057/CERT/MSC-JGU/IX/2026`.
+
+Pola **wajib memuat `{nomor}`** — divalidasi di panel — karena tanpa nomor urut
+setiap sertifikat akan menghasilkan teks yang sama dan bertabrakan.
+
+### Nomor urut
+
+Diambil dari tabel `certificate_number_sequences` dengan penguncian baris,
+sehingga dua job dalam satu batch tidak pernah memperoleh nomor sama. Kapan
+urutan kembali ke 1 dapat dipilih: setiap tahun (bawaan), setiap bulan, setiap
+kegiatan, atau tidak pernah.
+
+Mengubah pola tidak menyentuh nomor yang sudah terbit.
+
 ## Aturan validitas
 
 Sertifikat valid hanya jika event berstatus `published`, `issued_at` terisi, dan `revoked_at` kosong. QR berisi URL dengan UUID acak, bukan primary key database. Halaman verifikasi tetap menampilkan status tidak berlaku untuk sertifikat yang dicabut.

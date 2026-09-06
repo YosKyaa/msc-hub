@@ -8,7 +8,6 @@ use App\Models\CertificateEventParticipant;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 /**
  * Penerbitan sertifikat untuk satu keikutsertaan.
@@ -18,7 +17,7 @@ use Illuminate\Support\Str;
  */
 class CertificateIssuer
 {
-    private const NUMBER_ATTEMPTS = 5;
+    public function __construct(private readonly CertificateNumberGenerator $numbers) {}
 
     /**
      * Terbitkan sertifikat, atau kembalikan yang sudah ada. Aman dipanggil ulang.
@@ -74,8 +73,8 @@ class CertificateIssuer
     }
 
     /**
-     * Nomor dari file import dipakai apa adanya; selebihnya mengikuti pola
-     * penomoran yang sudah berlaku di panel.
+     * Nomor yang sudah ditetapkan manual — lewat import atau diketik admin —
+     * selalu menang. Selebihnya dibuat dari pola penomoran yang berlaku.
      */
     private function resolveNumber(CertificateEventParticipant $participation): string
     {
@@ -83,15 +82,6 @@ class CertificateIssuer
             return $participation->certificate_number;
         }
 
-        for ($attempt = 0; $attempt < self::NUMBER_ATTEMPTS; $attempt++) {
-            $number = 'CERT-'.now()->format('Ymd').'-'.strtoupper(Str::random(6));
-
-            if (! Certificate::where('certificate_number', $number)->exists()) {
-                return $number;
-            }
-        }
-
-        // Cadangan yang dijamin unik bila undian acak terus bertabrakan.
-        return 'CERT-'.now()->format('Ymd').'-'.strtoupper((string) Str::ulid());
+        return $this->numbers->next($participation->event);
     }
 }
