@@ -316,13 +316,6 @@ class RoomBookingResource extends Resource
                 // Formulir resmi kampus dibuka sebagai pratinjau lebih dulu.
                 BorrowingFormAction::make()->iconButton()->tooltip('Form peminjaman resmi'),
 
-                Actions\Action::make('export_pdf')
-                    ->iconButton()
-                    ->tooltip('Unduh bukti booking internal (PDF)')
-                    ->icon('heroicon-o-document-arrow-down')
-                    ->color('gray')
-                    ->action(fn ($record) => static::downloadPdf($record)),
-
                 Actions\Action::make('staff_approve')
                     ->iconButton()
                     ->tooltip('Setujui sebagai Staff')
@@ -382,21 +375,6 @@ class RoomBookingResource extends Resource
                     }),
             ])
             ->bulkActions([]);
-    }
-
-    /**
-     * Bukti booking dicetak dari template bersama `x-pdf.document`.
-     */
-    public static function downloadPdf(RoomBooking $booking): \Symfony\Component\HttpFoundation\StreamedResponse
-    {
-        $booking->loadMissing(['room', 'inventoryItems', 'staffApprover', 'headApprover', 'rejectedByUser']);
-
-        $pdf = app('dompdf.wrapper')->loadView('pdf.room-booking', ['booking' => $booking]);
-
-        return response()->streamDownload(
-            fn () => print ($pdf->output()),
-            'bukti-booking-ruangan-'.$booking->booking_code.'.pdf',
-        );
     }
 
     public static function getRelations(): array

@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\RoomBookingResource\Pages;
 
 use App\Enums\BookingStatus;
+use App\Filament\Actions\BorrowingFormAction;
 use App\Filament\Resources\RoomBookingResource;
 use Filament\Actions;
 use Filament\Forms\Components\Textarea;
@@ -134,11 +135,7 @@ class ViewRoomBooking extends ViewRecord
         return [
             // Halaman detail memuat alur lengkap: di sini peralatan yang
             // dipinjam terlihat sebelum booking disetujui.
-            Actions\Action::make('export_pdf')
-                ->label('Unduh Bukti (PDF)')
-                ->icon('heroicon-o-document-arrow-down')
-                ->color('gray')
-                ->action(fn () => RoomBookingResource::downloadPdf($this->record)),
+            BorrowingFormAction::make()->label('Form Peminjaman'),
 
             Actions\EditAction::make()
                 ->visible(fn () => $this->record->status === BookingStatus::PENDING),

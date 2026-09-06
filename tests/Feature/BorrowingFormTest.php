@@ -36,17 +36,22 @@ class BorrowingFormTest extends TestCase
         return $user->fresh();
     }
 
+    /** Penomoran fixture agar satu test dapat membuat beberapa booking. */
+    private int $sequence = 0;
+
     private function roomBooking(array $attributes = [], int $itemCount = 2): RoomBooking
     {
+        $this->sequence++;
+
         $room = Room::create([
-            'name' => 'Ruang Multimedia MSC',
+            'name' => 'Ruang Multimedia MSC '.$this->sequence,
             'location' => 'Gedung A Lantai 3',
             'capacity' => 20,
             'is_active' => true,
         ]);
 
         $booking = RoomBooking::create([
-            'booking_code' => 'ROOM-2026-0011',
+            'booking_code' => 'ROOM-2026-'.str_pad((string) $this->sequence, 4, '0', STR_PAD_LEFT),
             'room_id' => $room->id,
             'requester_name' => 'Budi Santoso',
             'requester_email' => 'budi@student.jgu.ac.id',
@@ -63,7 +68,7 @@ class BorrowingFormTest extends TestCase
 
         for ($i = 1; $i <= $itemCount; $i++) {
             $item = InventoryItem::create([
-                'code' => "CAM-00{$i}",
+                'code' => "CAM-{$this->sequence}-{$i}",
                 'name' => "Kamera Mirrorless {$i}",
                 'category' => 'camera',
                 'condition_status' => 'good',
@@ -127,7 +132,7 @@ class BorrowingFormTest extends TestCase
         $booking = $this->roomBooking();
         $html = $this->html($booking);
 
-        $this->assertStringContainsString('Ruangan: Ruang Multimedia MSC', $html);
+        $this->assertStringContainsString('Ruangan: '.$booking->room->name, $html);
 
         foreach ($booking->inventoryItems as $item) {
             $this->assertStringContainsString($item->name, $html);
@@ -181,7 +186,7 @@ class BorrowingFormTest extends TestCase
 
         $disposition = $response->headers->get('content-disposition');
         $this->assertStringStartsWith('attachment', $disposition);
-        $this->assertStringContainsString('ROOM-2026-0011', $disposition);
+        $this->assertStringContainsString($booking->booking_code, $disposition);
     }
 
     public function test_the_form_is_closed_to_guests(): void
@@ -226,14 +231,80 @@ class BorrowingFormTest extends TestCase
         $this->assertStringContainsString('Dr. Rina Kartika', $html);
     }
 
+    // ------------------------------------------------------------ cetakan
+
+    private function pdf(RoomBooking $booking): string
+    {
+        return app('dompdf.wrapper')
+            ->loadView('pdf.borrowing-form', ['form' => BorrowingFormData::fromRoomBooking($booking)])
+            ->output();
+    }
+
     public function test_the_pdf_is_actually_generated_with_the_letterhead(): void
     {
-        $pdf = app('dompdf.wrapper')
-            ->loadView('pdf.borrowing-form', ['form' => BorrowingFormData::fromRoomBooking($this->roomBooking())])
-            ->output();
+        $pdf = $this->pdf($this->roomBooking());
 
         $this->assertStringStartsWith('%PDF', $pdf);
         // Logo dan pita kaki surat ikut tertanam.
         $this->assertStringContainsString('/Image', $pdf);
+    }
+
+    /**
+     * Formulir dipakai sebagai lembar tanda tangan, jadi harus selalu muat satu
+     * halaman — termasuk saat sebelas baris fasilitas terisi penuh.
+     */
+    public function test_the_form_always_fits_a_single_a4_page(): void
+    {
+        foreach ([0, 5, 11] as $itemCount) {
+            $pdf = $this->pdf($this->roomBooking(itemCount: $itemCount));
+
+            preg_match_all('/\/Type\s*\/Page[^s]/', $pdf, $pages);
+            $this->assertCount(1, $pages[0], "Formulir dengan {$itemCount} alat memakai lebih dari satu halaman.");
+
+            $this->assertStringContainsString('595.280 841.890', $pdf, 'Kertas bukan A4 potret.');
+        }
+    }
+
+    public function test_the_document_is_typeset_in_times_new_roman(): void
+    {
+        $pdf = $this->pdf($this->roomBooking());
+
+        $this->assertStringContainsString('/Times-Roman', $pdf);
+        $this->assertStringContainsString('/Times-Bold', $pdf);
+        $this->assertStringNotContainsString('DejaVuSans', $pdf);
+    }
+
+    public function test_the_print_margins_leave_room_for_the_letterhead(): void
+    {
+        $pdf = $this->pdf($this->roomBooking());
+
+        preg_match_all('/stream
+?
+(.*?)
+?
+endstream/s', $pdf, $streams);
+        $content = '';
+
+        foreach ($streams[1] as $stream) {
+            $plain = @gzuncompress($stream) ?: $stream;
+
+            if (str_contains($plain, 'Td')) {
+                $content = $plain;
+                break;
+            }
+        }
+
+        preg_match_all('/BT ([\d.]+) ([\d.]+) Td/', $content, $positions);
+        $left = min(array_map('floatval', $positions[1]));
+        $lowest = min(array_map('floatval', $positions[2]));
+        $highest = max(array_map('floatval', $positions[2]));
+
+        $this->assertGreaterThanOrEqual(35, $left, 'Marjin kiri terlalu sempit.');
+        $this->assertGreaterThanOrEqual(25, 841.89 - $highest, 'Marjin atas terlalu sempit.');
+        // Pita kaki surat setinggi 65pt menempel di tepi bawah.
+        $this->assertGreaterThan(65, $lowest, 'Teks menabrak pita kaki surat.');
+
+        // Pita kaki surat digambar selebar kertas, rata tepi bawah.
+        $this->assertMatchesRegularExpression('/595\.280 0 0 6[0-9]\.\d+ 0\.000 0\.000 cm/', $content);
     }
 }

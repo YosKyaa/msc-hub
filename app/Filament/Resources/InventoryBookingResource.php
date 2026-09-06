@@ -228,20 +228,6 @@ class InventoryBookingResource extends Resource
                 // Formulir resmi kampus dibuka sebagai pratinjau lebih dulu.
                 BorrowingFormAction::make()->iconButton()->tooltip('Form peminjaman resmi'),
 
-                Actions\Action::make('export_pdf')
-                    ->iconButton()
-                    ->tooltip('Unduh bukti peminjaman internal (PDF)')
-                    ->icon('heroicon-o-document-arrow-down')
-                    ->color('gray')
-                    ->action(function ($record) {
-                        $pdf = app('dompdf.wrapper')->loadView('pdf.inventory-booking', ['booking' => $record]);
-
-                        return response()->streamDownload(
-                            fn () => print ($pdf->output()),
-                            'booking-inventory-'.$record->booking_code.'.pdf'
-                        );
-                    }),
-
                 // Staff Approve
                 Actions\Action::make('staff_approve')
                     ->iconButton()

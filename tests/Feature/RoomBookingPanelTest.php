@@ -113,7 +113,7 @@ class RoomBookingPanelTest extends TestCase
         Livewire::test(ListRoomBookings::class)
             ->assertSuccessful()
             ->assertTableActionExists('view')
-            ->assertTableActionExists('export_pdf')
+            ->assertTableActionExists('borrowing_form')
             ->assertTableActionExists('staff_approve')
             ->assertTableActionExists('reject');
     }
@@ -128,19 +128,5 @@ class RoomBookingPanelTest extends TestCase
 
         $this->assertSame(BookingStatus::APPROVED_STAFF, $booking->fresh()->status);
         $this->assertNotNull($booking->fresh()->staff_approved_at);
-    }
-
-    public function test_the_pdf_download_is_reachable_from_the_list(): void
-    {
-        $this->actingAs($this->admin());
-        $booking = $this->booking();
-
-        $response = RoomBookingResource::downloadPdf($booking);
-
-        $this->assertSame(200, $response->getStatusCode());
-        $this->assertStringContainsString(
-            $booking->booking_code,
-            $response->headers->get('content-disposition'),
-        );
     }
 }
