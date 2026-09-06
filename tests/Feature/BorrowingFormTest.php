@@ -202,9 +202,15 @@ class BorrowingFormTest extends TestCase
         // Dokumen dibingkai sehalaman penuh, bukan diperkecil ke dalam dialog.
         $response->assertSee('Form Peminjaman Ruangan / Fasilitas Multimedia JGU');
         $response->assertSee($booking->booking_code);
-        $response->assertSee('h-[calc(100vh-16rem)]', false);
         $response->assertSee(route('borrowing-form.room', $booking).'#view=FitH', false);
         $response->assertSee('Unduh PDF');
+
+        // Ukuran bingkai wajib berupa style inline: panel memakai CSS bawaan
+        // Filament, sehingga kelas Tailwind tidak akan pernah terbangun dan
+        // iframe jatuh ke ukuran default HTML 300x150 px.
+        $response->assertSee('height:calc(100vh - 17rem)', false);
+        $response->assertSee('min-height:720px', false);
+        $response->assertSee('width:100%', false);
     }
 
     public function test_the_inventory_preview_page_renders_too(): void
