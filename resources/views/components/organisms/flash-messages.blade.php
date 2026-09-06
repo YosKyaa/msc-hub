@@ -1,5 +1,5 @@
 @if(session('success') || session('error') || $errors->any())
-    <div class="fixed inset-x-4 top-4 z-50 ml-auto flex max-w-md flex-col gap-3 sm:inset-x-auto sm:right-4" aria-label="Notifikasi">
+    <div class="fixed inset-x-4 top-20 z-50 ml-auto flex max-w-md flex-col gap-3 sm:inset-x-auto sm:right-4" aria-label="Notifikasi">
         @if(session('success'))
             <x-atoms.alert variant="success" title="Berhasil" :auto-dismiss="8000">
                 {{ session('success') }}
