@@ -3,10 +3,11 @@
 namespace App\Observers;
 
 use App\Models\InventoryBooking;
-use App\Notifications\BookingSubmitted;
 use App\Notifications\BookingStatusUpdated;
+use App\Notifications\BookingSubmitted;
 use App\Notifications\NewBookingNotification;
 use App\Observers\Concerns\DispatchesMscNotifications;
+use Illuminate\Support\Facades\Log;
 
 class InventoryBookingObserver
 {
@@ -24,15 +25,17 @@ class InventoryBookingObserver
      */
     public function created(InventoryBooking $inventoryBooking): void
     {
-        $context = ['inventory_booking_id' => $inventoryBooking->id];
+        $this->withoutBreakingTheRequest(function () use ($inventoryBooking) {
+            $context = ['inventory_booking_id' => $inventoryBooking->id];
 
-        $this->notifyRequester(
-            $inventoryBooking->requester_email,
-            new BookingSubmitted($inventoryBooking, 'INVENTORY'),
-            $context,
-        );
+            $this->notifyRequester(
+                $inventoryBooking->requester_email,
+                new BookingSubmitted($inventoryBooking, 'INVENTORY'),
+                $context,
+            );
 
-        $this->notifyMscTeam(new NewBookingNotification($inventoryBooking, 'INVENTORY'), $context);
+            $this->notifyMscTeam(new NewBookingNotification($inventoryBooking, 'INVENTORY'), $context);
+        }, ['inventoryBooking_id' => $inventoryBooking->id]);
     }
 
     /**
@@ -76,5 +79,27 @@ class InventoryBookingObserver
     public function forceDeleted(InventoryBooking $inventoryBooking): void
     {
         //
+    }
+
+    /**
+     * Efek samping setelah commit tidak boleh menggagalkan permintaan
+     * peminjam: datanya sudah tersimpan, jadi kegagalan mengirim
+     * pemberitahuan cukup dicatat.
+     */
+    private function withoutBreakingTheRequest(callable $work, array $context): void
+    {
+        try {
+            $work();
+        } catch (\Throwable $exception) {
+            try {
+                Log::error('Gagal mengirim pemberitahuan booking.', [
+                    ...$context,
+                    'exception' => $exception,
+                ]);
+            } catch (\Throwable) {
+                // Menulis log pun bisa gagal (mis. izin folder di server).
+                // Diamkan: peminjam tidak boleh menanggung masalah itu.
+            }
+        }
     }
 }

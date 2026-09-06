@@ -2,6 +2,8 @@
     'variant' => 'default',
     'title' => null,
     'dismissible' => true,
+    // Toast menutup sendiri setelah sekian milidetik; 0 berarti menetap.
+    'autoDismiss' => 0,
 ])
 
 @php
@@ -29,7 +31,12 @@
     role="{{ $variant === 'destructive' ? 'alert' : 'status' }}"
     aria-live="{{ $variant === 'destructive' ? 'assertive' : 'polite' }}"
     {{ $attributes->class(['relative w-full rounded-lg border px-4 py-3 shadow-sm', $styles['container']]) }}
-    @if($dismissible) x-data="{ visible: true }" x-show="visible" x-transition @endif
+    @if($dismissible)
+        x-data="{ visible: true }"
+        x-show="visible"
+        x-transition
+        @if($autoDismiss) x-init="setTimeout(() => visible = false, {{ (int) $autoDismiss }})" @endif
+    @endif
 >
     <div class="flex items-start gap-3">
         <div class="mt-0.5 shrink-0 {{ $styles['icon'] }}" aria-hidden="true">
