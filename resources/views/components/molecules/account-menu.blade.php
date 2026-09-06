@@ -1,4 +1,10 @@
-@props(['requester', 'logoutRoute', 'tone' => 'indigo'])
+@props([
+    'requester',
+    // Kedua portal memakai route keluar yang sama; sebelumnya masing-masing
+    // punya sendiri dan tujuan setelah keluar jadi berbeda-beda.
+    'logoutRoute' => 'auth.google.logout',
+    'tone' => 'indigo',
+])
 
 <div class="relative" x-data="{ accountMenuOpen: false }" @keydown.escape.window="accountMenuOpen = false">
     <button type="button" @click="accountMenuOpen = !accountMenuOpen" :aria-expanded="accountMenuOpen"
@@ -23,6 +29,7 @@
         </div>
         <form action="{{ route($logoutRoute) }}" method="POST" class="p-2">
             @csrf
+            <input type="hidden" name="redirect" value="{{ route('landing') }}">
             <button type="submit" class="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-50" role="menuitem">
                 <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M10 17l5-5-5-5m5 5H3"/><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/></svg>
                 Keluar dari akun

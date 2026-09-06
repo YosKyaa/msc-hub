@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/png" href="{{ asset('img/jgusolo.png') }}">
-    <title>@yield('title', 'Booking') - MSC JGU</title>
+    <title>@yield('title', 'Peminjaman') - MSC JGU</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
@@ -13,111 +13,19 @@
     </style>
 </head>
 <body class="min-h-screen bg-gray-50 flex flex-col">
-    {{-- Header --}}
-    <header class="bg-white shadow-sm border-b" x-data="{ mobileMenuOpen: false }">
-        <div class="max-w-5xl mx-auto px-4">
-            {{-- Top Bar --}}
-            <div class="flex items-center justify-between py-3">
-                {{-- Logo --}}
-                <a href="{{ route('my.bookings') }}" class="flex items-center gap-2">
-                    <img src="{{ asset('img/jgu.png') }}" alt="JGU Logo" class="h-8 w-auto">
-                    <div class="hidden sm:block">
-                        <div class="font-semibold text-gray-900 text-sm">MSC Hub</div>
-                        <div class="text-xs text-gray-500">Booking System</div>
-                    </div>
-                </a>
-
-                {{-- Desktop Nav --}}
-                <nav class="hidden md:flex items-center gap-4">
-                    <a href="{{ route('landing') }}" class="text-sm text-gray-500 hover:text-gray-900 flex items-center gap-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                        Beranda
-                    </a>
-                    <span class="text-gray-300">|</span>
-                    <a href="{{ route('booking.inventory') }}" class="text-sm {{ request()->routeIs('booking.inventory*') ? 'text-indigo-600 font-medium' : 'text-gray-600 hover:text-gray-900' }}">
-                        Pinjam Alat
-                    </a>
-                    <a href="{{ route('booking.room') }}" class="text-sm {{ request()->routeIs('booking.room*') ? 'text-indigo-600 font-medium' : 'text-gray-600 hover:text-gray-900' }}">
-                        Booking Ruangan
-                    </a>
-                    <a href="{{ route('my.bookings') }}" class="text-sm {{ request()->routeIs('my.bookings*') ? 'text-indigo-600 font-medium' : 'text-gray-600 hover:text-gray-900' }}">
-                        Riwayat Booking
-                    </a>
-                    <a href="{{ route('request.status') }}" class="text-sm text-gray-600 hover:text-gray-900">
-                        Konten Saya
-                    </a>
-                    
-                    @if(session('requester'))
-                        <div class="pl-3 border-l">
-                            <x-molecules.account-menu :requester="session('requester')" logout-route="booking.logout" />
-                        </div>
-                    @endif
-                </nav>
-
-                {{-- Mobile: User + Hamburger --}}
-                <div class="flex items-center gap-3 md:hidden">
-                    @if(session('requester'))
-                        <x-atoms.avatar :name="session('requester.name')" size="sm" />
-                    @endif
-                    <button @click="mobileMenuOpen = !mobileMenuOpen" class="p-2 text-gray-600 hover:text-gray-900">
-                        <svg x-show="!mobileMenuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
-                        </svg>
-                        <svg x-show="mobileMenuOpen" x-cloak class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            {{-- Mobile Menu --}}
-            <div x-show="mobileMenuOpen" x-cloak x-transition class="md:hidden border-t py-3 space-y-1">
-                <a href="{{ route('landing') }}" class="block px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
-                    Kembali ke Beranda
-                </a>
-                <div class="border-t my-2"></div>
-                @if(session('requester'))
-                    <div class="px-3 py-2 text-sm text-gray-700 font-medium border-b pb-3 mb-2">
-                        {{ session('requester.name') }}
-                        <div class="text-xs text-gray-500 font-normal">{{ session('requester.email') }}</div>
-                    </div>
-                @endif
-                <a href="{{ route('booking.inventory') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('booking.inventory*') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                    📷 Pinjam Alat
-                </a>
-                <a href="{{ route('booking.room') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('booking.room*') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                    🏢 Booking Ruangan
-                </a>
-                <a href="{{ route('my.bookings') }}" class="block px-3 py-2 rounded-lg text-sm {{ request()->routeIs('my.bookings*') ? 'bg-indigo-50 text-indigo-600 font-medium' : 'text-gray-600 hover:bg-gray-50' }}">
-                    Riwayat Booking
-                </a>
-                <a href="{{ route('request.status') }}" class="block px-3 py-2 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
-                    Konten Saya
-                </a>
-                @if(session('requester'))
-                    <form action="{{ route('booking.logout') }}" method="POST" class="pt-2 border-t mt-2">
-                        @csrf
-                        <button type="submit" class="block w-full text-left px-3 py-2 rounded-lg text-sm text-red-600 hover:bg-red-50">
-                            🚪 Logout
-                        </button>
-                    </form>
-                @endif
-            </div>
-        </div>
-    </header>
+    <x-organisms.site-header tone="indigo" />
 
     {{-- Organism: reusable shadcn-style feedback notifications --}}
     <x-organisms.flash-messages />
 
     {{-- Main Content --}}
-    <main class="max-w-5xl mx-auto px-4 py-6 flex-grow w-full">
+    <main class="mx-auto w-full max-w-6xl flex-grow px-4 py-6">
         @yield('content')
     </main>
 
     {{-- Footer --}}
     <footer class="border-t bg-white mt-auto">
-        <div class="max-w-5xl mx-auto px-4 py-6">
+        <div class="mx-auto max-w-6xl px-4 py-6">
             <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div class="flex items-center gap-3">
                     <img src="{{ asset('img/jgu.png') }}" alt="JGU Logo" class="h-8 w-auto">
