@@ -19,6 +19,16 @@ class BorrowingFormData
 {
     public const FORM_CODE = 'FM/JGU/L.89';
 
+    /** Baris fasilitas pada lembar pertama, mengikuti formulir aslinya. */
+    public const ROWS_FIRST_PAGE = 11;
+
+    /**
+     * Lembar lanjutan memakai kop ringkas sehingga muat lebih banyak, tetapi
+     * tetap menyisakan ruang bagi blok tanda tangan yang selalu dicetak di
+     * lembar terakhir.
+     */
+    public const ROWS_NEXT_PAGE = 16;
+
     /**
      * @param  Collection<int, array{name: string, detail: string|null}>  $facilities
      */
@@ -94,6 +104,42 @@ class BorrowingFormData
             staffApprover: $booking->staffApprover?->name,
             headApprover: $booking->headApprover?->name,
         );
+    }
+
+    /**
+     * Bagi daftar fasilitas menjadi lembar-lembar cetak.
+     *
+     * Tidak ada baris yang dibuang: dokumen ini ditandatangani, sehingga alat
+     * yang tidak tercetak berarti alat yang luput saat serah terima.
+     *
+     * @param  Collection<int, array{name: string, detail: string|null}>  $facilities
+     * @return Collection<int, Collection<int, array{number: int, name: string, detail: string|null}>>
+     */
+    public static function paginateFacilities(Collection $facilities): Collection
+    {
+        $numbered = $facilities->values()->map(fn (array $facility, int $index) => [
+            'number' => $index + 1,
+            'name' => $facility['name'],
+            'detail' => $facility['detail'] ?? null,
+        ]);
+
+        $pages = collect([$numbered->take(self::ROWS_FIRST_PAGE)]);
+        $rest = $numbered->slice(self::ROWS_FIRST_PAGE);
+
+        return $rest->isEmpty()
+            ? $pages
+            : $pages->concat($rest->chunk(self::ROWS_NEXT_PAGE)->values());
+    }
+
+    /**
+     * Baris kosong penutup agar kotak isian tiap lembar tetap sama tingginya
+     * dan menyediakan ruang tulis tangan.
+     */
+    public static function blankRowsFor(int $page, int $filledRows): int
+    {
+        $quota = $page === 0 ? self::ROWS_FIRST_PAGE : self::ROWS_NEXT_PAGE;
+
+        return max(0, $quota - $filledRows);
     }
 
     /**

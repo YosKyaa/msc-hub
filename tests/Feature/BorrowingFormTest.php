@@ -292,20 +292,124 @@ class BorrowingFormTest extends TestCase
         $this->assertStringContainsString('/Image', $pdf);
     }
 
-    /**
-     * Formulir dipakai sebagai lembar tanda tangan, jadi harus selalu muat satu
-     * halaman — termasuk saat sebelas baris fasilitas terisi penuh.
-     */
-    public function test_the_form_always_fits_a_single_a4_page(): void
+    private function pageCount(string $pdf): int
     {
-        foreach ([0, 5, 11] as $itemCount) {
+        preg_match_all('/\/Type\s*\/Page[^s]/', $pdf, $pages);
+
+        return count($pages[0]);
+    }
+
+    /**
+     * Peminjaman biasa — ruangan plus sampai sepuluh alat — harus cukup satu
+     * lembar, seperti formulir aslinya.
+     */
+    public function test_an_ordinary_booking_fits_a_single_a4_page(): void
+    {
+        foreach ([0, 5, 10] as $itemCount) {
             $pdf = $this->pdf($this->roomBooking(itemCount: $itemCount));
 
-            preg_match_all('/\/Type\s*\/Page[^s]/', $pdf, $pages);
-            $this->assertCount(1, $pages[0], "Formulir dengan {$itemCount} alat memakai lebih dari satu halaman.");
-
+            $this->assertSame(1, $this->pageCount($pdf), "Formulir dengan {$itemCount} alat memakai lebih dari satu lembar.");
             $this->assertStringContainsString('595.280 841.890', $pdf, 'Kertas bukan A4 potret.');
         }
+    }
+
+    /**
+     * Dokumen ini ditandatangani: alat yang tidak tercetak berarti alat yang
+     * luput saat serah terima. Karena itu daftarnya tidak boleh dipotong.
+     */
+    public function test_a_long_facility_list_is_never_truncated(): void
+    {
+        $booking = $this->roomBooking(itemCount: 30);
+        $html = $this->html($booking);
+
+        foreach ($booking->inventoryItems as $item) {
+            $this->assertStringContainsString($item->code, $html, "Alat {$item->code} hilang dari formulir.");
+        }
+
+        // Ruangan menempati baris pertama, disusul tiga puluh alat.
+        $this->assertSame(31, substr_count($html, 'class="index"'));
+        $this->assertStringContainsString('31.', $html);
+    }
+
+    public function test_the_overflow_pages_stay_identifiable_and_tidy(): void
+    {
+        $booking = $this->roomBooking(itemCount: 30);
+        $html = $this->html($booking);
+
+        // Tiap lembar lanjutan membawa kop ringkas agar tetap dikenali bila
+        // terpisah dari lembar pertama.
+        // 31 baris terbagi menjadi 11 + 16 + 4, jadi ada dua lembar lanjutan.
+        $this->assertSame(2, substr_count($html, '— Lanjutan'));
+        $this->assertSame(2, substr_count($html, '(lanjutan)'));
+        $this->assertStringContainsString($booking->requester_name, $html);
+
+        // Blok tanda tangan hanya dicetak sekali, di lembar terakhir.
+        $this->assertSame(1, substr_count($html, 'Form ini hanya berlaku untuk 1 (Satu) acara'));
+        $this->assertSame(1, substr_count($html, 'Peminjam**'));
+    }
+
+    /**
+     * Kasus terburuk: lembar terakhir terisi penuh. Blok tanda tangan tidak
+     * boleh terdorong sendirian ke lembar berikutnya.
+     */
+    public function test_the_signature_block_is_never_pushed_onto_an_empty_sheet(): void
+    {
+        $expectations = [
+            10 => 1,   // 11 baris, tepat memenuhi lembar pertama
+            11 => 2,   // 12 baris, satu baris meluap
+            26 => 2,   // 27 baris, lembar kedua terisi penuh
+            42 => 3,   // 43 baris, lembar ketiga terisi penuh
+        ];
+
+        foreach ($expectations as $itemCount => $expectedPages) {
+            $pdf = $this->pdf($this->roomBooking(itemCount: $itemCount));
+
+            $this->assertSame(
+                $expectedPages,
+                $this->pageCount($pdf),
+                "Formulir dengan {$itemCount} alat menghasilkan lembar yang tidak diharapkan.",
+            );
+        }
+    }
+
+    /**
+     * Baca teks yang benar-benar digambar ke halaman PDF.
+     */
+    private function drawnText(string $pdf): string
+    {
+        preg_match_all('/stream?
+(.*?)?
+endstream/s', $pdf, $streams);
+
+        $text = '';
+
+        foreach ($streams[1] as $stream) {
+            $plain = @gzuncompress($stream) ?: $stream;
+
+            if (str_contains($plain, 'Tj') || str_contains($plain, 'TJ')) {
+                $text .= $plain;
+            }
+        }
+
+        return $text;
+    }
+
+    public function test_multi_page_forms_are_numbered(): void
+    {
+        $staff = $this->staff();
+
+        $single = $this->actingAs($staff)
+            ->get(route('borrowing-form.room', $this->roomBooking(itemCount: 5)))
+            ->getContent();
+
+        $spilled = $this->actingAs($staff)
+            ->get(route('borrowing-form.room', $this->roomBooking(itemCount: 30)))
+            ->getContent();
+
+        // Penomoran hanya berguna — dan hanya dicetak — ketika lembarnya
+        // lebih dari satu, supaya lembar yang hilang setelah dicetak ketahuan.
+        $this->assertStringNotContainsString('Halaman', $this->drawnText($single));
+        $this->assertStringContainsString('Halaman 1 dari 3', $this->drawnText($spilled));
     }
 
     public function test_the_document_is_typeset_in_times_new_roman(): void

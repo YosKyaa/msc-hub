@@ -2,11 +2,12 @@
     use App\Support\BorrowingFormData;
     use App\Support\PdfLetterhead;
 
-    // Formulir resmi menyediakan sebelas baris fasilitas; barisan sisa tetap
-    // dicetak sebagai garis titik-titik agar dapat ditambah dengan tangan.
-    $rows = 11;
-    $facilities = $form->facilities->take($rows);
-    $blankRows = max(0, $rows - $facilities->count());
+    // Daftar fasilitas TIDAK pernah dipotong: dokumen ini ditandatangani, jadi
+    // alat yang hilang dari lembarnya berarti alat yang tidak terhitung saat
+    // serah terima. Bila melebihi satu lembar, sisanya lanjut ke halaman
+    // berikutnya dengan kop ringkas agar tiap lembar tetap dapat dikenali.
+    $chunks = BorrowingFormData::paginateFacilities($form->facilities);
+    $lastPage = $chunks->count() - 1;
 
     $logo = PdfLetterhead::logoDataUri();
     $footer = PdfLetterhead::footerDataUri();
@@ -32,6 +33,8 @@
             padding: 30pt 40pt 82pt;
         }
 
+        .sheet-break { page-break-before: always; }
+
         .form-code { font-size: 9pt; }
 
         .logo { width: 96pt; margin: 6pt 0 2pt; }
@@ -43,6 +46,17 @@
             text-transform: uppercase;
             margin: 4pt 0 10pt;
         }
+
+        /* Kop ringkas untuk lembar lanjutan: cukup untuk mengenali dokumen
+           bila lembarnya terpisah dari halaman pertama. */
+        .continued { margin-bottom: 10pt; }
+        .continued h2 {
+            font-size: 11.5pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            margin-bottom: 2pt;
+        }
+        .continued p { font-size: 9.5pt; }
 
         /* ------------------------------------------------------ isian atas */
         .fields { width: 100%; border-collapse: collapse; margin-bottom: 12pt; }
@@ -61,14 +75,16 @@
         .facilities .caption { width: 26%; vertical-align: top; padding-top: 3pt; }
         .facilities .list { vertical-align: top; }
 
-        /* Tinggi baris dipatok agar sebelas garis isian selalu muat dalam satu
-           halaman, sekaligus mengisi lembar seperti formulir aslinya. */
+        /* Tinggi baris dipatok agar jumlah baris per lembar dapat dihitung
+           pasti, sehingga isian tidak pernah tumpah ke halaman berikutnya
+           di tengah blok tanda tangan. */
         .facility {
             height: 19pt;
             border-bottom: 1px dotted #000;
             padding: 3pt 5pt 0;
         }
         .facility .name { font-weight: bold; }
+        .facility .index { color: #444; }
 
         /* --------------------------------------------------- tanda tangan */
         .signatures { width: 100%; border-collapse: collapse; }
@@ -95,97 +111,114 @@
 </head>
 <body>
 
-<div class="form-code">{{ BorrowingFormData::FORM_CODE }}</div>
+@foreach($chunks as $page => $facilities)
+    @if($page === 0)
+        <div class="form-code">{{ BorrowingFormData::FORM_CODE }}</div>
 
-@if($logo)
-    <img class="logo" src="{{ $logo }}" alt="Jakarta Global University">
-@endif
+        @if($logo)
+            <img class="logo" src="{{ $logo }}" alt="Jakarta Global University">
+        @endif
 
-<h1>Form Peminjaman Ruangan / Fasilitas Multimedia JGU</h1>
+        <h1>Form Peminjaman Ruangan / Fasilitas Multimedia JGU</h1>
 
-<table class="fields">
-    <tr>
-        <td class="label">Penanggung Jawab (Dosen)*</td>
-        <td class="value">{{ $form->supervisorName }}</td>
-        <td class="gap"></td>
-        <td class="label">Acara / Kegiatan*</td>
-        <td class="value">{{ $form->activity }}</td>
-    </tr>
-    <tr>
-        <td class="label">Nama Fakultas / Organisasi*</td>
-        <td class="value">{{ $form->unit }}</td>
-        <td class="gap"></td>
-        <td class="label">Jumlah Peserta*</td>
-        <td class="value">{{ $form->attendees }}</td>
-    </tr>
-    <tr>
-        <td class="label">Nama Peminjam*</td>
-        <td class="value">{{ $form->requesterName }}</td>
-        <td class="gap"></td>
-        <td class="label">Hari dan Tgl Peminjaman*</td>
-        <td class="value">{{ $form->borrowedOn() }}</td>
-    </tr>
-    <tr>
-        <td class="label">No. HP Peminjam*</td>
-        <td class="value">{{ $form->requesterPhone }}</td>
-        <td class="gap"></td>
-        <td class="label">Waktu*</td>
-        <td class="value">{{ $form->timeRange() }}</td>
-    </tr>
-</table>
+        <table class="fields">
+            <tr>
+                <td class="label">Penanggung Jawab (Dosen)*</td>
+                <td class="value">{{ $form->supervisorName }}</td>
+                <td class="gap"></td>
+                <td class="label">Acara / Kegiatan*</td>
+                <td class="value">{{ $form->activity }}</td>
+            </tr>
+            <tr>
+                <td class="label">Nama Fakultas / Organisasi*</td>
+                <td class="value">{{ $form->unit }}</td>
+                <td class="gap"></td>
+                <td class="label">Jumlah Peserta*</td>
+                <td class="value">{{ $form->attendees }}</td>
+            </tr>
+            <tr>
+                <td class="label">Nama Peminjam*</td>
+                <td class="value">{{ $form->requesterName }}</td>
+                <td class="gap"></td>
+                <td class="label">Hari dan Tgl Peminjaman*</td>
+                <td class="value">{{ $form->borrowedOn() }}</td>
+            </tr>
+            <tr>
+                <td class="label">No. HP Peminjam*</td>
+                <td class="value">{{ $form->requesterPhone }}</td>
+                <td class="gap"></td>
+                <td class="label">Waktu*</td>
+                <td class="value">{{ $form->timeRange() }}</td>
+            </tr>
+        </table>
+    @else
+        <div class="sheet-break"></div>
 
-<table class="facilities">
-    <tr>
-        <td class="caption">Daftar Fasilitas yang Dipinjam&nbsp;:</td>
-        <td class="list">
-            @foreach($facilities as $facility)
-                <div class="facility">
-                    <span class="name">{{ $facility['name'] }}</span>
-                    @if($facility['detail'])
-                        <span>— {{ $facility['detail'] }}</span>
-                    @endif
-                </div>
-            @endforeach
+        <div class="continued">
+            <div class="form-code">{{ BorrowingFormData::FORM_CODE }}</div>
+            <h2>Form Peminjaman Ruangan / Fasilitas Multimedia JGU — Lanjutan</h2>
+            <p>{{ $form->bookingCode }} &middot; {{ $form->requesterName }} &middot; {{ $form->borrowedOn() }}</p>
+        </div>
+    @endif
 
-            @for($i = 0; $i < $blankRows; $i++)
-                <div class="facility">&nbsp;</div>
-            @endfor
-        </td>
-    </tr>
-</table>
+    <table class="facilities">
+        <tr>
+            <td class="caption">
+                Daftar Fasilitas yang Dipinjam{{ $page === 0 ? '' : ' (lanjutan)' }}&nbsp;:
+            </td>
+            <td class="list">
+                @foreach($facilities as $facility)
+                    <div class="facility">
+                        <span class="index">{{ $facility['number'] }}.</span>
+                        <span class="name">{{ $facility['name'] }}</span>
+                        @if($facility['detail'])
+                            <span>— {{ $facility['detail'] }}</span>
+                        @endif
+                    </div>
+                @endforeach
 
-<table class="signatures">
-    <tr>
-        <th colspan="3">Rekomendasi</th>
-        <th>Peminjam**</th>
-    </tr>
-    <tr>
-        <td class="role">Kepala<br>Media &amp; Strategic<br>Communication</td>
-        <td class="role">Staff<br>Media &amp; Strategic<br>Communication</td>
-        <td class="role">Penanggung Jawab<br>Kegiatan<br>(Dosen)</td>
-        <td class="role">&nbsp;</td>
-    </tr>
-    <tr>
-        <td class="space"></td>
-        <td class="space"></td>
-        <td class="space"></td>
-        <td class="space"></td>
-    </tr>
-    <tr>
-        <td class="name">{{ $form->headApprover ?: '(………………………)' }}</td>
-        <td class="name">{{ $form->staffApprover ?: '(………………………)' }}</td>
-        <td class="name">{{ $form->supervisorName ?: '(………………………)' }}</td>
-        <td class="name">{{ $form->requesterName }}</td>
-    </tr>
-</table>
+                @for($i = 0; $i < BorrowingFormData::blankRowsFor($page, $facilities->count()); $i++)
+                    <div class="facility">&nbsp;</div>
+                @endfor
+            </td>
+        </tr>
+    </table>
 
-<p class="notice">Form ini hanya berlaku untuk 1 (Satu) acara dalam 1 (Satu) hari</p>
+    @if($page === $lastPage)
+        <table class="signatures">
+            <tr>
+                <th colspan="3">Rekomendasi</th>
+                <th>Peminjam**</th>
+            </tr>
+            <tr>
+                <td class="role">Kepala<br>Media &amp; Strategic<br>Communication</td>
+                <td class="role">Staff<br>Media &amp; Strategic<br>Communication</td>
+                <td class="role">Penanggung Jawab<br>Kegiatan<br>(Dosen)</td>
+                <td class="role">&nbsp;</td>
+            </tr>
+            <tr>
+                <td class="space"></td>
+                <td class="space"></td>
+                <td class="space"></td>
+                <td class="space"></td>
+            </tr>
+            <tr>
+                <td class="name">{{ $form->headApprover ?: '(………………………)' }}</td>
+                <td class="name">{{ $form->staffApprover ?: '(………………………)' }}</td>
+                <td class="name">{{ $form->supervisorName ?: '(………………………)' }}</td>
+                <td class="name">{{ $form->requesterName }}</td>
+            </tr>
+        </table>
 
-<div class="legend">
-    <p><strong>Keterangan:</strong></p>
-    <p>* wajib diisi oleh Peminjam</p>
-    <p>** isikan jabatan atau posisi peminjam dalam acara di kolom bawah Peminjam</p>
-</div>
+        <p class="notice">Form ini hanya berlaku untuk 1 (Satu) acara dalam 1 (Satu) hari</p>
+
+        <div class="legend">
+            <p><strong>Keterangan:</strong></p>
+            <p>* wajib diisi oleh Peminjam</p>
+            <p>** isikan jabatan atau posisi peminjam dalam acara di kolom bawah Peminjam</p>
+        </div>
+    @endif
+@endforeach
 
 <div class="meta">{{ $form->bookingCode }} · dicetak {{ now()->locale('id')->translatedFormat('d F Y, H:i') }} WIB</div>
 
