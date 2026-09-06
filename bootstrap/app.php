@@ -13,6 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             \App\Http\Middleware\SecurityHeaders::class,
+            \App\Http\Middleware\ExpireStaleLogins::class,
         ]);
 
         // Route non-Filament yang butuh login (mis. /logs) diarahkan ke

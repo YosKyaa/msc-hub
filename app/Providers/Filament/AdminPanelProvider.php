@@ -3,6 +3,7 @@
 namespace App\Providers\Filament;
 
 use App\Filament\Pages\Auth\Login;
+use App\Http\Middleware\ExpirePanelSession;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
@@ -13,12 +14,12 @@ use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
 use Filament\Widgets\AccountWidget;
 use Filament\Widgets\FilamentInfoWidget;
-use Illuminate\Support\HtmlString;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
@@ -32,8 +33,8 @@ class AdminPanelProvider extends PanelProvider
             ->login(Login::class)
             ->registration(false)
             ->brandName('MSC Hub')
-            ->brandLogo(new HtmlString('<div style="display: flex; align-items: center; gap: 8px;"><img src="' . asset('img/jgu.png') . '" alt="JGU" style="height: 2rem;"><span style="font-weight: 600; font-size: 1.1rem;">MSC Hub</span></div>'))
-            ->darkModeBrandLogo(new HtmlString('<div style="display: flex; align-items: center; gap: 8px;"><img src="' . asset('img/jgu.png') . '" alt="JGU" style="height: 2rem;"><span style="font-weight: 600; font-size: 1.1rem; color: white;">MSC Hub</span></div>'))
+            ->brandLogo(new HtmlString('<div style="display: flex; align-items: center; gap: 8px;"><img src="'.asset('img/jgu.png').'" alt="JGU" style="height: 2rem;"><span style="font-weight: 600; font-size: 1.1rem;">MSC Hub</span></div>'))
+            ->darkModeBrandLogo(new HtmlString('<div style="display: flex; align-items: center; gap: 8px;"><img src="'.asset('img/jgu.png').'" alt="JGU" style="height: 2rem;"><span style="font-weight: 600; font-size: 1.1rem; color: white;">MSC Hub</span></div>'))
             ->favicon(asset('img/jgusolo.png'))
             ->colors([
                 'primary' => Color::Amber,
@@ -65,6 +66,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                ExpirePanelSession::class,
             ]);
     }
 }
