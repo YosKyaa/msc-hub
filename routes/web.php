@@ -3,10 +3,11 @@
 use App\Http\Controllers\AnnouncementPublicController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\BorrowingFormController;
+use App\Http\Controllers\CertificatePublicController;
 use App\Http\Controllers\ContentRequestController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PublicBookingController;
-use App\Http\Controllers\CertificatePublicController;
 use Illuminate\Support\Facades\Route;
 
 // Landing Page
@@ -37,7 +38,7 @@ Route::prefix('request')->name('request.')->group(function () {
         ->middleware('throttle:10,1')
         ->name('content.submit');
     Route::get('/success', [ContentRequestController::class, 'showSuccess'])->name('success');
-    
+
     Route::get('/status', [ContentRequestController::class, 'showStatus'])->name('status');
     Route::post('/status', [ContentRequestController::class, 'checkStatus'])
         ->middleware('throttle:30,1')
@@ -84,6 +85,17 @@ Route::post('/attend/{action}/{token}', [AttendanceController::class, 'store'])
 Route::get('/admin/attendance/{event}/qr/{action}', [AttendanceController::class, 'poster'])
     ->middleware(['auth', 'permission:certificates.view'])
     ->name('attendance.poster');
+
+// Formulir resmi peminjaman (FM/JGU/L.89). Bawaannya pratinjau di browser;
+// tambahkan ?unduh=1 untuk mengunduh berkasnya.
+Route::middleware(['auth'])->prefix('admin/form-peminjaman')->name('borrowing-form.')->group(function () {
+    Route::get('/ruangan/{roomBooking}', [BorrowingFormController::class, 'room'])
+        ->middleware('permission:room_bookings.view')
+        ->name('room');
+    Route::get('/inventaris/{inventoryBooking}', [BorrowingFormController::class, 'inventory'])
+        ->middleware('permission:inventory_bookings.view')
+        ->name('inventory');
+});
 
 // Public certificate authenticity and download
 Route::get('/verify/certificate/{token}', [CertificatePublicController::class, 'verify'])->name('certificates.verify');

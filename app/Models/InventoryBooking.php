@@ -16,6 +16,8 @@ class InventoryBooking extends Model
         'booking_code',
         'requester_name',
         'requester_email',
+        'requester_phone',
+        'supervisor_name',
         'requester_google_id',
         'unit',
         'purpose',
@@ -184,7 +186,7 @@ class InventoryBooking extends Model
         }
 
         if ($startAt >= $endAt) {
-            $errors[] = "Jam selesai harus setelah jam mulai";
+            $errors[] = 'Jam selesai harus setelah jam mulai';
         }
 
         return $errors;

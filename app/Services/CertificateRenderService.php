@@ -19,7 +19,7 @@ class CertificateRenderService
             'recipient_role' => $certificate->recipient_role_label ?: ucfirst($certificate->recipient_role),
             'certificate_number' => $certificate->certificate_number,
             'event_name' => $event->name,
-            'event_date' => $event->event_date->translatedFormat('d F Y'),
+            'event_date' => $event->event_date->locale('id')->translatedFormat('d F Y'),
             // Penyelenggara yang dicetak; bila dikosongkan memakai nama penerbit.
             'organizer' => $event->organizer ?: $event->resolvedIssuer()?->name,
             'signatory_name' => $event->signatory_name,

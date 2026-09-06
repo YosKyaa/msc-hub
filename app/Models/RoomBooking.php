@@ -15,6 +15,8 @@ class RoomBooking extends Model
         'room_id',
         'requester_name',
         'requester_email',
+        'requester_phone',
+        'supervisor_name',
         'requester_google_id',
         'unit',
         'purpose',

@@ -74,6 +74,31 @@
                         <option value="Staff" {{ old('unit') == 'Staff' ? 'selected' : '' }}>Staff</option>
                     </select>
                 </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="requester_phone" class="block text-sm font-medium text-gray-700 mb-1">
+                            No. HP Peminjam
+                        </label>
+                        <input type="tel" name="requester_phone" id="requester_phone" maxlength="30"
+                            value="{{ old('requester_phone') }}"
+                            placeholder="08xxxxxxxxxx"
+                            class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500">
+                        <p class="mt-1 text-xs text-gray-500">Dicantumkan pada formulir resmi peminjaman.</p>
+                        @error('requester_phone')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label for="supervisor_name" class="block text-sm font-medium text-gray-700 mb-1">
+                            Penanggung Jawab (Dosen)
+                        </label>
+                        <input type="text" name="supervisor_name" id="supervisor_name" maxlength="255"
+                            value="{{ old('supervisor_name') }}"
+                            placeholder="Nama dosen penanggung jawab"
+                            class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500">
+                        <p class="mt-1 text-xs text-gray-500">Dicantumkan pada formulir resmi peminjaman.</p>
+                        @error('supervisor_name')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
                 <div>
                     <label for="attendees" class="block text-sm font-medium text-gray-700 mb-1">
                         Jumlah Peserta <span class="text-red-500">*</span>

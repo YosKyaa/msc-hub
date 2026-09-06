@@ -17,10 +17,12 @@ class PublicBookingController extends Controller
     // Middleware check - redirect to Google login if not authenticated
     protected function ensureAuthenticated(Request $request)
     {
-        if (!Session::has('requester')) {
+        if (! Session::has('requester')) {
             $redirect = $request->fullUrl();
+
             return redirect()->route('google.redirect', ['redirect' => $redirect]);
         }
+
         return null;
     }
 
@@ -59,6 +61,8 @@ class PublicBookingController extends Controller
 
         $validated = $request->validate([
             'requester_name' => 'required|string|max:255',
+            'requester_phone' => 'nullable|string|max:30',
+            'supervisor_name' => 'nullable|string|max:255',
             'unit' => 'required|string|max:255',
             'purpose' => 'nullable|string|max:1000',
             'start_at' => 'required|date|after:now',
@@ -81,13 +85,13 @@ class PublicBookingController extends Controller
         $endDay = (int) $endAt->format('N');
         if ($startDay > 5 || $endDay > 5) {
             return back()->withInput()->withErrors([
-                'time' => 'Peminjaman hanya dapat dilakukan pada hari Senin - Jumat.'
+                'time' => 'Peminjaman hanya dapat dilakukan pada hari Senin - Jumat.',
             ]);
         }
 
         // Validate operating hours (08:00 - 16:00)
         $hourErrors = InventoryBooking::validateOperatingHours($startAt, $endAt);
-        if (!empty($hourErrors)) {
+        if (! empty($hourErrors)) {
             return back()->withInput()->withErrors(['time' => implode(' ', $hourErrors)]);
         }
 
@@ -104,7 +108,7 @@ class PublicBookingController extends Controller
 
         if ($bookingsThisMonth >= 2) {
             return back()->withInput()->withErrors([
-                'error' => 'Anda sudah melakukan 2x peminjaman pada bulan ini. Maksimal peminjaman per bulan adalah 2x.'
+                'error' => 'Anda sudah melakukan 2x peminjaman pada bulan ini. Maksimal peminjaman per bulan adalah 2x.',
             ]);
         }
 
@@ -121,9 +125,9 @@ class PublicBookingController extends Controller
 
         // Check for overlapping bookings
         $conflicts = InventoryBooking::checkItemOverlaps($activeItemIds, $startAt, $endAt);
-        if (!empty($conflicts)) {
+        if (! empty($conflicts)) {
             return back()->withInput()->withErrors([
-                'items' => 'Item berikut tidak tersedia pada waktu yang dipilih: ' . implode(', ', $conflicts)
+                'items' => 'Item berikut tidak tersedia pada waktu yang dipilih: '.implode(', ', $conflicts),
             ]);
         }
 
@@ -133,6 +137,8 @@ class PublicBookingController extends Controller
                 $booking = InventoryBooking::create([
                     'booking_code' => InventoryBooking::generateBookingCode(),
                     'requester_name' => $validated['requester_name'],
+                    'requester_phone' => $validated['requester_phone'] ?? null,
+                    'supervisor_name' => $validated['supervisor_name'] ?? null,
                     'requester_email' => $requester['email'],
                     'requester_google_id' => $requester['google_id'] ?? null,
                     'unit' => $validated['unit'],
@@ -150,13 +156,14 @@ class PublicBookingController extends Controller
 
             return redirect()->route('booking.success', [
                 'type' => 'inventory',
-                'code' => $booking->booking_code
+                'code' => $booking->booking_code,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Inventory booking error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+            \Log::error('Inventory booking error: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
             ]);
-            return back()->withInput()->withErrors(['error' => 'Terjadi kesalahan: ' . $e->getMessage()]);
+
+            return back()->withInput()->withErrors(['error' => 'Terjadi kesalahan: '.$e->getMessage()]);
         }
     }
 
@@ -173,7 +180,7 @@ class PublicBookingController extends Controller
         $requester = $this->getRequester();
         $room = Room::where('is_active', true)->first();
 
-        if (!$room) {
+        if (! $room) {
             return view('booking.room-unavailable');
         }
 
@@ -204,6 +211,8 @@ class PublicBookingController extends Controller
 
         $validated = $request->validate([
             'requester_name' => 'required|string|max:255',
+            'requester_phone' => 'nullable|string|max:30',
+            'supervisor_name' => 'nullable|string|max:255',
             'unit' => 'required|string|max:255',
             'purpose' => 'nullable|string|max:1000',
             'attendees' => 'required|integer|min:1|max:7',
@@ -220,7 +229,7 @@ class PublicBookingController extends Controller
         ]);
 
         $room = Room::where('is_active', true)->first();
-        if (!$room) {
+        if (! $room) {
             return back()->withInput()->withErrors(['error' => 'Ruangan tidak tersedia.']);
         }
 
@@ -232,13 +241,13 @@ class PublicBookingController extends Controller
         $endDay = (int) $endAt->format('N');
         if ($startDay > 5 || $endDay > 5) {
             return back()->withInput()->withErrors([
-                'time' => 'Booking hanya dapat dilakukan pada hari Senin - Jumat.'
+                'time' => 'Booking hanya dapat dilakukan pada hari Senin - Jumat.',
             ]);
         }
 
         // Validate operating hours
         $hourErrors = $room->validateOperatingHours($startAt, $endAt);
-        if (!empty($hourErrors)) {
+        if (! empty($hourErrors)) {
             return back()->withInput()->withErrors(['time' => implode(' ', $hourErrors)]);
         }
 
@@ -255,14 +264,14 @@ class PublicBookingController extends Controller
 
         if ($bookingsThisMonth >= 2) {
             return back()->withInput()->withErrors([
-                'error' => 'Anda sudah melakukan 2x booking pada bulan ini. Maksimal booking per bulan adalah 2x.'
+                'error' => 'Anda sudah melakukan 2x booking pada bulan ini. Maksimal booking per bulan adalah 2x.',
             ]);
         }
 
         // Check for overlapping bookings
         if ($room->hasOverlappingBookings($startAt, $endAt)) {
             return back()->withInput()->withErrors([
-                'time' => 'Ruangan sudah dibooking pada waktu yang dipilih. Silakan pilih waktu lain.'
+                'time' => 'Ruangan sudah dibooking pada waktu yang dipilih. Silakan pilih waktu lain.',
             ]);
         }
 
@@ -273,6 +282,8 @@ class PublicBookingController extends Controller
                     'booking_code' => RoomBooking::generateBookingCode(),
                     'room_id' => $room->id,
                     'requester_name' => $validated['requester_name'],
+                    'requester_phone' => $validated['requester_phone'] ?? null,
+                    'supervisor_name' => $validated['supervisor_name'] ?? null,
                     'requester_email' => $requester['email'],
                     'requester_google_id' => $requester['google_id'] ?? null,
                     'unit' => $validated['unit'],
@@ -284,12 +295,12 @@ class PublicBookingController extends Controller
                 ]);
 
                 // Attach inventory items if any
-                if (!empty($validated['inventory_items'])) {
+                if (! empty($validated['inventory_items'])) {
                     $itemsData = [];
                     foreach ($validated['inventory_items'] as $itemId) {
                         $itemsData[$itemId] = [
                             'quantity' => 1,
-                            'notes' => null
+                            'notes' => null,
                         ];
                     }
                     $booking->inventoryItems()->sync($itemsData);
@@ -300,14 +311,15 @@ class PublicBookingController extends Controller
 
             return redirect()->route('booking.success', [
                 'type' => 'room',
-                'code' => $booking->booking_code
+                'code' => $booking->booking_code,
             ])->with('success', 'Booking ruangan berhasil diajukan. Tim MSC akan meninjau jadwal Anda.');
         } catch (\Exception $e) {
-            \Log::error('Room booking error: ' . $e->getMessage(), [
-                'trace' => $e->getTraceAsString()
+            \Log::error('Room booking error: '.$e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
             ]);
+
             return back()->withInput()->withErrors([
-                'error' => 'Booking belum dapat diproses. Silakan coba lagi dalam beberapa saat.'
+                'error' => 'Booking belum dapat diproses. Silakan coba lagi dalam beberapa saat.',
             ]);
         }
     }
@@ -334,7 +346,7 @@ class PublicBookingController extends Controller
                 ->first();
         }
 
-        if (!$booking) {
+        if (! $booking) {
             abort(404);
         }
 
@@ -386,7 +398,7 @@ class PublicBookingController extends Controller
             abort(404);
         }
 
-        if (!$booking) {
+        if (! $booking) {
             abort(404);
         }
 

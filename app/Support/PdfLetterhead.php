@@ -16,8 +16,13 @@ class PdfLetterhead
 {
     private const CACHE_KEY = 'pdf.letterhead-logo';
 
+    private const FOOTER_CACHE_KEY = 'pdf.letterhead-footer';
+
     /** Lebar cukup untuk cetak tajam pada 300 dpi. */
     private const TARGET_WIDTH = 220;
+
+    /** Pita kaki surat membentang selebar kertas, jadi perlu lebih lebar. */
+    private const FOOTER_WIDTH = 1000;
 
     public static function logoDataUri(): ?string
     {
@@ -28,7 +33,25 @@ class PdfLetterhead
                 return null;
             }
 
-            $encoded = static::downscale($path) ?? file_get_contents($path);
+            $encoded = static::downscale($path, self::TARGET_WIDTH) ?? file_get_contents($path);
+
+            return 'data:image/png;base64,'.base64_encode($encoded);
+        });
+    }
+
+    /**
+     * Pita kaki surat resmi JGU: alamat kampus dan baris kontak.
+     */
+    public static function footerDataUri(): ?string
+    {
+        return Cache::rememberForever(self::FOOTER_CACHE_KEY, function (): ?string {
+            $path = public_path('img/jgu-letterhead-footer.png');
+
+            if (! is_file($path)) {
+                return null;
+            }
+
+            $encoded = static::downscale($path, self::FOOTER_WIDTH) ?? file_get_contents($path);
 
             return 'data:image/png;base64,'.base64_encode($encoded);
         });
@@ -37,13 +60,14 @@ class PdfLetterhead
     public static function forget(): void
     {
         Cache::forget(self::CACHE_KEY);
+        Cache::forget(self::FOOTER_CACHE_KEY);
     }
 
     /**
      * Kembalikan PNG yang sudah diperkecil, atau null bila GD tidak sanggup
      * memprosesnya sehingga pemanggil memakai berkas aslinya.
      */
-    private static function downscale(string $path): ?string
+    private static function downscale(string $path, int $targetWidth): ?string
     {
         if (! function_exists('imagecreatefrompng')) {
             return null;
@@ -52,11 +76,11 @@ class PdfLetterhead
         try {
             $source = @imagecreatefrompng($path);
 
-            if ($source === false || imagesx($source) <= self::TARGET_WIDTH) {
+            if ($source === false || imagesx($source) <= $targetWidth) {
                 return null;
             }
 
-            $resized = imagescale($source, self::TARGET_WIDTH);
+            $resized = imagescale($source, $targetWidth);
             imagedestroy($source);
 
             if ($resized === false) {
