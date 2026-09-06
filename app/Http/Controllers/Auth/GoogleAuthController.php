@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\RequesterSession;
 use App\Support\SafeRedirect;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
@@ -54,24 +55,29 @@ class GoogleAuthController extends Controller
             return redirect($intended)->with('error', 'Hanya email @jgu.ac.id atau @student.jgu.ac.id yang diperbolehkan.');
         }
 
-        Session::put('requester', [
+        RequesterSession::start([
             'google_id' => $googleUser->getId(),
             'name' => $googleUser->getName(),
             'email' => strtolower($email),
             'avatar' => $googleUser->getAvatar(),
             'type' => str_contains($domain, 'student') ? 'student' : 'lecturer',
-            'authenticated_at' => now()->toIso8601String(),
         ]);
 
         Session::forget('google_auth_redirect');
 
-        return redirect($intended)
-            ->with('success', 'Login berhasil! Selamat datang, '.$googleUser->getName());
+        // Sesi yang berakhir melempar peminjam ke Google tanpa sempat
+        // menampilkan alasannya; pesan itu disampaikan sekarang.
+        $notice = Session::pull(RequesterSession::NOTICE_KEY);
+
+        return redirect($intended)->with('success', $notice
+            ? $notice.' Anda masuk kembali sebagai '.$googleUser->getName().'.'
+            : 'Login berhasil! Selamat datang, '.$googleUser->getName());
     }
 
     public function logout(Request $request)
     {
-        Session::forget('requester');
+        RequesterSession::forget();
+        Session::forget(RequesterSession::NOTICE_KEY);
 
         return redirect($this->intendedUrl($request->input('redirect')))
             ->with('success', 'Anda telah logout.');

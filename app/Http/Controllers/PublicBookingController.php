@@ -8,6 +8,7 @@ use App\Models\InventoryBooking;
 use App\Models\InventoryItem;
 use App\Models\Room;
 use App\Models\RoomBooking;
+use App\Support\RequesterSession;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Session;
@@ -411,7 +412,8 @@ class PublicBookingController extends Controller
 
     public function logout(Request $request)
     {
-        Session::forget('requester');
+        RequesterSession::forget();
+        Session::forget(RequesterSession::NOTICE_KEY);
 
         return redirect()->route('booking.inventory')
             ->with('success', 'Anda telah logout.');
