@@ -9,6 +9,7 @@ use App\Filament\Resources\CertificateEventResource\Pages;
 use App\Filament\Resources\CertificateEventResource\RelationManagers\CertificatesRelationManager;
 use App\Filament\Resources\CertificateEventResource\RelationManagers\ParticipationsRelationManager;
 use App\Models\CertificateEvent;
+use App\Services\Certificates\CertificateNumberFormat;
 use BackedEnum;
 use Filament\Actions;
 use Filament\Forms\Components\DatePicker;
@@ -23,11 +24,13 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Support\HtmlString;
 use Illuminate\Support\Str;
 use UnitEnum;
 
@@ -69,6 +72,35 @@ class CertificateEventResource extends Resource
                                 ->preload(),
                             TextInput::make('organizer')->label('Penyelenggara'),
                         ])->columns(2),
+
+                        Section::make('Penomoran Sertifikat')
+                            ->description('Nomor dibuat otomatis dari pola yang berlaku. Nomor per peserta tetap dapat diisi manual lewat tab peserta atau kolom nomor_sertifikat pada file import.')
+                            ->schema([
+                                TextInput::make('certificate_code')
+                                    ->label('Kode kegiatan')
+                                    ->maxLength(40)
+                                    ->live(onBlur: true)
+                                    ->placeholder('Contoh: ESSENTIAL')
+                                    ->helperText('Mengisi token {kode_kegiatan} pada pola nomor.'),
+
+                                TextInput::make('certificate_number_format')
+                                    ->label('Pola khusus kegiatan ini')
+                                    ->maxLength(190)
+                                    ->live(onBlur: true)
+                                    ->placeholder(CertificateNumberFormat::default()->pattern)
+                                    ->helperText('Kosongkan untuk mengikuti pola default kampus.')
+                                    ->rules([
+                                        fn (): \Closure => function (string $attribute, $value, \Closure $fail) {
+                                            if (filled($value) && ! str_contains((string) $value, '{nomor')) {
+                                                $fail('Pola wajib memuat token {nomor} agar setiap sertifikat memperoleh nomor urut berbeda.');
+                                            }
+                                        },
+                                    ]),
+
+                                Text::make(fn (Get $get, ?CertificateEvent $record) => static::numberPreview($get, $record))
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(2),
 
                         Section::make('Penandatangan & Publikasi')->schema([
                             TextInput::make('signatory_name')->label('Nama penandatangan'),
@@ -123,6 +155,29 @@ class CertificateEventResource extends Resource
     /**
      * Satu kartu pengaturan per aksi absensi: window waktu, tautan, dan QR.
      */
+    /**
+     * Contoh nomor menurut pola yang sedang diisi, supaya admin tidak perlu
+     * menerbitkan sertifikat hanya untuk memeriksa hasilnya.
+     */
+    protected static function numberPreview(Get $get, ?CertificateEvent $record): HtmlString
+    {
+        $default = CertificateNumberFormat::default();
+        $pattern = (string) ($get('certificate_number_format') ?: $default->pattern);
+
+        $preview = (new CertificateNumberFormat($pattern, $default->reset, $default->unitCode))
+            ->preview(new CertificateEvent([
+                'name' => $get('name') ?: ($record?->name ?? 'Contoh Kegiatan'),
+                'certificate_code' => $get('certificate_code'),
+            ]));
+
+        return new HtmlString(
+            '<div class="rounded-lg bg-gray-50 px-4 py-3 dark:bg-white/5">'
+            .'<p class="text-xs uppercase tracking-wide text-gray-500">Contoh nomor</p>'
+            .'<p class="mt-1 font-mono text-base font-semibold text-gray-950 dark:text-white">'
+            .e($preview).'</p></div>'
+        );
+    }
+
     protected static function attendanceCard(AttendanceAction $action): Section
     {
         $label = $action->getLabel();
