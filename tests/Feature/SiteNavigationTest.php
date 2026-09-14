@@ -159,6 +159,27 @@ class SiteNavigationTest extends TestCase
     }
 
     /**
+     * Menu akun duduk di kaki sidebar, jadi harus membuka ke atas: membuka
+     * ke bawah dari sana membuat menunya jatuh di luar layar dan tombol
+     * keluarnya tidak pernah terlihat sama sekali.
+     */
+    public function test_the_account_menu_opens_upward_from_the_sidebar_foot(): void
+    {
+        $response = $this->asRequester()->get(route('requester.dashboard'))->assertOk();
+
+        $response->assertSee('bottom-full mb-2', false);
+        $response->assertDontSee('top-full mt-2', false);
+    }
+
+    public function test_signing_out_is_reachable_from_the_sidebar(): void
+    {
+        $response = $this->asRequester()->get(route('requester.dashboard'))->assertOk();
+
+        $response->assertSee('Keluar dari akun');
+        $response->assertSee(route('auth.google.logout'), false);
+    }
+
+    /**
      * Di layar sempit menunya menjadi laci; tombol pembukanya diberi label
      * "Menu", bukan sekadar ikon tiga garis.
      */

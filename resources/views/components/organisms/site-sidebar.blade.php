@@ -97,7 +97,7 @@
 
     <div class="border-t border-gray-100 p-3">
         @if ($requester)
-            <x-molecules.account-menu :requester="$requester" :tone="$tone" />
+            <x-molecules.account-menu :requester="$requester" :tone="$tone" placement="top" />
         @else
             <p class="px-2 pb-3 text-xs leading-relaxed text-gray-500">
                 Masuk dengan akun kampus untuk mengajukan dan memantau permintaan Anda.
