@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\Certificate;
 use App\Notifications\CertificateIssued;
+use Illuminate\Bus\Batchable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Log;
@@ -17,6 +18,7 @@ use Throwable;
  */
 class SendCertificateEmailJob implements ShouldQueue
 {
+    use Batchable;
     use Queueable;
 
     public int $tries = 3;
@@ -28,6 +30,10 @@ class SendCertificateEmailJob implements ShouldQueue
 
     public function handle(): void
     {
+        if ($this->batch()?->cancelled()) {
+            return;
+        }
+
         $certificate = $this->certificate->fresh(['event']);
 
         // Sudah terkirim, tidak punya alamat, dicabut, atau kegiatan belum

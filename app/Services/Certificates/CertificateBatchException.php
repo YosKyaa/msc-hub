@@ -18,4 +18,14 @@ class CertificateBatchException extends RuntimeException
     {
         return new self('Tidak ada peserta eligible yang belum memiliki sertifikat.');
     }
+
+    public static function eventNotPublished(): self
+    {
+        return new self('Kegiatan belum dipublikasikan. Tautan verifikasi di dalam email belum akan berfungsi.');
+    }
+
+    public static function nothingToEmail(): self
+    {
+        return new self('Tidak ada sertifikat yang menunggu dikirim. Pastikan penerimanya punya alamat email.');
+    }
 }

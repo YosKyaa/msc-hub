@@ -5,6 +5,8 @@ namespace App\Filament\Resources\CertificateEventResource\RelationManagers;
 use App\Enums\ParticipantRole;
 use App\Jobs\SendCertificateEmailJob;
 use App\Models\Certificate;
+use App\Services\Certificates\CertificateBatchException;
+use App\Services\Certificates\CertificateBatchMailer;
 use App\Support\CertificatePermission;
 use Filament\Actions;
 use Filament\Forms\Components\KeyValue;
@@ -19,6 +21,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class CertificatesRelationManager extends RelationManager
@@ -55,7 +58,24 @@ class CertificatesRelationManager extends RelationManager
                 TextColumn::make('recipient_role')->label('Peran')->badge()
                     ->formatStateUsing(fn (Certificate $record) => $record->recipient_role_label ?: ucfirst($record->recipient_role)),
                 IconColumn::make('valid')->label('Valid')->state(fn (Certificate $record) => $record->isValid())->boolean()->alignCenter(),
-                TextColumn::make('emailed_at')->label('Email')->dateTime('d M H:i')->placeholder('Belum'),
+                // Dua tahap itu harus terbaca sekilas: apa yang sudah terbit
+                // belum tentu sudah dikirim.
+                TextColumn::make('email_status')
+                    ->label('Email')
+                    ->badge()
+                    ->state(fn (Certificate $record) => match (true) {
+                        $record->emailed_at !== null => 'Terkirim',
+                        $record->email_failed_at !== null => 'Gagal',
+                        blank($record->recipient_email) => 'Tanpa email',
+                        default => 'Belum dikirim',
+                    })
+                    ->color(fn (string $state) => match ($state) {
+                        'Terkirim' => 'success',
+                        'Gagal' => 'danger',
+                        'Tanpa email' => 'gray',
+                        default => 'warning',
+                    })
+                    ->description(fn (Certificate $record) => $record->emailed_at?->format('d M H:i')),
                 TextColumn::make('email_error')->label('Kendala email')->wrap()->placeholder('—')
                     ->toggleable(isToggledHiddenByDefault: true),
                 TextColumn::make('issued_at')->label('Terbit')->dateTime('d M H:i')->toggleable(),
@@ -74,6 +94,18 @@ class CertificatesRelationManager extends RelationManager
             ->headerActions([
                 Actions\CreateAction::make()->label('Tambah Penerima')
                     ->visible(fn () => CertificatePermission::allows('create')),
+
+                // Tahap kedua: sertifikat sudah terbit, kini dikirim.
+                Actions\Action::make('sendPendingEmails')
+                    ->label('Kirim Email ke Semua')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Kirim Email Sertifikat')
+                    ->modalDescription(fn () => $this->pendingEmailSummary())
+                    ->modalSubmitActionLabel('Ya, Kirim')
+                    ->visible(fn () => CertificatePermission::allowsIssuing())
+                    ->action(fn () => $this->dispatchEmails()),
             ])
             // Tombol ikon inline, alasan yang sama seperti pada tabel peserta.
             ->actions([
@@ -84,12 +116,16 @@ class CertificatesRelationManager extends RelationManager
                     ->icon('heroicon-o-arrow-down-tray')
                     ->url(fn (Certificate $record) => $record->downloadUrl())->openUrlInNewTab()
                     ->visible(fn (Certificate $record) => $record->isValid()),
-                Actions\Action::make('resendEmail')->iconButton()->tooltip('Kirim ulang email')
-                    ->icon('heroicon-o-envelope')
+                Actions\Action::make('resendEmail')->iconButton()
+                    ->tooltip(fn (Certificate $record) => $record->emailed_at === null ? 'Kirim email' : 'Kirim ulang email')
+                    ->icon(fn (Certificate $record) => $record->emailed_at === null ? 'heroicon-o-paper-airplane' : 'heroicon-o-envelope')
                     ->color('info')
                     ->requiresConfirmation()
-                    ->modalHeading('Kirim Ulang Email Sertifikat')
-                    ->modalDescription('Penanda pengiriman direset lalu email diantrekan ulang.')
+                    ->modalHeading(fn (Certificate $record) => $record->emailed_at === null ? 'Kirim Email Sertifikat' : 'Kirim Ulang Email Sertifikat')
+                    ->modalDescription(fn (Certificate $record) => $record->emailed_at === null
+                        ? 'Sertifikat ini sudah terbit. Emailnya dikirim sekarang.'
+                        : 'Penanda pengiriman direset lalu email diantrekan ulang.')
+                    ->modalSubmitActionLabel('Ya, Kirim')
                     ->visible(fn (Certificate $record) => CertificatePermission::allowsIssuing() && filled($record->recipient_email))
                     ->action(fn (Certificate $record) => $this->resendEmail($record)),
                 Actions\Action::make('revoke')->iconButton()->tooltip('Cabut sertifikat')
@@ -109,7 +145,55 @@ class CertificatesRelationManager extends RelationManager
                 Actions\EditAction::make()->iconButton()->tooltip('Ubah penerima'),
                 Actions\DeleteAction::make()->iconButton()->tooltip('Hapus sertifikat'),
             ])
-            ->bulkActions([Actions\DeleteBulkAction::make()]);
+            ->bulkActions([
+                Actions\BulkAction::make('sendEmails')
+                    ->label('Kirim Email')
+                    ->icon('heroicon-o-paper-airplane')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Kirim Email Sertifikat')
+                    ->modalDescription('Hanya penerima yang belum pernah dikirimi yang akan diproses.')
+                    ->modalSubmitActionLabel('Ya, Kirim')
+                    ->visible(fn () => CertificatePermission::allowsIssuing())
+                    ->action(fn (Collection $records) => $this->dispatchEmails($records)),
+                Actions\DeleteBulkAction::make(),
+            ]);
+    }
+
+    /**
+     * Antrekan pengiriman email. Penolakannya dijelaskan langsung agar admin
+     * tahu apa yang harus dibereskan lebih dulu.
+     *
+     * @param  Collection<int, Certificate>|null  $records
+     */
+    private function dispatchEmails(?Collection $records = null): void
+    {
+        try {
+            $batch = app(CertificateBatchMailer::class)->dispatchFor(
+                $this->getOwnerRecord(),
+                $records,
+                auth()->user(),
+            );
+        } catch (CertificateBatchException $exception) {
+            Notification::make()->title('Pengiriman dibatalkan')->body($exception->getMessage())->warning()->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title('Email diantrekan')
+            ->body("{$batch->totalJobs} email sertifikat sedang dikirim di latar belakang.")
+            ->success()
+            ->send();
+    }
+
+    private function pendingEmailSummary(): string
+    {
+        $menunggu = app(CertificateBatchMailer::class)->pendingCountFor($this->getOwnerRecord());
+
+        return $menunggu === 0
+            ? 'Semua sertifikat yang punya alamat email sudah pernah dikirim.'
+            : "{$menunggu} sertifikat belum pernah dikirimi email. Penerima yang sudah menerima tidak dikirimi ulang.";
     }
 
     /**
