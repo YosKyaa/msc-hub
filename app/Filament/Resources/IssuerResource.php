@@ -6,6 +6,8 @@ use App\Enums\CertificateNumberReset;
 use App\Filament\Concerns\AuthorizesCertificateModule;
 use App\Filament\Resources\IssuerResource\Pages;
 use App\Models\Issuer;
+use App\Services\Certificates\CertificateNumberCounter;
+use App\Services\Certificates\CertificateNumberException;
 use App\Services\Certificates\CertificateNumberFormat;
 use BackedEnum;
 use Filament\Actions;
@@ -13,6 +15,7 @@ use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -82,7 +85,7 @@ class IssuerResource extends Resource
                 ->columns(2),
 
             Section::make('Penomoran')
-                ->description('Setiap penerbit memiliki urutan nomor sendiri, sehingga sertifikat mitra tidak menggerus urutan nomor JGU.')
+                ->description('Tiap penerbit memegang urutan nomornya sendiri, jadi nomor Rektorat, SCD, jurusan, dan MSC tidak pernah saling menggerus.')
                 ->schema([
                     TextInput::make('number_pattern')
                         ->label('Pola nomor penerbit ini')
@@ -103,6 +106,14 @@ class IssuerResource extends Resource
                         ->options(CertificateNumberReset::options())
                         ->placeholder('Ikuti pengaturan default sistem')
                         ->helperText(fn ($state) => CertificateNumberReset::tryFrom((string) $state)?->getDescription()),
+
+                    TextInput::make('number_start')
+                        ->label('Mulai dari nomor')
+                        ->numeric()
+                        ->minValue(1)
+                        ->default(1)
+                        ->required()
+                        ->helperText('Nomor pertama setiap kali urutan dimulai ulang. Isi bila unit ini sudah memegang register sendiri, misalnya mulai dari 120.'),
 
                     Toggle::make('is_active')
                         ->label('Aktif')
@@ -125,11 +136,72 @@ class IssuerResource extends Resource
                 TextColumn::make('code')->label('Kode')->badge()->searchable(),
                 TextColumn::make('events_count')->label('Kegiatan')->counts('events'),
                 TextColumn::make('number_pattern')->label('Pola nomor')->placeholder('Default sistem')->toggleable(),
+
+                // Pertanyaan pertama tiap unit penerbit adalah "kita sudah
+                // sampai nomor berapa?". Angkanya dulu hanya hidup di dalam
+                // tabel dan tidak pernah terlihat.
+                TextColumn::make('nomor_berikutnya')
+                    ->label('Nomor berikutnya')
+                    ->badge()
+                    ->color('info')
+                    ->state(function (Issuer $record): string {
+                        $counter = app(CertificateNumberCounter::class);
+
+                        if ($counter->currentScope($record) === null) {
+                            return 'Per kegiatan';
+                        }
+
+                        return (string) $counter->nextNumber($record);
+                    })
+                    ->description(function (Issuer $record): ?string {
+                        $last = app(CertificateNumberCounter::class)->lastNumber($record);
+
+                        return $last === null ? 'Belum ada yang terbit' : 'Terakhir terpakai: '.$last;
+                    }),
                 IconColumn::make('is_house')->label('Penerbit rumah')->boolean()->alignCenter(),
                 IconColumn::make('is_active')->label('Aktif')->boolean()->alignCenter(),
             ])
             ->defaultSort('is_house', 'desc')
             ->actions([
+                // Register kertas sering sudah berjalan lebih dulu; ini cara
+                // menyelaraskan sistem dengan nomor yang sudah terpakai di sana.
+                Actions\Action::make('setNextNumber')
+                    ->iconButton()
+                    ->tooltip('Setel nomor berikutnya')
+                    ->icon('heroicon-o-hashtag')
+                    ->color('info')
+                    ->modalHeading('Setel Nomor Berikutnya')
+                    ->modalDescription('Pakai ini bila unit penerbit sudah memegang register sendiri. Sertifikat berikutnya akan memakai nomor yang Anda sebut.')
+                    ->modalSubmitActionLabel('Simpan')
+                    ->fillForm(fn (Issuer $record) => [
+                        'next' => app(CertificateNumberCounter::class)->currentScope($record) === null
+                            ? $record->startingNumber()
+                            : app(CertificateNumberCounter::class)->nextNumber($record),
+                    ])
+                    ->schema([
+                        TextInput::make('next')
+                            ->label('Nomor berikutnya')
+                            ->numeric()
+                            ->minValue(1)
+                            ->required()
+                            ->helperText('Sertifikat yang diterbitkan setelah ini akan memakai nomor tersebut.'),
+                    ])
+                    ->visible(fn (Issuer $record) => app(CertificateNumberCounter::class)->currentScope($record) !== null)
+                    ->action(function (Issuer $record, array $data): void {
+                        try {
+                            app(CertificateNumberCounter::class)->setNextNumber($record, (int) $data['next']);
+                        } catch (CertificateNumberException $exception) {
+                            Notification::make()->title('Tidak dapat disetel')->body($exception->getMessage())->warning()->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title('Nomor berikutnya disetel ke '.$data['next'])
+                            ->success()
+                            ->send();
+                    }),
+
                 Actions\EditAction::make()->iconButton()->tooltip('Ubah penerbit'),
                 Actions\DeleteAction::make()
                     ->iconButton()

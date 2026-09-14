@@ -38,6 +38,8 @@ class CertificateNumberFormat
         public readonly string $pattern,
         public readonly CertificateNumberReset $reset,
         public readonly string $unitCode,
+        /** Nomor urut pertama setiap kali urutan dimulai ulang. */
+        public readonly int $numberStart = 1,
     ) {}
 
     /**
@@ -67,6 +69,7 @@ class CertificateNumberFormat
                 ?: ($issuer?->number_pattern ?: $default->pattern),
             reset: $issuer?->number_reset ?? $default->reset,
             unitCode: $issuer?->code ?: $default->unitCode,
+            numberStart: $issuer?->startingNumber() ?? $default->numberStart,
         );
     }
 
