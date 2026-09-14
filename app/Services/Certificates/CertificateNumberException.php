@@ -13,4 +13,9 @@ class CertificateNumberException extends RuntimeException
             .'Pastikan pola memuat token {nomor} agar setiap sertifikat mendapat nomor urut berbeda.'
         );
     }
+
+    public static function perEventCounter(): self
+    {
+        return new self('Penerbit ini mengulang nomor pada tiap kegiatan, sehingga penghitungnya tidak tunggal dan tidak dapat disetel dari sini.');
+    }
 }

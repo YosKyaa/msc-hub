@@ -23,13 +23,14 @@ class Issuer extends Model
 
     protected $fillable = [
         'name', 'code', 'logo_path', 'address_line', 'verification_note',
-        'number_pattern', 'number_reset', 'is_house', 'is_active',
+        'number_pattern', 'number_reset', 'number_start', 'is_house', 'is_active',
     ];
 
     protected $casts = [
         'is_house' => 'boolean',
         'is_active' => 'boolean',
         'number_reset' => CertificateNumberReset::class,
+        'number_start' => 'integer',
     ];
 
     public function events(): HasMany
@@ -48,6 +49,18 @@ class Issuer extends Model
     public static function house(): ?self
     {
         return static::query()->where('is_house', true)->orderBy('id')->first();
+    }
+
+    /**
+     * Nomor urut pertama setiap kali urutan dimulai ulang.
+     *
+     * Unit penerbit sering sudah memegang register sendiri yang berjalan di
+     * luar sistem ini, sehingga memaksa urutannya mulai dari satu akan
+     * bertabrakan dengan nomor yang sudah terpakai di sana.
+     */
+    public function startingNumber(): int
+    {
+        return max(1, (int) ($this->number_start ?: 1));
     }
 
     public function logoUrl(): string

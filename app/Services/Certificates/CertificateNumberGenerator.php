@@ -25,7 +25,7 @@ class CertificateNumberGenerator
         $scope = $format->sequenceScope($event, $moment);
 
         for ($attempt = 0; $attempt < self::MAX_ATTEMPTS; $attempt++) {
-            $number = $format->render($event, $this->allocate($scope), $moment);
+            $number = $format->render($event, $this->allocate($scope, $format->numberStart), $moment);
 
             // Pola yang tidak memuat token {nomor} akan selalu menghasilkan
             // teks sama; berhenti agar tidak berputar tanpa guna.
@@ -43,10 +43,14 @@ class CertificateNumberGenerator
 
     /**
      * Ambil nomor urut berikutnya untuk sebuah cakupan.
+     *
+     * Urutan yang belum pernah dipakai dimulai dari nomor awal penerbitnya,
+     * bukan selalu dari satu: unit penerbit sering sudah memegang register
+     * sendiri yang berjalan di luar sistem ini.
      */
-    private function allocate(string $scope): int
+    private function allocate(string $scope, int $start = 1): int
     {
-        return DB::transaction(function () use ($scope) {
+        return DB::transaction(function () use ($scope, $start) {
             $current = DB::table('certificate_number_sequences')
                 ->where('scope', $scope)
                 ->lockForUpdate()
@@ -55,12 +59,12 @@ class CertificateNumberGenerator
             if ($current === null) {
                 DB::table('certificate_number_sequences')->insert([
                     'scope' => $scope,
-                    'last_number' => 1,
+                    'last_number' => $start,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
 
-                return 1;
+                return $start;
             }
 
             $next = $current->last_number + 1;
