@@ -56,6 +56,25 @@ class RequesterSession
         Session::put(self::KEY, $requester);
     }
 
+    /**
+     * Sebutan akun, disimpulkan dari domain emailnya.
+     *
+     * Login Google hanya bisa membedakan @student.jgu.ac.id dari @jgu.ac.id.
+     * Dosen, tenaga kependidikan, dan staf sama-sama memakai domain yang
+     * kedua, jadi sebutannya menyebut ketiganya ketimbang menebak salah satu
+     * dan keliru menyapa dua pertiga penggunanya.
+     *
+     * @param  array<string, mixed>|null  $requester
+     */
+    public static function accountLabel(?array $requester = null): string
+    {
+        $requester ??= self::get();
+
+        return ($requester['type'] ?? 'student') === 'student'
+            ? 'Mahasiswa'
+            : 'Dosen / Tendik / Staf';
+    }
+
     public static function forget(): void
     {
         Session::forget(self::KEY);

@@ -16,7 +16,7 @@
             <p class="mt-0.5 break-words text-xs text-gray-400">{{ $requester['email'] }}</p>
         </div>
         <span class="self-start rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
-            {{ ($requester['type'] ?? 'student') === 'student' ? 'Mahasiswa' : 'Dosen / Tendik' }}
+            {{ \App\Support\RequesterSession::accountLabel($requester) }}
         </span>
     </div>
 
