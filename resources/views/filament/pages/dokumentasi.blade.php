@@ -6,14 +6,92 @@
 @endphp
 
 <x-filament-panels::page>
-    <div class="space-y-6">
+    {{-- Gaya ditulis di sini, bukan lewat utility Tailwind: panel ini tidak
+         memakai viteTheme(), sehingga hanya kelas yang sudah dipakai Filament
+         sendiri yang ikut terkompilasi. Kelas karangan sendiri — grid kartu,
+         bayangan, sudut membulat — tidak akan pernah berlaku. --}}
+    <style>
+        .panduan-grid {
+            display: grid;
+            gap: 1rem;
+            /* Menyesuaikan lebar layar tanpa media query. */
+            grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+        }
+
+        .panduan-kartu {
+            display: flex;
+            flex-direction: column;
+            padding: 1.25rem;
+            border-radius: 0.75rem;
+            border: 1px solid rgb(228 228 231);
+            background-color: #fff;
+            box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+            transition: border-color .15s ease, box-shadow .15s ease, transform .15s ease;
+        }
+
+        .panduan-kartu:hover {
+            border-color: rgb(161 161 170);
+            box-shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+            transform: translateY(-2px);
+        }
+
+        .panduan-ikon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2.75rem;
+            height: 2.75rem;
+            border-radius: 0.625rem;
+        }
+
+        .panduan-ikon svg { width: 1.5rem; height: 1.5rem; }
+
+        .panduan-judul {
+            margin-top: 1rem;
+            font-weight: 600;
+            color: rgb(24 24 27);
+        }
+
+        .panduan-ringkas {
+            margin-top: 0.25rem;
+            font-size: 0.875rem;
+            line-height: 1.5;
+            color: rgb(113 113 122);
+        }
+
+        .panduan-lanjut {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.25rem;
+            margin-top: auto;
+            padding-top: 1rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: rgb(217 119 6);
+        }
+
+        .panduan-lanjut svg { width: 1rem; height: 1rem; }
+
+        .dark .panduan-kartu {
+            border-color: rgb(63 63 70);
+            background-color: rgb(24 24 27);
+            box-shadow: none;
+        }
+
+        .dark .panduan-kartu:hover { border-color: rgb(113 113 122); }
+        .dark .panduan-judul { color: #fff; }
+        .dark .panduan-ringkas { color: rgb(161 161 170); }
+        .dark .panduan-lanjut { color: rgb(251 191 36); }
+    </style>
+
+    <div class="fi-section-content-ctn" style="display:flex;flex-direction:column;gap:1.5rem;">
         <x-filament::section>
             <x-slot name="heading">Cara kerja MSC Hub</x-slot>
             <x-slot name="description">
                 Semuanya berawal dari pengajuan warga kampus lewat halaman publik, lalu diproses di panel ini.
             </x-slot>
 
-            <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+            <p style="font-size:0.875rem;line-height:1.6;color:rgb(82 82 91);">
                 Ada empat hal yang dikerjakan di sini: <strong>permintaan konten</strong>,
                 <strong>peminjaman ruangan dan alat</strong>, <strong>penerbitan sertifikat</strong>, dan
                 <strong>arsip media</strong>. Tiga yang pertama selalu menempuh pola yang sama —
@@ -21,7 +99,7 @@
                 lewat email pada tiap perubahan status.
             </p>
 
-            <p class="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+            <p style="margin-top:0.75rem;font-size:0.875rem;line-height:1.6;color:rgb(82 82 91);">
                 Halaman depan panel menampilkan <strong>Perlu Tindakan Anda</strong>: apa saja yang
                 sedang menunggu, lengkap dengan jalan pintas ke sana. Mulailah dari situ.
             </p>
@@ -29,22 +107,21 @@
 
         {{-- Kartu dulu, rinciannya di halaman masing-masing. Satu halaman
              panjang berisi semua modul memaksa yang dicari digulir dulu. --}}
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div class="panduan-grid">
             @foreach ($topik as $slug => $item)
                 @php $warna = PanduanPanel::warna($item['warna']); @endphp
 
-                <a href="{{ DokumentasiTopik::getUrl(['topik' => $slug]) }}"
-                   class="group flex flex-col rounded-xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:border-gray-300 hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary-500 dark:border-white/10 dark:bg-gray-900 dark:hover:border-white/20">
-                    <span class="flex size-11 items-center justify-center rounded-lg {{ $warna['kotak'] }}">
-                        <x-filament::icon :icon="$item['ikon']" class="size-6" />
+                <a href="{{ DokumentasiTopik::getUrl(['topik' => $slug]) }}" class="panduan-kartu">
+                    <span class="panduan-ikon" style="background-color:{{ $warna['latar'] }};color:{{ $warna['teks'] }};">
+                        <x-filament::icon :icon="$item['ikon']" />
                     </span>
 
-                    <span class="mt-4 block font-semibold text-gray-900 dark:text-white">{{ $item['judul'] }}</span>
-                    <span class="mt-1 block text-sm leading-relaxed text-gray-500 dark:text-gray-400">{{ $item['ringkas'] }}</span>
+                    <span class="panduan-judul">{{ $item['judul'] }}</span>
+                    <span class="panduan-ringkas">{{ $item['ringkas'] }}</span>
 
-                    <span class="mt-4 inline-flex items-center gap-1 text-sm font-medium text-primary-600 dark:text-primary-400">
+                    <span class="panduan-lanjut">
                         Baca selengkapnya
-                        <x-filament::icon icon="heroicon-m-arrow-right" class="size-4 transition group-hover:translate-x-0.5" />
+                        <x-filament::icon icon="heroicon-m-arrow-right" />
                     </span>
                 </a>
             @endforeach
@@ -53,10 +130,10 @@
         <x-filament::section>
             <x-slot name="heading">Butuh bantuan?</x-slot>
 
-            <p class="text-sm text-gray-600 dark:text-gray-400">
+            <p style="font-size:0.875rem;color:rgb(82 82 91);">
                 Hubungi tim Media &amp; Strategic Communications, Jakarta Global University.
-                Sebutkan kode pengajuannya — misalnya <code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-800">CR-2026-0001</code>
-                atau <code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-800">ROOM-2026-0001</code> — supaya lebih cepat ditelusuri.
+                Sebutkan kode pengajuannya — misalnya <code>CR-2026-0001</code>
+                atau <code>ROOM-2026-0001</code> — supaya lebih cepat ditelusuri.
             </p>
         </x-filament::section>
     </div>

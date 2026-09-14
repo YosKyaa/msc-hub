@@ -164,20 +164,24 @@ class PanduanPanel
     }
 
     /**
-     * Kelas warna ditulis utuh, bukan dirangkai dari nama warnanya, supaya
-     * tetap hidup ketika kelasnya dipindai saat pembuatan aset.
+     * Warna topik sebagai nilai jadi, bukan kelas Tailwind.
      *
-     * @return array{kotak: string, angka: string}
+     * Panel ini tidak memakai viteTheme(), sehingga hanya kelas yang sudah
+     * dipakai Filament sendiri yang ikut terkompilasi — kelas karangan
+     * sendiri tidak akan pernah berlaku. Nilai warnanya karena itu dipasang
+     * langsung pada elemennya.
+     *
+     * @return array{latar: string, teks: string}
      */
     public static function warna(string $nama): array
     {
         return match ($nama) {
-            'primary' => ['kotak' => 'bg-primary-50 text-primary-600 dark:bg-primary-950 dark:text-primary-400', 'angka' => 'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-200'],
-            'warning' => ['kotak' => 'bg-warning-50 text-warning-600 dark:bg-warning-950 dark:text-warning-400', 'angka' => 'bg-warning-100 text-warning-700 dark:bg-warning-900 dark:text-warning-200'],
-            'success' => ['kotak' => 'bg-success-50 text-success-600 dark:bg-success-950 dark:text-success-400', 'angka' => 'bg-success-100 text-success-700 dark:bg-success-900 dark:text-success-200'],
-            'info' => ['kotak' => 'bg-info-50 text-info-600 dark:bg-info-950 dark:text-info-400', 'angka' => 'bg-info-100 text-info-700 dark:bg-info-900 dark:text-info-200'],
-            'danger' => ['kotak' => 'bg-danger-50 text-danger-600 dark:bg-danger-950 dark:text-danger-400', 'angka' => 'bg-danger-100 text-danger-700 dark:bg-danger-900 dark:text-danger-200'],
-            default => ['kotak' => 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400', 'angka' => 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200'],
+            'primary' => ['latar' => 'rgb(254 243 199)', 'teks' => 'rgb(180 83 9)'],
+            'warning' => ['latar' => 'rgb(255 237 213)', 'teks' => 'rgb(194 65 12)'],
+            'success' => ['latar' => 'rgb(209 250 229)', 'teks' => 'rgb(4 120 87)'],
+            'info' => ['latar' => 'rgb(219 234 254)', 'teks' => 'rgb(29 78 216)'],
+            'danger' => ['latar' => 'rgb(254 226 226)', 'teks' => 'rgb(185 28 28)'],
+            default => ['latar' => 'rgb(244 244 245)', 'teks' => 'rgb(82 82 91)'],
         };
     }
 }

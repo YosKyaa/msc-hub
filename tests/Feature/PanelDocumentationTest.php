@@ -173,6 +173,32 @@ class PanelDocumentationTest extends TestCase
     }
 
     /**
+     * Panel ini tidak memakai viteTheme(), sehingga kelas utility Tailwind
+     * karangan sendiri tidak pernah ikut terkompilasi dan kartunya tampil
+     * sebagai teks polos. Gayanya karena itu harus dibawa halamannya sendiri.
+     */
+    public function test_the_cards_bring_their_own_styling(): void
+    {
+        $response = $this->index();
+
+        $response->assertSee('.panduan-kartu', false);
+        $response->assertSee('class="panduan-grid"', false);
+        $response->assertSee('class="panduan-kartu"', false);
+
+        // Kelas yang tidak pernah terkompilasi tidak boleh dipakai lagi untuk
+        // menyusun tata letaknya.
+        $response->assertDontSee('sm:grid-cols-2', false);
+        $response->assertDontSee('lg:grid-cols-3', false);
+    }
+
+    public function test_the_detail_pages_bring_their_own_styling_too(): void
+    {
+        $this->topic('sertifikat')
+            ->assertSee('.panduan-langkah', false)
+            ->assertSee('class="panduan-nomor"', false);
+    }
+
+    /**
      * Halaman rinciannya tidak muncul di navigasi kiri: pintu masuknya satu,
      * lewat kartu.
      */
