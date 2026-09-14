@@ -3,6 +3,7 @@
 namespace App\Support;
 
 use App\Models\CertificateEventParticipant;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Sejauh mana sertifikat seseorang sudah berjalan.
@@ -82,6 +83,34 @@ enum CertificateStage: string
             self::SENT => 'Selesai — sertifikat sudah sampai ke penerimanya.',
             self::FAILED => 'Pengiriman gagal. Periksa alamat emailnya, lalu kirim ulang.',
             self::REVOKED => 'Sertifikat dicabut dan tidak lagi dianggap sah.',
+        };
+    }
+
+    /**
+     * Bentuk kueri dari tahap yang sama.
+     *
+     * Sengaja bertetangga dengan for(): keduanya menyatakan aturan yang sama
+     * dalam dua bahasa — PHP untuk satu baris, SQL untuk menyaring dan
+     * menghitung. CertificateRelationManagerRendersTest menjaga agar
+     * keduanya tidak diam-diam berbeda pendapat.
+     *
+     * @param  Builder<CertificateEventParticipant>  $query
+     * @return Builder<CertificateEventParticipant>
+     */
+    public function constrain(Builder $query): Builder
+    {
+        return match ($this) {
+            self::NOT_ELIGIBLE => $query->whereNull('eligible_at'),
+            self::READY => $query->whereNotNull('eligible_at')->whereDoesntHave('certificate'),
+            self::ISSUED => $query->whereHas('certificate', fn (Builder $c) => $c
+                ->whereNull('revoked_at')->whereNull('emailed_at')->whereNull('email_failed_at')->whereNotNull('recipient_email')),
+            self::ISSUED_WITHOUT_EMAIL => $query->whereHas('certificate', fn (Builder $c) => $c
+                ->whereNull('revoked_at')->whereNull('emailed_at')->whereNull('recipient_email')),
+            self::SENT => $query->whereHas('certificate', fn (Builder $c) => $c
+                ->whereNull('revoked_at')->whereNotNull('emailed_at')),
+            self::FAILED => $query->whereHas('certificate', fn (Builder $c) => $c
+                ->whereNull('revoked_at')->whereNull('emailed_at')->whereNotNull('email_failed_at')),
+            self::REVOKED => $query->whereHas('certificate', fn (Builder $c) => $c->whereNotNull('revoked_at')),
         };
     }
 

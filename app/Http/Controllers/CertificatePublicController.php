@@ -31,6 +31,6 @@ class CertificatePublicController extends Controller
 
         abort_unless($certificate->isValid(), 404);
 
-        return $renderer->pdf($certificate)->download($certificate->certificate_number.'.pdf');
+        return $renderer->pdf($certificate)->download($certificate->downloadFileName());
     }
 }

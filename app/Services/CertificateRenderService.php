@@ -3,8 +3,11 @@
 namespace App\Services;
 
 use App\Models\Certificate;
+use App\Models\CertificateTemplate;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
+use RuntimeException;
 
 class CertificateRenderService
 {
@@ -37,16 +40,43 @@ class CertificateRenderService
     public function pdf(Certificate $certificate)
     {
         $certificate->loadMissing('event.template');
-        $template = $certificate->event->template;
-        $backgroundPath = Storage::disk('public')->path($template->background_path);
-        $backgroundMime = mime_content_type($backgroundPath) ?: 'image/png';
+        $template = $certificate->event?->template;
+
+        if ($template === null) {
+            throw new RuntimeException('Kegiatan ini tidak lagi memakai template sertifikat, sehingga PDF-nya tidak bisa dicetak.');
+        }
 
         return Pdf::loadView('certificates.pdf', [
             'certificate' => $certificate,
             'template' => $template,
             'values' => $this->variables($certificate),
             'qrDataUri' => $this->qrDataUri($certificate),
-            'backgroundDataUri' => 'data:'.$backgroundMime.';base64,'.base64_encode(file_get_contents($backgroundPath)),
+            'backgroundDataUri' => $this->backgroundDataUri($template),
         ])->setPaper([0, 0, $template->canvas_width * .75, $template->canvas_height * .75]);
+    }
+
+    /**
+     * Desain latarnya hiasan, bukan isinya: nama, nomor, dan QR tetap sah
+     * tanpa gambar itu. Berkas yang hilang — misalnya karena storage tidak
+     * ikut terbawa saat rilis — karena itu dicatat lalu dilewati, bukan
+     * membuat setiap unduhan gagal.
+     */
+    private function backgroundDataUri(CertificateTemplate $template): ?string
+    {
+        $path = (string) $template->background_path;
+
+        if ($path === '' || ! Storage::disk('public')->exists($path)) {
+            Log::warning('Desain latar sertifikat tidak ditemukan; PDF dicetak tanpa latar.', [
+                'certificate_template_id' => $template->id,
+                'background_path' => $path,
+            ]);
+
+            return null;
+        }
+
+        $absolute = Storage::disk('public')->path($path);
+        $mime = mime_content_type($absolute) ?: 'image/png';
+
+        return 'data:'.$mime.';base64,'.base64_encode((string) file_get_contents($absolute));
     }
 }
