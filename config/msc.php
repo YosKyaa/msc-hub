@@ -14,6 +14,17 @@ return [
     ))),
 
     /*
+    | Penerbitan sertifikat.
+    |
+    | Sampai sejumlah ini sertifikat diterbitkan langsung saat tombol ditekan,
+    | supaya hasilnya seketika terlihat tanpa bergantung pada pekerja antrean.
+    | Di atasnya barulah dikerjakan di latar belakang.
+    */
+    'certificates' => [
+        'inline_issue_limit' => (int) env('MSC_INLINE_ISSUE_LIMIT', 100),
+    ],
+
+    /*
     | Batas waktu login, dalam menit.
     |
     | idle     : sesi berakhir bila tidak ada permintaan selama sekian menit.

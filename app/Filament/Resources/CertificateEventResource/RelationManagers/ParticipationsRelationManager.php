@@ -15,6 +15,7 @@ use App\Services\Certificates\CertificateBatchMailer;
 use App\Services\Certificates\ParticipantRegistry;
 use App\Support\CertificatePermission;
 use App\Support\CertificateStage;
+use App\Support\QueueHealth;
 use Filament\Actions;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
@@ -163,7 +164,7 @@ class ParticipationsRelationManager extends RelationManager
                     ->color('success')
                     ->requiresConfirmation()
                     ->modalHeading('Terbitkan Sertifikat Secara Digital')
-                    ->modalDescription('Sertifikat langsung bisa diverifikasi dan diunduh. Email BELUM dikirim — periksa hasilnya dulu, lalu tekan Kirim Email.')
+                    ->modalDescription('Nomor diberikan dan halaman verifikasinya langsung aktif, sehingga sertifikat bisa diunduh dan dicek keasliannya. Email BELUM dikirim — periksa hasilnya dulu, lalu tekan Kirim Email.')
                     ->modalSubmitActionLabel('Ya, Terbitkan')
                     ->visible(fn () => CertificatePermission::allowsIssuing())
                     ->action(fn () => $this->dispatchIssuing()),
@@ -388,7 +389,7 @@ class ParticipationsRelationManager extends RelationManager
     private function dispatchIssuing(?Collection $records = null): void
     {
         try {
-            $batch = app(CertificateBatchIssuer::class)->dispatchFor(
+            $outcome = app(CertificateBatchIssuer::class)->issueFor(
                 $this->getOwnerRecord(),
                 $records,
                 auth()->user(),
@@ -400,9 +401,9 @@ class ParticipationsRelationManager extends RelationManager
         }
 
         Notification::make()
-            ->title('Penerbitan digital diantrekan')
-            ->body("{$batch->totalJobs} sertifikat sedang diterbitkan. Email belum dikirim — tekan Kirim Email setelah hasilnya diperiksa.")
-            ->success()
+            ->title($outcome->title())
+            ->body($outcome->body())
+            ->status($outcome->isSuccessful() ? 'success' : 'warning')
             ->send();
     }
 
@@ -426,10 +427,16 @@ class ParticipationsRelationManager extends RelationManager
             return;
         }
 
+        // Pengiriman email tetap lewat antrean karena SMTP lambat, jadi
+        // admin harus tahu bila antreannya ternyata tidak dikerjakan.
+        $peringatan = QueueHealth::warning();
+
         Notification::make()
             ->title('Email diantrekan')
-            ->body("{$batch->totalJobs} email sertifikat sedang dikirim di latar belakang.")
-            ->success()
+            ->body("{$batch->totalJobs} email sertifikat sedang dikirim di latar belakang."
+                .($peringatan === null ? '' : ' '.$peringatan))
+            ->status($peringatan === null ? 'success' : 'warning')
+            ->persistent($peringatan !== null)
             ->send();
     }
 

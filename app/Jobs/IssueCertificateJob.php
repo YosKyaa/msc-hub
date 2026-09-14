@@ -25,6 +25,12 @@ class IssueCertificateJob implements ShouldQueue
 
     public int $tries = 3;
 
+    /**
+     * Peserta yang sudah dihapus membuat job lama meledak saat dibongkar,
+     * sebelum handle() sempat memeriksanya. Job seperti itu cukup dibuang.
+     */
+    public bool $deleteWhenMissingModels = true;
+
     /** @var array<int, int> */
     public array $backoff = [10, 30, 60];
 

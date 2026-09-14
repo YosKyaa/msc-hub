@@ -13,8 +13,10 @@ use App\Services\Certificates\CertificateBatchException;
 use App\Services\Certificates\CertificateBatchIssuer;
 use App\Services\Certificates\CertificateBatchMailer;
 use App\Services\Certificates\CertificateIssuer;
+use App\Support\QueueHealth;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
 use Tests\TestCase;
@@ -129,6 +131,110 @@ class CertificateIssuingTest extends TestCase
 
         Notification::assertNothingSent();
         $this->assertNull($certificate->fresh()->emailed_at);
+    }
+
+    // ------------------------------------------------- terbit tanpa menunggu
+
+    /**
+     * Inti keluhannya: tombol Terbitkan Digital menitipkan pekerjaan ke
+     * antrean, dan tanpa pekerja yang menjalankannya sertifikatnya tidak
+     * pernah ada. Jumlah yang wajar karena itu diterbitkan saat itu juga.
+     */
+    public function test_issuing_a_handful_happens_immediately_without_a_worker(): void
+    {
+        Bus::fake();
+        Queue::fake();
+
+        $event = CertificateEvent::factory()->published()->create();
+        $this->eligibleParticipation($event);
+        $this->eligibleParticipation($event);
+
+        $outcome = app(CertificateBatchIssuer::class)->issueFor($event);
+
+        $this->assertFalse($outcome->queued);
+        $this->assertSame(2, $outcome->issued);
+        $this->assertSame(2, Certificate::where('certificate_event_id', $event->id)->count());
+
+        Bus::assertNothingBatched();
+    }
+
+    /**
+     * Yang dimaksud "terbitkan secara digital": halaman verifikasinya hidup
+     * begitu tombolnya ditekan.
+     */
+    public function test_the_verification_page_is_live_right_after_issuing(): void
+    {
+        $event = CertificateEvent::factory()->published()->create();
+        $this->eligibleParticipation($event);
+
+        app(CertificateBatchIssuer::class)->issueFor($event);
+
+        $certificate = Certificate::sole();
+
+        $this->get($certificate->verificationUrl())->assertOk();
+    }
+
+    public function test_a_crowd_is_still_handed_to_the_queue(): void
+    {
+        Bus::fake();
+
+        config(['msc.certificates.inline_issue_limit' => 2]);
+
+        $event = CertificateEvent::factory()->published()->create();
+        $this->eligibleParticipation($event);
+        $this->eligibleParticipation($event);
+        $this->eligibleParticipation($event);
+
+        $outcome = app(CertificateBatchIssuer::class)->issueFor($event);
+
+        $this->assertTrue($outcome->queued);
+        $this->assertSame(3, $outcome->total);
+
+        Bus::assertBatched(fn ($batch) => $batch->jobs->count() === 3);
+    }
+
+    public function test_the_outcome_says_what_actually_happened(): void
+    {
+        $event = CertificateEvent::factory()->published()->create();
+        $this->eligibleParticipation($event);
+
+        $outcome = app(CertificateBatchIssuer::class)->issueFor($event);
+
+        $this->assertTrue($outcome->isSuccessful());
+        $this->assertStringContainsString('halaman verifikasinya sudah aktif', $outcome->body());
+        $this->assertStringContainsString('Email belum dikirim', $outcome->body());
+    }
+
+    public function test_issuing_inline_still_refuses_when_there_is_nothing_to_do(): void
+    {
+        $event = CertificateEvent::factory()->published()->create();
+
+        $this->expectException(CertificateBatchException::class);
+
+        app(CertificateBatchIssuer::class)->issueFor($event);
+    }
+
+    /**
+     * Pengiriman email tetap lewat antrean, jadi antrean yang menumpuk harus
+     * terlihat ketimbang membuat admin menunggu sia-sia.
+     */
+    public function test_a_stalled_queue_is_reported(): void
+    {
+        config(['queue.default' => 'database']);
+
+        $this->assertNull(QueueHealth::warning());
+
+        DB::table('jobs')->insert([
+            'queue' => 'default',
+            'payload' => '{}',
+            'attempts' => 0,
+            'reserved_at' => null,
+            'available_at' => now()->subHour()->getTimestamp(),
+            'created_at' => now()->subHour()->getTimestamp(),
+        ]);
+
+        $this->assertTrue(QueueHealth::isStalled());
+        $this->assertStringContainsString('queue:work', (string) QueueHealth::warning());
     }
 
     // ------------------------------------------- terbit dulu, kirim kemudian
