@@ -18,6 +18,7 @@
     // Hanya berguna setelah masuk, jadi disembunyikan selama belum masuk
     // ketimbang diam-diam melempar peminjam ke Google begitu diklik.
     $riwayat = [
+        ['route' => 'requester.dashboard', 'pattern' => 'requester.dashboard', 'label' => 'Dasbor'],
         ['route' => 'request.status', 'pattern' => 'request.status*', 'label' => 'Konten Saya'],
         ['route' => 'my.bookings', 'pattern' => 'my.bookings*', 'label' => 'Riwayat Booking'],
     ];

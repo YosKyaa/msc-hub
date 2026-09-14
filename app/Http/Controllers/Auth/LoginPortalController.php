@@ -19,7 +19,9 @@ class LoginPortalController extends Controller
 {
     public function show(Request $request)
     {
-        $redirect = SafeRedirect::sanitize($request->input('redirect'), route('landing'));
+        // Tanpa tujuan khusus, peminjam mendarat di dasbornya — di situlah
+        // pilihan layanan berada.
+        $redirect = SafeRedirect::sanitize($request->input('redirect'), route('requester.dashboard'));
 
         // Yang sudah masuk tidak perlu disuruh memilih lagi.
         if (Auth::check()) {

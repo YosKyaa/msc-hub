@@ -9,6 +9,7 @@ use App\Http\Controllers\CertificatePublicController;
 use App\Http\Controllers\ContentRequestController;
 use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PublicBookingController;
+use App\Http\Controllers\RequesterDashboardController;
 use Illuminate\Support\Facades\Route;
 
 // Landing Page
@@ -35,6 +36,10 @@ Route::prefix('admin/auth/google')->name('admin.google.')->middleware('throttle:
     Route::get('/redirect', [\App\Http\Controllers\Auth\AdminGoogleAuthController::class, 'redirect'])->name('redirect');
     Route::get('/callback', [\App\Http\Controllers\Auth\AdminGoogleAuthController::class, 'callback'])->name('callback');
 });
+
+// Halaman pertama peminjam setelah masuk: memilih layanan dan melihat
+// pengajuannya sendiri.
+Route::get('/dashboard', [RequesterDashboardController::class, 'index'])->name('requester.dashboard');
 
 // Content Request (Public)
 Route::prefix('request')->name('request.')->group(function () {

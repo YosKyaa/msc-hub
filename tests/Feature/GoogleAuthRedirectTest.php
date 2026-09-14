@@ -39,6 +39,8 @@ class GoogleAuthRedirectTest extends TestCase
     {
         $this->get(route('google.redirect', ['redirect' => 'https://evil.com']));
 
-        $this->assertSame(route('request.content'), session('google_auth_redirect'));
+        // Tujuan luar dibuang; yang tersimpan adalah tujuan bawaan, yaitu
+        // dasbor peminjam.
+        $this->assertSame(route('requester.dashboard'), session('google_auth_redirect'));
     }
 }
