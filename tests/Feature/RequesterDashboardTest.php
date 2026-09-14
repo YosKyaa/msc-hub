@@ -129,6 +129,32 @@ class RequesterDashboardTest extends TestCase
         $response->assertSee(route('booking.inventory'), false);
     }
 
+    /**
+     * Login Google hanya bisa membedakan domain emailnya, bukan jabatannya:
+     * dosen, tenaga kependidikan, dan staf sama-sama memakai @jgu.ac.id.
+     * Sebutannya karena itu menyebut ketiganya ketimbang menebak salah satu.
+     */
+    public function test_a_campus_account_is_named_without_guessing_the_role(): void
+    {
+        $this->withSession([RequesterSession::KEY => [
+            'google_id' => '1234567890',
+            'name' => 'Yosua Immanuel',
+            'email' => 'yosua@jgu.ac.id',
+            'type' => 'lecturer',
+        ]])->get(route('requester.dashboard'))
+            ->assertOk()
+            ->assertSee('Dosen / Tendik / Staf');
+    }
+
+    public function test_a_student_account_is_simply_a_student(): void
+    {
+        $this->signIn()
+            ->get(route('requester.dashboard'))
+            ->assertOk()
+            ->assertSee('Mahasiswa')
+            ->assertDontSee('Dosen / Tendik / Staf');
+    }
+
     public function test_a_visitor_who_is_not_signed_in_is_sent_to_the_portal(): void
     {
         $this->get(route('requester.dashboard'))
