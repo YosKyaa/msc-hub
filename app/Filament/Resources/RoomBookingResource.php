@@ -4,19 +4,18 @@ namespace App\Filament\Resources;
 
 use App\Enums\BookingStatus;
 use App\Enums\InventoryCategory;
+use App\Filament\Actions\BorrowingFormAction;
 use App\Filament\Resources\RoomBookingResource\Pages;
 use App\Models\InventoryItem;
 use App\Models\Room;
 use App\Models\RoomBooking;
 use BackedEnum;
-use UnitEnum;
 use Filament\Actions;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -26,6 +25,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class RoomBookingResource extends Resource
 {
@@ -74,6 +74,15 @@ class RoomBookingResource extends Resource
                         ->email()
                         ->required()
                         ->maxLength(255),
+                    TextInput::make('requester_phone')
+                        ->label('No. HP Peminjam')
+                        ->tel()
+                        ->maxLength(30)
+                        ->helperText('Isian wajib pada formulir resmi kampus.'),
+                    TextInput::make('supervisor_name')
+                        ->label('Penanggung Jawab (Dosen)')
+                        ->maxLength(255)
+                        ->helperText('Isian wajib pada formulir resmi kampus.'),
                     Select::make('unit')
                         ->label('Unit/Fakultas')
                         ->options([
@@ -173,7 +182,7 @@ class RoomBookingResource extends Resource
                                     ])
                                     ->get()
                                     ->mapWithKeys(fn ($item) => [
-                                        $item->id => "{$item->code} - {$item->name}"
+                                        $item->id => "{$item->code} - {$item->name}",
                                     ]))
                                 ->required()
                                 ->searchable()
@@ -198,9 +207,8 @@ class RoomBookingResource extends Resource
                         ->defaultItems(0)
                         ->reorderable(false)
                         ->collapsible()
-                        ->itemLabel(fn (array $state): ?string => 
-                            isset($state['inventory_item_id']) 
-                                ? InventoryItem::find($state['inventory_item_id'])?->name 
+                        ->itemLabel(fn (array $state): ?string => isset($state['inventory_item_id'])
+                                ? InventoryItem::find($state['inventory_item_id'])?->name
                                 : null
                         )
                         ->saveRelationshipsUsing(function () {
@@ -295,116 +303,76 @@ class RoomBookingResource extends Resource
                         BookingStatus::APPROVED_STAFF,
                     ])),
             ])
+            // Tombol ikon inline, bukan dropdown: panel ActionGroup Filament
+            // dirender tanpa modifier `.flip`, sehingga selalu membuka ke bawah
+            // dan terpotong tepi layar pada baris terakhir tabel.
+            //
+            // Baris hanya memuat aksi cepat. Persetujuan lengkap ada di halaman
+            // detail, tempat peralatan yang dipinjam ikut terlihat sebelum
+            // booking disetujui.
             ->actions([
-                Actions\ActionGroup::make([
-                    Actions\ViewAction::make(),
-                    Actions\EditAction::make()
-                        ->visible(fn ($record) => $record->status === BookingStatus::PENDING),
+                Actions\ViewAction::make()->iconButton()->tooltip('Lihat detail booking'),
 
-                    // Export PDF
-                    Actions\Action::make('export_pdf')
-                        ->label('Export PDF')
-                        ->icon('heroicon-o-document-arrow-down')
-                        ->color('gray')
-                        ->action(function ($record) {
-                            $pdf = app('dompdf.wrapper')->loadView('pdf.room-booking', ['booking' => $record]);
-                            return response()->streamDownload(
-                                fn () => print($pdf->output()),
-                                'booking-room-' . $record->booking_code . '.pdf'
-                            );
-                        }),
+                // Formulir resmi kampus dibuka sebagai pratinjau lebih dulu.
+                BorrowingFormAction::make()->iconButton()->tooltip('Form peminjaman resmi'),
 
-                    // Staff Approve
-                    Actions\Action::make('staff_approve')
-                        ->label('Approve (Staff)')
-                        ->icon('heroicon-o-check')
-                        ->color('success')
-                        ->visible(fn ($record) => $record->canStaffApprove() && auth()->user()->hasAnyRole(['admin', 'staff_msc', 'head_msc']))
-                        ->requiresConfirmation()
-                        ->modalHeading('Approve Booking (Staff)')
-                        ->modalDescription('Booking akan diteruskan ke Head MSC untuk approval final.')
-                        ->action(function ($record) {
-                            $record->update([
-                                'staff_approved_at' => now(),
-                                'staff_approved_by' => auth()->id(),
-                                'status' => BookingStatus::APPROVED_STAFF,
-                            ]);
-                            Notification::make()->title('Booking di-approve (Staff)')->success()->send();
-                        }),
+                Actions\Action::make('staff_approve')
+                    ->iconButton()
+                    ->tooltip('Setujui sebagai Staff')
+                    ->icon('heroicon-o-check')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->canStaffApprove() && auth()->user()->hasAnyRole(['admin', 'staff_msc', 'head_msc']))
+                    ->requiresConfirmation()
+                    ->modalHeading('Approve Booking (Staff)')
+                    ->modalDescription('Booking akan diteruskan ke Head MSC untuk approval final.')
+                    ->action(function ($record) {
+                        $record->update([
+                            'staff_approved_at' => now(),
+                            'staff_approved_by' => auth()->id(),
+                            'status' => BookingStatus::APPROVED_STAFF,
+                        ]);
+                        Notification::make()->title('Booking di-approve (Staff)')->success()->send();
+                    }),
 
-                    // Head Approve
-                    Actions\Action::make('head_approve')
-                        ->label('Approve (Head)')
-                        ->icon('heroicon-o-check-badge')
-                        ->color('success')
-                        ->visible(fn ($record) => $record->canHeadApprove() && auth()->user()->hasAnyRole(['admin', 'head_msc']))
-                        ->requiresConfirmation()
-                        ->modalHeading('Approve Booking (Head)')
-                        ->modalDescription('Booking akan disetujui.')
-                        ->action(function ($record) {
-                            $record->update([
-                                'head_approved_at' => now(),
-                                'head_approved_by' => auth()->id(),
-                                'status' => BookingStatus::APPROVED_HEAD,
-                            ]);
-                            Notification::make()->title('Booking di-approve (Head)')->success()->send();
-                        }),
+                Actions\Action::make('head_approve')
+                    ->iconButton()
+                    ->tooltip('Setujui sebagai Kepala MSC')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->canHeadApprove() && auth()->user()->hasAnyRole(['admin', 'head_msc']))
+                    ->requiresConfirmation()
+                    ->modalHeading('Approve Booking (Head)')
+                    ->action(function ($record) {
+                        $record->update([
+                            'head_approved_at' => now(),
+                            'head_approved_by' => auth()->id(),
+                            'status' => BookingStatus::APPROVED_HEAD,
+                        ]);
+                        Notification::make()->title('Booking di-approve (Head)')->success()->send();
+                    }),
 
-                    // Reject
-                    Actions\Action::make('reject')
-                        ->label('Tolak')
-                        ->icon('heroicon-o-x-circle')
-                        ->color('danger')
-                        ->visible(fn ($record) => $record->canReject())
-                        ->form([
-                            Textarea::make('reject_reason')
-                                ->label('Alasan Penolakan')
-                                ->required()
-                                ->rows(3),
-                        ])
-                        ->action(function ($record, array $data) {
-                            $record->update([
-                                'rejected_at' => now(),
-                                'rejected_by' => auth()->id(),
-                                'reject_reason' => $data['reject_reason'],
-                                'status' => BookingStatus::REJECTED,
-                            ]);
-                            Notification::make()->title('Booking ditolak')->warning()->send();
-                        }),
-
-                    // Complete
-                    Actions\Action::make('complete')
-                        ->label('Selesai')
-                        ->icon('heroicon-o-check-circle')
-                        ->color('success')
-                        ->visible(fn ($record) => $record->canComplete())
-                        ->requiresConfirmation()
-                        ->action(function ($record) {
-                            $record->update([
-                                'completed_at' => now(),
-                                'status' => BookingStatus::COMPLETED,
-                            ]);
-                            Notification::make()->title('Booking selesai')->success()->send();
-                        }),
-
-                    // Cancel
-                    Actions\Action::make('cancel')
-                        ->label('Batalkan')
-                        ->icon('heroicon-o-x-mark')
-                        ->color('gray')
-                        ->visible(fn ($record) => $record->canCancel())
-                        ->requiresConfirmation()
-                        ->action(function ($record) {
-                            $record->update([
-                                'cancelled_at' => now(),
-                                'status' => BookingStatus::CANCELLED,
-                            ]);
-                            Notification::make()->title('Booking dibatalkan')->success()->send();
-                        }),
-
-                    Actions\DeleteAction::make()
-                        ->visible(fn () => auth()->user()->hasRole('admin')),
-                ]),
+                Actions\Action::make('reject')
+                    ->iconButton()
+                    ->tooltip('Tolak booking')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->visible(fn ($record) => $record->canReject())
+                    ->modalHeading('Tolak Booking')
+                    ->schema([
+                        Textarea::make('reject_reason')
+                            ->label('Alasan penolakan')
+                            ->required()
+                            ->rows(3),
+                    ])
+                    ->action(function ($record, array $data) {
+                        $record->update([
+                            'rejected_at' => now(),
+                            'rejected_by' => auth()->id(),
+                            'reject_reason' => $data['reject_reason'],
+                            'status' => BookingStatus::REJECTED,
+                        ]);
+                        Notification::make()->title('Booking ditolak')->warning()->send();
+                    }),
             ])
             ->bulkActions([]);
     }
@@ -421,6 +389,7 @@ class RoomBookingResource extends Resource
             'create' => Pages\CreateRoomBooking::route('/create'),
             'view' => Pages\ViewRoomBooking::route('/{record}'),
             'edit' => Pages\EditRoomBooking::route('/{record}/edit'),
+            'form' => Pages\RoomBookingForm::route('/{record}/form'),
         ];
     }
 }

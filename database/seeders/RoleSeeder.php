@@ -100,6 +100,13 @@ class RoleSeeder extends Seeder
             'tags.create',
             'tags.edit',
             'tags.delete',
+
+            // Certificate Management
+            'certificates.view',
+            'certificates.create',
+            'certificates.edit',
+            'certificates.delete',
+            'certificates.publish',
         ];
 
         // Create all permissions
@@ -127,6 +134,7 @@ class RoleSeeder extends Seeder
                 'announcements.view', 'announcements.create', 'announcements.edit', 'announcements.delete',
                 'featured_works.view', 'featured_works.create', 'featured_works.edit', 'featured_works.delete',
                 'tags.view', 'tags.create', 'tags.edit',
+                'certificates.view', 'certificates.create', 'certificates.edit', 'certificates.delete', 'certificates.publish',
             ],
             'staff_msc' => [
                 'panel.access',
@@ -141,6 +149,7 @@ class RoleSeeder extends Seeder
                 'announcements.view', 'announcements.create', 'announcements.edit',
                 'featured_works.view', 'featured_works.create', 'featured_works.edit',
                 'tags.view', 'tags.create',
+                'certificates.view', 'certificates.create', 'certificates.edit', 'certificates.publish',
             ],
             'department' => [
                 'panel.access',

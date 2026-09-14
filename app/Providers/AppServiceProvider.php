@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use App\Http\Middleware\ExpirePanelSession;
 use App\Models\Asset;
 use App\Models\ContentRequest;
 use App\Models\InventoryBooking;
@@ -15,7 +16,11 @@ use App\Policies\AssetPolicy;
 use App\Policies\ContentRequestPolicy;
 use App\Policies\ProjectPolicy;
 use App\Policies\TagPolicy;
+use Illuminate\Auth\Events\Login;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -42,5 +47,14 @@ class AppServiceProvider extends ServiceProvider
         RoomBooking::observe(RoomBookingObserver::class);
         InventoryBooking::observe(InventoryBookingObserver::class);
         ContentRequest::observe(ContentRequestObserver::class);
+
+        // Login mempertahankan isi sesi sebelumnya, jadi batas keras panel
+        // harus dihitung ulang dari sini agar tidak mewarisi jam lama.
+        Event::listen(Login::class, function (): void {
+            $now = Carbon::now()->toIso8601String();
+
+            Session::put(ExpirePanelSession::LOGGED_IN_AT, $now);
+            Session::put(ExpirePanelSession::LAST_SEEN_AT, $now);
+        });
     }
 }
