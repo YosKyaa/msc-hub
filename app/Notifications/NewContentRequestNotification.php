@@ -3,12 +3,11 @@
 namespace App\Notifications;
 
 use App\Models\User;
+use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-
-use Filament\Notifications\Notification as FilamentNotification;
 
 class NewContentRequestNotification extends Notification implements ShouldQueue
 {
@@ -17,6 +16,7 @@ class NewContentRequestNotification extends Notification implements ShouldQueue
     public $contentRequest;
 
     public $tries = 5;
+
     public $backoff = [10, 30, 60, 120, 240];
 
     /**
@@ -32,6 +32,33 @@ class NewContentRequestNotification extends Notification implements ShouldQueue
      *
      * @return array<int, string>
      */
+
+    /**
+     * Lonceng panel ditulis seketika, email tetap dititipkan ke antrean.
+     *
+     * Keduanya dulu sama-sama diantrekan, sehingga tanpa pekerja antrean
+     * lonceng tidak pernah berbunyi — pemberitahuan baru muncul berjam-jam
+     * kemudian ketika antreannya kebetulan dijalankan. Menulis satu baris ke
+     * basis data murah; yang lambat adalah SMTP.
+     *
+     * @return array<string, string>
+     */
+    public function viaConnections(): array
+    {
+        return ['database' => 'sync'];
+    }
+
+    /**
+     * Jeda bertingkat dipasang untuk menahan laju SMTP, jadi hanya email yang
+     * perlu menunggu. Lonceng tidak ada urusannya dengan itu.
+     *
+     * @return array<string, mixed>
+     */
+    public function withDelay(object $notifiable): array
+    {
+        return ['database' => null, 'mail' => $this->delay];
+    }
+
     public function via(object $notifiable): array
     {
         if (! $notifiable instanceof User) {
@@ -57,7 +84,7 @@ class NewContentRequestNotification extends Notification implements ShouldQueue
         $requester = $this->contentRequest->requester_name;
         $contentType = $this->contentRequest->content_type->getLabel();
         $eventDate = $this->contentRequest->event_date ? $this->contentRequest->event_date->format('d F Y') : '-';
-        
+
         $url = url('/panel');
 
         return (new MailMessage)
@@ -89,7 +116,7 @@ class NewContentRequestNotification extends Notification implements ShouldQueue
         $contentType = $this->contentRequest->content_type->getLabel();
 
         return FilamentNotification::make()
-            ->title("Request Konten Baru")
+            ->title('Request Konten Baru')
             ->body("Kode: {$code}\nJenis: {$contentType}\nPeminjam: {$this->contentRequest->requester_name}")
             ->info()
             ->actions([
