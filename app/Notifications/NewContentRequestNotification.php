@@ -2,13 +2,12 @@
 
 namespace App\Notifications;
 
+use App\Models\User;
+use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
-use Illuminate\Support\HtmlString;
-
-use Filament\Notifications\Notification as FilamentNotification;
 
 class NewContentRequestNotification extends Notification implements ShouldQueue
 {
@@ -17,6 +16,7 @@ class NewContentRequestNotification extends Notification implements ShouldQueue
     public $contentRequest;
 
     public $tries = 5;
+
     public $backoff = [10, 30, 60, 120, 240];
 
     /**
@@ -32,9 +32,47 @@ class NewContentRequestNotification extends Notification implements ShouldQueue
      *
      * @return array<int, string>
      */
+
+    /**
+     * Lonceng panel ditulis seketika, email tetap dititipkan ke antrean.
+     *
+     * Keduanya dulu sama-sama diantrekan, sehingga tanpa pekerja antrean
+     * lonceng tidak pernah berbunyi — pemberitahuan baru muncul berjam-jam
+     * kemudian ketika antreannya kebetulan dijalankan. Menulis satu baris ke
+     * basis data murah; yang lambat adalah SMTP.
+     *
+     * @return array<string, string>
+     */
+    public function viaConnections(): array
+    {
+        return ['database' => 'sync'];
+    }
+
+    /**
+     * Jeda bertingkat dipasang untuk menahan laju SMTP, jadi hanya email yang
+     * perlu menunggu. Lonceng tidak ada urusannya dengan itu.
+     *
+     * @return array<string, mixed>
+     */
+    public function withDelay(object $notifiable): array
+    {
+        return ['database' => null, 'mail' => $this->delay];
+    }
+
     public function via(object $notifiable): array
     {
-        return ['mail', 'database'];
+        if (! $notifiable instanceof User) {
+            return ['mail'];
+        }
+
+        $channels = ['database'];
+        $operationalEmails = array_map('strtolower', config('msc.notification_recipients', []));
+
+        if (in_array(strtolower($notifiable->email), $operationalEmails, true)) {
+            $channels[] = 'mail';
+        }
+
+        return $channels;
     }
 
     /**
@@ -46,25 +84,30 @@ class NewContentRequestNotification extends Notification implements ShouldQueue
         $requester = $this->contentRequest->requester_name;
         $contentType = $this->contentRequest->content_type->getLabel();
         $eventDate = $this->contentRequest->event_date ? $this->contentRequest->event_date->format('d F Y') : '-';
-        
+
         $url = url('/panel');
 
         return (new MailMessage)
             ->subject("[MSC Hub] Request Konten Baru #{$code}")
-            ->greeting("Yth. Tim Administrator MSC Hub,")
-            ->line("Terdapat permintaan pembuatan konten baru yang memerlukan tinjauan Anda.")
-            ->line(new HtmlString("
-                <div style='margin-bottom: 10px;'>
-                    <p style='margin: 5px 0;'><strong>Kode Request:</strong> {$code}</p>
-                    <p style='margin: 5px 0;'><strong>Nama Pemohon:</strong> {$requester}</p>
-                    <p style='margin: 5px 0;'><strong>Unit/Instansi:</strong> {$this->contentRequest->unit}</p>
-                    <p style='margin: 5px 0;'><strong>Jenis Konten:</strong> {$contentType}</p>
-                    <p style='margin: 5px 0;'><strong>Tanggal Acara:</strong> {$eventDate}</p>
-                </div>
-            "))
-            ->action('Tinjau & Verifikasi', $url)
-            ->line('Mohon segera dilakukan pengecekan untuk persetujuan atau penolakan permintaan ini.')
-            ->salutation('Hormat kami,');
+            ->view('emails.notification', [
+                'badge' => 'Tindakan diperlukan',
+                'title' => 'Ada request konten baru',
+                'greeting' => 'Halo, Tim MSC',
+                'intro' => 'Request baru telah masuk dan menunggu peninjauan. Periksa kelengkapan brief serta deadline sebelum menentukan tindak lanjut.',
+                'details' => [
+                    'Kode request' => $code,
+                    'Pemohon' => $requester,
+                    'Unit' => $this->contentRequest->unit,
+                    'Jenis konten' => $contentType,
+                    'Tanggal acara' => $eventDate,
+                    'Deadline' => $this->contentRequest->deadline->format('d M Y'),
+                ],
+                'status' => 'Perlu ditinjau',
+                'statusTone' => 'warning',
+                'note' => 'Tentukan PIC atau tindak lanjut melalui panel MSC Hub.',
+                'actionUrl' => $url,
+                'actionText' => 'Buka panel MSC',
+            ]);
     }
 
     public function toDatabase(object $notifiable): array
@@ -73,11 +116,11 @@ class NewContentRequestNotification extends Notification implements ShouldQueue
         $contentType = $this->contentRequest->content_type->getLabel();
 
         return FilamentNotification::make()
-            ->title("Request Konten Baru")
+            ->title('Request Konten Baru')
             ->body("Kode: {$code}\nJenis: {$contentType}\nPeminjam: {$this->contentRequest->requester_name}")
             ->info()
             ->actions([
-                \Filament\Notifications\Actions\Action::make('view')
+                \Filament\Actions\Action::make('view')
                     ->button()
                     ->url(url('/panel'), shouldOpenInNewTab: true),
             ])

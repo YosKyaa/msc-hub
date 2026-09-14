@@ -169,63 +169,22 @@
             </div>
             
             {{-- Submit --}}
-            <div class="flex items-center justify-between">
+            <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <p class="text-sm text-gray-500">* Wajib diisi</p>
-                <button type="submit" 
-                        class="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition">
-                    Kirim Request
-                </button>
+                <x-molecules.confirm-submit
+                    label="Kirim Request"
+                    tone="blue"
+                    heading="Kirim pengajuan konten?"
+                    description="Permintaan langsung diteruskan ke tim MSC. Periksa kembali sebelum dikirim."
+                    confirm-label="Ya, Kirim"
+                    :summary="[
+                        'Jenis konten' => 'content_type',
+                        'Platform' => 'platform_target',
+                        'Unit' => 'unit',
+                        'Tenggat' => 'deadline',
+                    ]" />
             </div>
         </form>
     @endif
 </div>
-@push('scripts')
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
-    
-    if (form) {
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            Swal.fire({
-                title: 'Konfirmasi Request Konten',
-                html: `
-                    <div class="text-left space-y-2">
-                        <p class="text-sm text-gray-600">Pastikan data request sudah benar:</p>
-                        <ul class="text-sm text-gray-700 list-disc list-inside space-y-1 mt-3">
-                            <li>Jenis konten sesuai kebutuhan</li>
-                            <li>Deadline realistis (min. H-3)</li>
-                            <li>Detail dan materi pendukung sudah lengkap</li>
-                        </ul>
-                    </div>
-                `,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#2563EB', // Blue-600
-                cancelButtonColor: '#6B7280',
-                confirmButtonText: 'Ya, Kirim Request',
-                cancelButtonText: 'Batal',
-                reverseButtons: true
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    Swal.fire({
-                        title: 'Mengirim...',
-                        text: 'Mohon tunggu sebentar',
-                        allowOutsideClick: false,
-                        allowEscapeKey: false,
-                        didOpen: () => {
-                            Swal.showLoading();
-                        }
-                    });
-                    
-                    form.submit();
-                }
-            });
-        });
-    }
-});
-</script>
-@endpush
 @endsection

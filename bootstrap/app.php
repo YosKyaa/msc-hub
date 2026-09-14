@@ -13,11 +13,21 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->web(append: [
             \App\Http\Middleware\SecurityHeaders::class,
+            \App\Http\Middleware\ExpireStaleLogins::class,
         ]);
 
-        // Rate limiting aliases
+        // Route non-Filament yang butuh login (mis. /logs) diarahkan ke
+        // halaman login panel, bukan route `login` bawaan yang tidak ada.
+        $middleware->redirectGuestsTo(fn () => route('filament.admin.auth.login'));
+
         $middleware->alias([
+            // Rate limiting
             'throttle.auth' => \Illuminate\Routing\Middleware\ThrottleRequests::class.':5,1',
+
+            // Spatie permission guards (dipakai untuk route non-Filament seperti /logs)
+            'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+            'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+            'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

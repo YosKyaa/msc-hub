@@ -64,7 +64,7 @@
                 <strong>Proses Selanjutnya:</strong><br>
                 1. Staff MSC akan mereview permintaan Anda<br>
                 2. Setelah disetujui staff, Head MSC akan memberikan approval final<br>
-                3. Anda dapat mengecek status booking di halaman "Booking Saya"
+                3. Pantau statusnya kapan saja melalui halaman "Riwayat Booking"
             </p>
         </div>
 
@@ -76,7 +76,7 @@
             </a>
             <a href="{{ route('my.bookings') }}" 
                 class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
-                Semua Booking Saya
+                Lihat Riwayat Booking
             </a>
         </div>
     </div>

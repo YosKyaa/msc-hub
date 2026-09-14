@@ -4,11 +4,11 @@ namespace App\Filament\Resources;
 
 use App\Enums\BookingStatus;
 use App\Enums\InventoryLogType;
+use App\Filament\Actions\BorrowingFormAction;
 use App\Filament\Resources\InventoryBookingResource\Pages;
 use App\Models\InventoryBooking;
 use App\Models\InventoryItem;
 use BackedEnum;
-use UnitEnum;
 use Filament\Actions;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
@@ -23,6 +23,7 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class InventoryBookingResource extends Resource
 {
@@ -217,149 +218,145 @@ class InventoryBookingResource extends Resource
                         BookingStatus::APPROVED_STAFF,
                     ])),
             ])
+            // Tombol ikon inline; alasan sama seperti pada booking ruangan.
             ->actions([
-                Actions\ActionGroup::make([
-                    Actions\ViewAction::make(),
-                    Actions\EditAction::make()
-                        ->visible(fn ($record) => $record->status === BookingStatus::PENDING),
+                Actions\ViewAction::make()->iconButton(),
+                Actions\EditAction::make()->iconButton()
+                    ->visible(fn ($record) => $record->status === BookingStatus::PENDING),
 
-                    // Export PDF
-                    Actions\Action::make('export_pdf')
-                        ->label('Export PDF')
-                        ->icon('heroicon-o-document-arrow-down')
-                        ->color('gray')
-                        ->action(function ($record) {
-                            $pdf = app('dompdf.wrapper')->loadView('pdf.inventory-booking', ['booking' => $record]);
-                            return response()->streamDownload(
-                                fn () => print($pdf->output()),
-                                'booking-inventory-' . $record->booking_code . '.pdf'
-                            );
-                        }),
+                // Export PDF
+                // Formulir resmi kampus dibuka sebagai pratinjau lebih dulu.
+                BorrowingFormAction::make()->iconButton()->tooltip('Form peminjaman resmi'),
 
-                    // Staff Approve
-                    Actions\Action::make('staff_approve')
-                        ->label('Approve (Staff)')
-                        ->icon('heroicon-o-check')
-                        ->color('success')
-                        ->visible(fn ($record) => $record->canStaffApprove() && auth()->user()->hasAnyRole(['admin', 'staff_msc', 'head_msc']))
-                        ->requiresConfirmation()
-                        ->modalHeading('Approve Booking (Staff)')
-                        ->modalDescription('Booking akan diteruskan ke Head MSC untuk approval final.')
-                        ->action(function ($record) {
-                            $record->update([
-                                'staff_approved_at' => now(),
-                                'staff_approved_by' => auth()->id(),
-                                'status' => BookingStatus::APPROVED_STAFF,
-                            ]);
-                            $record->createLog(InventoryLogType::STATUS_CHANGE, 'Approved by Staff');
-                            Notification::make()->title('Booking di-approve (Staff)')->success()->send();
-                        }),
+                // Staff Approve
+                Actions\Action::make('staff_approve')
+                    ->iconButton()
+                    ->tooltip('Setujui sebagai Staff')
+                    ->icon('heroicon-o-check')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->canStaffApprove() && auth()->user()->hasAnyRole(['admin', 'staff_msc', 'head_msc']))
+                    ->requiresConfirmation()
+                    ->modalHeading('Approve Booking (Staff)')
+                    ->modalDescription('Booking akan diteruskan ke Head MSC untuk approval final.')
+                    ->action(function ($record) {
+                        $record->update([
+                            'staff_approved_at' => now(),
+                            'staff_approved_by' => auth()->id(),
+                            'status' => BookingStatus::APPROVED_STAFF,
+                        ]);
+                        $record->createLog(InventoryLogType::STATUS_CHANGE, 'Approved by Staff');
+                        Notification::make()->title('Booking di-approve (Staff)')->success()->send();
+                    }),
 
-                    // Head Approve
-                    Actions\Action::make('head_approve')
-                        ->label('Approve (Head)')
-                        ->icon('heroicon-o-check-badge')
-                        ->color('success')
-                        ->visible(fn ($record) => $record->canHeadApprove() && auth()->user()->hasAnyRole(['admin', 'head_msc']))
-                        ->requiresConfirmation()
-                        ->modalHeading('Approve Booking (Head)')
-                        ->modalDescription('Booking akan disetujui dan siap untuk check-out.')
-                        ->action(function ($record) {
-                            $record->update([
-                                'head_approved_at' => now(),
-                                'head_approved_by' => auth()->id(),
-                                'status' => BookingStatus::APPROVED_HEAD,
-                            ]);
-                            $record->createLog(InventoryLogType::STATUS_CHANGE, 'Approved by Head');
-                            Notification::make()->title('Booking di-approve (Head)')->success()->send();
-                        }),
+                // Head Approve
+                Actions\Action::make('head_approve')
+                    ->iconButton()
+                    ->tooltip('Setujui sebagai Kepala MSC')
+                    ->icon('heroicon-o-check-badge')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->canHeadApprove() && auth()->user()->hasAnyRole(['admin', 'head_msc']))
+                    ->requiresConfirmation()
+                    ->modalHeading('Approve Booking (Head)')
+                    ->modalDescription('Booking akan disetujui dan siap untuk check-out.')
+                    ->action(function ($record) {
+                        $record->update([
+                            'head_approved_at' => now(),
+                            'head_approved_by' => auth()->id(),
+                            'status' => BookingStatus::APPROVED_HEAD,
+                        ]);
+                        $record->createLog(InventoryLogType::STATUS_CHANGE, 'Approved by Head');
+                        Notification::make()->title('Booking di-approve (Head)')->success()->send();
+                    }),
 
-                    // Reject
-                    Actions\Action::make('reject')
-                        ->label('Tolak')
-                        ->icon('heroicon-o-x-circle')
-                        ->color('danger')
-                        ->visible(fn ($record) => $record->canReject())
-                        ->form([
-                            Textarea::make('reject_reason')
-                                ->label('Alasan Penolakan')
-                                ->required()
-                                ->rows(3),
-                        ])
-                        ->action(function ($record, array $data) {
-                            $record->update([
-                                'rejected_at' => now(),
-                                'rejected_by' => auth()->id(),
-                                'reject_reason' => $data['reject_reason'],
-                                'status' => BookingStatus::REJECTED,
-                            ]);
-                            $record->createLog(InventoryLogType::STATUS_CHANGE, 'Rejected: ' . $data['reject_reason']);
-                            Notification::make()->title('Booking ditolak')->warning()->send();
-                        }),
+                // Reject
+                Actions\Action::make('reject')
+                    ->iconButton()
+                    ->tooltip('Tolak peminjaman')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('danger')
+                    ->visible(fn ($record) => $record->canReject())
+                    ->form([
+                        Textarea::make('reject_reason')
+                            ->label('Alasan penolakan')
+                            ->required()
+                            ->rows(3),
+                    ])
+                    ->action(function ($record, array $data) {
+                        $record->update([
+                            'rejected_at' => now(),
+                            'rejected_by' => auth()->id(),
+                            'reject_reason' => $data['reject_reason'],
+                            'status' => BookingStatus::REJECTED,
+                        ]);
+                        $record->createLog(InventoryLogType::STATUS_CHANGE, 'Rejected: '.$data['reject_reason']);
+                        Notification::make()->title('Booking ditolak')->warning()->send();
+                    }),
 
-                    // Check-out
-                    Actions\Action::make('checkout')
-                        ->label('Check-out')
-                        ->icon('heroicon-o-arrow-right-start-on-rectangle')
-                        ->color('primary')
-                        ->visible(fn ($record) => $record->canCheckOut())
-                        ->form([
-                            Textarea::make('checkout_note')
-                                ->label('Catatan Check-out')
-                                ->rows(2),
-                        ])
-                        ->action(function ($record, array $data) {
-                            $record->update([
-                                'checked_out_at' => now(),
-                                'checked_out_by' => auth()->id(),
-                                'checkout_note' => $data['checkout_note'] ?? null,
-                                'status' => BookingStatus::CHECKED_OUT,
-                            ]);
-                            $record->createLog(InventoryLogType::CHECK_OUT, $data['checkout_note'] ?? 'Items checked out');
-                            Notification::make()->title('Items berhasil di-checkout')->success()->send();
-                        }),
+                // Check-out
+                Actions\Action::make('checkout')
+                    ->iconButton()
+                    ->tooltip('Catat pengambilan alat')
+                    ->icon('heroicon-o-arrow-right-start-on-rectangle')
+                    ->color('primary')
+                    ->visible(fn ($record) => $record->canCheckOut())
+                    ->form([
+                        Textarea::make('checkout_note')
+                            ->label('Catatan check-out')
+                            ->rows(2),
+                    ])
+                    ->action(function ($record, array $data) {
+                        $record->update([
+                            'checked_out_at' => now(),
+                            'checked_out_by' => auth()->id(),
+                            'checkout_note' => $data['checkout_note'] ?? null,
+                            'status' => BookingStatus::CHECKED_OUT,
+                        ]);
+                        $record->createLog(InventoryLogType::CHECK_OUT, $data['checkout_note'] ?? 'Items checked out');
+                        Notification::make()->title('Items berhasil di-checkout')->success()->send();
+                    }),
 
-                    // Return
-                    Actions\Action::make('return')
-                        ->label('Return')
-                        ->icon('heroicon-o-arrow-uturn-left')
-                        ->color('success')
-                        ->visible(fn ($record) => $record->canReturn())
-                        ->form([
-                            Textarea::make('return_note')
-                                ->label('Catatan Return')
-                                ->rows(2),
-                        ])
-                        ->action(function ($record, array $data) {
-                            $record->update([
-                                'returned_at' => now(),
-                                'returned_by' => auth()->id(),
-                                'return_note' => $data['return_note'] ?? null,
-                                'status' => BookingStatus::RETURNED,
-                            ]);
-                            $record->createLog(InventoryLogType::RETURN, $data['return_note'] ?? 'Items returned');
-                            Notification::make()->title('Items berhasil dikembalikan')->success()->send();
-                        }),
+                // Return
+                Actions\Action::make('return')
+                    ->iconButton()
+                    ->tooltip('Catat pengembalian alat')
+                    ->icon('heroicon-o-arrow-uturn-left')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->canReturn())
+                    ->form([
+                        Textarea::make('return_note')
+                            ->label('Catatan pengembalian')
+                            ->rows(2),
+                    ])
+                    ->action(function ($record, array $data) {
+                        $record->update([
+                            'returned_at' => now(),
+                            'returned_by' => auth()->id(),
+                            'return_note' => $data['return_note'] ?? null,
+                            'status' => BookingStatus::RETURNED,
+                        ]);
+                        $record->createLog(InventoryLogType::RETURN, $data['return_note'] ?? 'Items returned');
+                        Notification::make()->title('Items berhasil dikembalikan')->success()->send();
+                    }),
 
-                    // Cancel
-                    Actions\Action::make('cancel')
-                        ->label('Batalkan')
-                        ->icon('heroicon-o-x-mark')
-                        ->color('gray')
-                        ->visible(fn ($record) => $record->canCancel())
-                        ->requiresConfirmation()
-                        ->action(function ($record) {
-                            $record->update([
-                                'cancelled_at' => now(),
-                                'status' => BookingStatus::CANCELLED,
-                            ]);
-                            $record->createLog(InventoryLogType::STATUS_CHANGE, 'Booking cancelled');
-                            Notification::make()->title('Booking dibatalkan')->success()->send();
-                        }),
+                // Cancel
+                Actions\Action::make('cancel')
+                    ->iconButton()
+                    ->tooltip('Batalkan peminjaman')
+                    ->icon('heroicon-o-x-mark')
+                    ->color('gray')
+                    ->visible(fn ($record) => $record->canCancel())
+                    ->requiresConfirmation()
+                    ->action(function ($record) {
+                        $record->update([
+                            'cancelled_at' => now(),
+                            'status' => BookingStatus::CANCELLED,
+                        ]);
+                        $record->createLog(InventoryLogType::STATUS_CHANGE, 'Booking cancelled');
+                        Notification::make()->title('Booking dibatalkan')->success()->send();
+                    }),
 
-                    Actions\DeleteAction::make()
-                        ->visible(fn () => auth()->user()->hasRole('admin')),
-                ]),
+                Actions\DeleteAction::make()->iconButton()
+                    ->visible(fn () => auth()->user()->hasRole('admin')),
             ])
             ->bulkActions([]);
     }
@@ -378,6 +375,7 @@ class InventoryBookingResource extends Resource
             'create' => Pages\CreateInventoryBooking::route('/create'),
             'view' => Pages\ViewInventoryBooking::route('/{record}'),
             'edit' => Pages\EditInventoryBooking::route('/{record}/edit'),
+            'form' => Pages\InventoryBookingForm::route('/{record}/form'),
         ];
     }
 }

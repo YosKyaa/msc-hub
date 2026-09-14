@@ -3,13 +3,15 @@
 namespace App\Observers;
 
 use App\Models\ContentRequest;
-use App\Models\User;
+use App\Notifications\ContentRequestSubmitted;
 use App\Notifications\ContentRequestStatusUpdated;
 use App\Notifications\NewContentRequestNotification;
-use Illuminate\Support\Facades\Notification;
+use App\Observers\Concerns\DispatchesMscNotifications;
 
 class ContentRequestObserver
 {
+    use DispatchesMscNotifications;
+
     /**
      * Handle events after all transactions are committed.
      *
@@ -22,16 +24,15 @@ class ContentRequestObserver
      */
     public function created(ContentRequest $contentRequest): void
     {
-        // Send notification to Staff/Head/Admin
-        $recipients = User::role(['admin', 'staff_msc', 'head_msc'])->get();
-        
-        // Loop and add delay to avoid Mailtrap Rate Limiting
-        foreach ($recipients as $index => $recipient) {
-            $recipient->notify(
-                (new NewContentRequestNotification($contentRequest))
-                    ->delay(now()->addSeconds(($index + 1) * 10))
-            );
-        }
+        $context = ['content_request_id' => $contentRequest->id];
+
+        $this->notifyRequester(
+            $contentRequest->requester_email,
+            new ContentRequestSubmitted($contentRequest),
+            $context,
+        );
+
+        $this->notifyMscTeam(new NewContentRequestNotification($contentRequest), $context);
     }
 
     /**
@@ -40,12 +41,16 @@ class ContentRequestObserver
     public function updated(ContentRequest $contentRequest): void
     {
         // Check if status changed
-        if ($contentRequest->isDirty('status')) {
-            // Send notification to requester
-            if ($contentRequest->requester_email) {
-                Notification::route('mail', $contentRequest->requester_email)
-                    ->notify(new ContentRequestStatusUpdated($contentRequest));
-            }
+        $notifiableStatuses = ['need_revision', 'approved', 'rejected', 'published'];
+
+        if ($contentRequest->isDirty('status')
+            && $contentRequest->requester_email
+            && in_array($contentRequest->status->value, $notifiableStatuses, true)) {
+            $this->notifyRequester(
+                $contentRequest->requester_email,
+                new ContentRequestStatusUpdated($contentRequest),
+                ['content_request_id' => $contentRequest->id],
+            );
         }
     }
 
