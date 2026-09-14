@@ -4,9 +4,12 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
+use App\Support\GoogleLogin;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Socialite\Facades\Socialite;
+use Throwable;
 
 class AdminGoogleAuthController extends Controller
 {
@@ -16,9 +19,8 @@ class AdminGoogleAuthController extends Controller
 
     public function redirect()
     {
-        // Set session flag for admin login
-        session(['google_auth_type' => 'admin']);
-        
+        GoogleLogin::begin(GoogleLogin::ADMIN);
+
         return Socialite::driver('google')
             ->scopes(['openid', 'profile', 'email'])
             ->with(['prompt' => 'select_account'])
@@ -27,43 +29,60 @@ class AdminGoogleAuthController extends Controller
 
     public function callback(Request $request)
     {
-        try {
-            $googleUser = Socialite::driver('google')->stateless()->user();
-        } catch (\Exception $e) {
-            return redirect()->route('filament.admin.auth.login')
-                ->with('error', 'Gagal login dengan Google. Silakan coba lagi.');
+        if (GoogleLogin::attemptExpired()) {
+            return $this->refuse(GoogleLogin::expiredMessage());
         }
 
-        if (!$googleUser->getEmail()) {
-            return redirect()->route('filament.admin.auth.login')
-                ->with('error', 'Email tidak ditemukan dari akun Google.');
+        try {
+            // Bukan stateless: parameter `state` yang ditaruh saat redirect
+            // memang tersimpan di sesi yang sama, dan memeriksanya menutup
+            // jalan bagi permintaan callback yang dipalsukan dari luar.
+            $googleUser = Socialite::driver('google')->user();
+        } catch (Throwable $exception) {
+            return $this->refuse(GoogleLogin::report($exception, 'panel'));
         }
 
         $email = $googleUser->getEmail();
-        $domain = substr(strrchr($email, "@"), 1);
 
-        if (!in_array($domain, $this->allowedDomains)) {
-            return redirect()->route('filament.admin.auth.login')
-                ->with('error', 'Hanya email @jgu.ac.id yang diperbolehkan untuk akses admin.');
+        if (! $email) {
+            return $this->refuse('Email tidak ditemukan dari akun Google.');
         }
 
-        // Find existing user by email
+        $domain = strtolower(substr(strrchr($email, '@'), 1));
+
+        if (! in_array($domain, $this->allowedDomains, true)) {
+            return $this->refuse('Panel hanya dapat diakses dengan email @jgu.ac.id.');
+        }
+
         $user = User::where('email', $email)->first();
 
-        if (!$user) {
-            return redirect()->route('filament.admin.auth.login')
-                ->with('error', 'Akun Anda belum terdaftar. Hubungi administrator.');
+        if ($user === null) {
+            return $this->refuse('Akun '.$email.' belum terdaftar. Hubungi administrator MSC.');
         }
 
-        // Check if user has panel access permission
-        if (!$user->hasPermissionTo('panel.access')) {
-            return redirect()->route('filament.admin.auth.login')
-                ->with('error', 'Anda tidak memiliki akses ke panel admin.');
+        if (! $user->hasPermissionTo('panel.access')) {
+            return $this->refuse('Akun Anda terdaftar tetapi belum diberi akses panel.');
         }
 
-        // Login the user
         Auth::login($user, true);
 
-        return redirect()->to('/panel');
+        // Sesi diperbarui setelah login supaya sesi lama tidak bisa dipakai
+        // ulang, dan penanda perjalanan tidak tertinggal untuk login berikutnya.
+        $request->session()->regenerate();
+        GoogleLogin::finish();
+
+        return redirect()->intended('/panel');
+    }
+
+    /**
+     * Setiap penolakan berakhir di halaman login panel, bukan di halaman
+     * peminjam — dulu admin yang gagal masuk mendarat di portal publik dengan
+     * pesan galat yang bukan miliknya.
+     */
+    private function refuse(string $message): RedirectResponse
+    {
+        GoogleLogin::finish();
+
+        return redirect()->route('filament.admin.auth.login')->with('error', $message);
     }
 }

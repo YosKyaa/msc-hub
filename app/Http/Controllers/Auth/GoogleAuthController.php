@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\GoogleLogin;
 use App\Support\RequesterSession;
 use App\Support\SafeRedirect;
 use Illuminate\Http\Request;
@@ -19,6 +20,7 @@ class GoogleAuthController extends Controller
     public function redirect(Request $request)
     {
         Session::put('google_auth_redirect', $this->intendedUrl($request->input('redirect')));
+        GoogleLogin::begin();
 
         return Socialite::driver('google')
             ->scopes(['openid', 'profile', 'email'])
@@ -27,20 +29,28 @@ class GoogleAuthController extends Controller
 
     public function callback(Request $request)
     {
-        // Check if this is an admin login
-        if (session('google_auth_type') === 'admin') {
-            Session::forget('google_auth_type');
-
+        // Google hanya memanggil balik satu alamat, jadi perjalanan menuju
+        // panel dibedakan lewat penanda di sesi dan diserahkan seluruhnya —
+        // termasuk penanganan galatnya — ke controller panel.
+        if (GoogleLogin::isForPanel()) {
             return app(AdminGoogleAuthController::class)->callback($request);
         }
 
         // Tetap di halaman yang memicu login supaya pesan error terlihat di konteksnya.
         $intended = $this->intendedUrl(Session::get('google_auth_redirect'));
 
+        if (GoogleLogin::attemptExpired()) {
+            GoogleLogin::finish();
+
+            return redirect($intended)->with('error', GoogleLogin::expiredMessage());
+        }
+
         try {
             $googleUser = Socialite::driver('google')->user();
-        } catch (\Exception $e) {
-            return redirect($intended)->with('error', 'Gagal login dengan Google. Silakan coba lagi.');
+        } catch (\Throwable $exception) {
+            GoogleLogin::finish();
+
+            return redirect($intended)->with('error', GoogleLogin::report($exception, 'peminjam'));
         }
 
         $email = $googleUser->getEmail();
@@ -64,6 +74,7 @@ class GoogleAuthController extends Controller
         ]);
 
         Session::forget('google_auth_redirect');
+        GoogleLogin::finish();
 
         // Sesi yang berakhir melempar peminjam ke Google tanpa sempat
         // menampilkan alasannya; pesan itu disampaikan sekarang.
