@@ -10,21 +10,22 @@ use Illuminate\Testing\TestResponse;
 use Tests\TestCase;
 
 /**
- * Header peminjam.
+ * Navigasi portal peminjam.
  *
- * Dulu tiap layout menyusun navigasinya sendiri, sehingga menunya berubah
- * susunan ketika peminjam berpindah antara pengajuan konten dan peminjaman —
- * dan dari halaman konten ia sama sekali tidak bisa mencapai peminjaman.
+ * Menunya menetap di sisi kiri dan tersusun mengikuti cara orang berpikir:
+ * apa yang bisa diajukan, lalu apa yang sedang berjalan. Tiap menu membawa
+ * satu kalimat penjelas, karena namanya saja belum tentu dimengerti orang
+ * yang baru pertama membuka portal ini.
  */
-class SiteHeaderTest extends TestCase
+class SiteNavigationTest extends TestCase
 {
     use RefreshDatabase;
 
     /** Layanan yang harus selalu bisa dijangkau seorang peminjam. */
-    private const LAYANAN = ['Ajukan Konten', 'Pinjam Alat', 'Booking Ruangan'];
+    private const LAYANAN = ['Ajukan Konten', 'Booking Ruangan', 'Pinjam Alat'];
 
     /** Halaman miliknya sendiri, hanya berguna setelah masuk. */
-    private const MILIK_SAYA = ['Konten Saya', 'Riwayat Booking'];
+    private const MILIK_SAYA = ['Ringkasan', 'Konten Saya', 'Riwayat Booking'];
 
     protected function setUp(): void
     {
@@ -64,13 +65,14 @@ class SiteHeaderTest extends TestCase
     private function borrowerPages(): array
     {
         return [
+            'Ringkasan' => $this->asRequester()->get(route('requester.dashboard')),
             'Ajukan Konten' => $this->asRequester()->get(route('request.content')),
             'Pinjam Alat' => $this->asRequester()->get(route('booking.inventory')),
             'Booking Ruangan' => $this->asRequester()->get(route('booking.room')),
         ];
     }
 
-    public function test_every_borrower_page_offers_the_same_menu(): void
+    public function test_every_borrower_page_carries_the_same_sidebar(): void
     {
         foreach ($this->borrowerPages() as $halaman => $response) {
             $response->assertOk();
@@ -79,13 +81,31 @@ class SiteHeaderTest extends TestCase
                 $response->assertSee($label, false);
             }
 
-            // Menu akun ikut hadir di mana pun, bukan hanya di portal booking.
+            // Menunya tersusun, bukan sekadar berderet.
+            $response->assertSee('Buat Pengajuan', false);
+            $response->assertSee('Pantau Pengajuan', false);
             $response->assertSee('Akun saya', false);
         }
     }
 
     /**
-     * Inti keluhannya: dari halaman pengajuan konten, peminjam tidak punya
+     * Yang diminta: alurnya harus terbaca oleh orang awam. Nama menu saja
+     * tidak cukup — tiap menu menjelaskan sendiri apa isinya.
+     */
+    public function test_each_menu_item_explains_itself_in_plain_indonesian(): void
+    {
+        $response = $this->asRequester()->get(route('requester.dashboard'))->assertOk();
+
+        $response->assertSee('Minta dibuatkan foto, video, atau desain.');
+        $response->assertSee('Pinjam studio atau ruang rapat MSC.');
+        $response->assertSee('Kamera, lighting, audio, dan lainnya.');
+        $response->assertSee('Sudah sampai mana permintaan konten Anda.');
+        $response->assertSee('Ruangan dan alat yang pernah Anda pinjam.');
+        $response->assertSee('Semua pengajuan Anda dalam satu halaman.');
+    }
+
+    /**
+     * Inti keluhan awal: dari halaman pengajuan konten, peminjam tidak punya
      * jalan menuju peminjaman alat maupun ruangan.
      */
     public function test_the_content_page_can_reach_the_borrowing_services(): void
@@ -97,15 +117,15 @@ class SiteHeaderTest extends TestCase
     }
 
     /**
-     * Sebelumnya header tidak menampilkan cara masuk sama sekali; peminjam
-     * hanya terlempar ke Google begitu menyentuh tautan yang butuh login.
+     * Pengunjung yang belum masuk diberi tahu untuk apa ia harus masuk, dan
+     * diarahkan ke satu pintu masuk yang sama seperti dari beranda.
      */
-    public function test_a_signed_out_visitor_is_offered_a_way_in(): void
+    public function test_a_signed_out_visitor_is_told_why_to_sign_in(): void
     {
         $response = $this->get(route('request.content'))->assertOk();
 
-        $response->assertSee('Masuk dengan Google');
-        $response->assertSee(route('google.redirect', ['redirect' => route('request.content')]), false);
+        $response->assertSee('Masuk dengan akun kampus untuk mengajukan dan memantau permintaan Anda.');
+        $response->assertSee(route('login.portal', ['redirect' => route('request.content')]), false);
     }
 
     public function test_private_pages_are_not_advertised_before_signing_in(): void
@@ -136,5 +156,18 @@ class SiteHeaderTest extends TestCase
             ->get(route('booking.room'))
             ->assertOk()
             ->assertSee('href="'.route('landing').'"', false);
+    }
+
+    /**
+     * Di layar sempit menunya menjadi laci; tombol pembukanya diberi label
+     * "Menu", bukan sekadar ikon tiga garis.
+     */
+    public function test_narrow_screens_get_a_labelled_menu_button(): void
+    {
+        $response = $this->asRequester()->get(route('requester.dashboard'))->assertOk();
+
+        $response->assertSee('aria-controls="menu-utama"', false);
+        $response->assertSee('Buka menu', false);
+        $response->assertSee('>Menu<', false);
     }
 }

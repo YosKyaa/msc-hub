@@ -4,16 +4,15 @@
     'compact' => false,
 ])
 
-{{-- Sebelumnya header sama sekali tidak menampilkan cara masuk: peminjam yang
-     belum login hanya melihat daftar tautan, lalu terlempar ke Google tanpa
-     penjelasan begitu salah satunya diklik. --}}
+{{-- Mengarah ke portal, bukan langsung ke Google: satu pintu masuk untuk
+     seluruh sistem, dan pengunjung yang ternyata admin tidak tersesat. --}}
 @php
     // Ditulis utuh, bukan dirangkai dari $tone: kelas yang dibentuk saat
     // berjalan hanya selamat selama halaman memakai Tailwind Play CDN.
     $cincin = $tone === 'blue' ? 'focus:ring-blue-300' : 'focus:ring-indigo-300';
 @endphp
 
-<a href="{{ route('google.redirect', ['redirect' => request()->fullUrl()]) }}"
+<a href="{{ route('login.portal', ['redirect' => request()->fullUrl()]) }}"
    {{ $attributes->class([
        'inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white font-medium text-gray-700 transition hover:bg-gray-50 focus:outline-none focus:ring-2',
        $cincin,
@@ -26,5 +25,5 @@
         <path fill="#FBBC05" d="M5.4 14.3a7.2 7.2 0 0 1 0-4.6V6.6H1.4a12 12 0 0 0 0 10.8l4-3.1Z"/>
         <path fill="#EA4335" d="M12 4.8c1.8 0 3.3.6 4.6 1.8l3.4-3.4A12 12 0 0 0 1.4 6.6l4 3.1C6.3 6.9 8.9 4.8 12 4.8Z"/>
     </svg>
-    <span>Masuk{{ $compact ? '' : ' dengan Google' }}</span>
+    <span>Masuk</span>
 </a>

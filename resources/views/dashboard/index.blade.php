@@ -1,6 +1,6 @@
 @extends('layouts.public')
 
-@section('title', 'Dasbor')
+@section('title', 'Ringkasan')
 
 @section('content')
 <div class="space-y-8">
@@ -10,7 +10,10 @@
             <h1 class="text-xl font-bold text-gray-900 sm:text-2xl">
                 Halo, {{ \Illuminate\Support\Str::before($requester['name'], ' ') }}
             </h1>
-            <p class="mt-1 break-words text-sm text-gray-500">{{ $requester['email'] }}</p>
+            <p class="mt-1 text-sm text-gray-600">
+                Halaman ini merangkum semua pengajuan Anda ke tim Media &amp; Strategic Communications.
+            </p>
+            <p class="mt-0.5 break-words text-xs text-gray-400">{{ $requester['email'] }}</p>
         </div>
         <span class="self-start rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
             {{ ($requester['type'] ?? 'student') === 'student' ? 'Mahasiswa' : 'Dosen / Tendik' }}
@@ -75,6 +78,30 @@
                 </a>
             @endforeach
         </div>
+    </section>
+
+    {{-- Orang yang baru pertama mengajukan tidak tahu apa yang terjadi
+         sesudah tombol kirim ditekan. Tiga langkah ini menjawabnya. --}}
+    <section class="rounded-2xl border border-gray-200 bg-white p-5">
+        <h2 class="font-semibold text-gray-900">Bagaimana prosesnya?</h2>
+
+        <ol class="mt-4 grid gap-4 sm:grid-cols-3">
+            @foreach ([
+                ['1', 'Anda mengajukan', 'Isi formulir dan kirim. Anda langsung menerima kode pengajuan.'],
+                ['2', 'Tim MSC meninjau', 'Staf memeriksa, lalu Kepala MSC menyetujui. Anda dikabari lewat email.'],
+                ['3', 'Selesai', 'Statusnya berubah di halaman ini dan pengajuan siap dijalankan.'],
+            ] as [$nomor, $judul, $isi])
+                <li class="flex gap-3">
+                    <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-600">
+                        {{ $nomor }}
+                    </span>
+                    <span class="min-w-0">
+                        <span class="block text-sm font-medium text-gray-900">{{ $judul }}</span>
+                        <span class="mt-0.5 block text-xs leading-relaxed text-gray-500">{{ $isi }}</span>
+                    </span>
+                </li>
+            @endforeach
+        </ol>
     </section>
 
     {{-- Pengajuan sendiri --}}
