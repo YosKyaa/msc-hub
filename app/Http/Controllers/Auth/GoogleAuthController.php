@@ -99,6 +99,6 @@ class GoogleAuthController extends Controller
      */
     protected function intendedUrl(?string $target): string
     {
-        return SafeRedirect::sanitize($target, route('request.content'));
+        return SafeRedirect::sanitize($target, route('requester.dashboard'));
     }
 }

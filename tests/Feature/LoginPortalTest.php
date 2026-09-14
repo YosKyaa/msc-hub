@@ -70,7 +70,7 @@ class LoginPortalTest extends TestCase
             'name' => 'Budi Santoso',
             'email' => 'budi@student.jgu.ac.id',
             'type' => 'student',
-        ]])->get(route('login.portal'))->assertRedirect(route('landing'));
+        ]])->get(route('login.portal'))->assertRedirect(route('requester.dashboard'));
     }
 
     public function test_a_signed_in_admin_goes_straight_to_the_panel(): void

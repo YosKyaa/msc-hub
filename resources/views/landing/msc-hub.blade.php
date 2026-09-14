@@ -236,16 +236,19 @@
                             Platform terpadu untuk pengajuan konten, peminjaman inventaris, dan booking ruang di Media & Strategic Communications.
                         </p>
 
+                        {{-- Semua ajakan di sini melewati pintu masuk yang sama.
+                             Ketiganya butuh login, jadi mengarahkannya langsung
+                             ke formulir hanya berujung pentalan ke Google. --}}
                         <div class="flex flex-wrap gap-4">
-                            <a href="{{ route('request.content') }}" class="inline-flex items-center gap-2 px-6 py-3.5 bg-dark text-white rounded-full font-semibold hover:bg-gray-800 transition shadow-lg shadow-gray-900/10">
+                            <a href="{{ route('login.portal') }}" class="inline-flex items-center gap-2 px-6 py-3.5 bg-dark text-white rounded-full font-semibold hover:bg-gray-800 transition shadow-lg shadow-gray-900/10">
                                 <span>Ajukan Konten</span>
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                             </a>
-                            <a href="{{ route('booking.room') }}" class="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-gray-900 rounded-full font-semibold hover:bg-gray-50 transition border border-gray-200">
+                            <a href="{{ route('login.portal') }}" class="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-gray-900 rounded-full font-semibold hover:bg-gray-50 transition border border-gray-200">
                                 <span>Booking Ruang</span>
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                             </a>
-                            <a href="{{ route('request.status') }}" class="inline-flex items-center gap-2 px-6 py-3.5 text-blue-700 rounded-full font-semibold hover:bg-blue-50 transition border border-blue-200">
+                            <a href="{{ route('login.portal') }}" class="inline-flex items-center gap-2 px-6 py-3.5 text-blue-700 rounded-full font-semibold hover:bg-blue-50 transition border border-blue-200">
                                 <span>Cek Status</span>
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                             </a>
