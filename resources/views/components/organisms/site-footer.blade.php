@@ -11,8 +11,8 @@
                 </div>
             </div>
             <div class="text-center text-sm text-gray-500 sm:text-right">
-                <p>&copy; {{ date('Y') }} MSC Hub</p>
-                <p class="mt-1 hidden text-xs sm:block">Jl. Boulevard Grand Depok City, Depok</p>
+                <p>&copy; {{ date('Y') }} Jakarta Global University</p>
+                <p class="mt-1 text-xs">Jl. Boulevard Grand Depok City, Depok 16412</p>
             </div>
         </div>
     </div>

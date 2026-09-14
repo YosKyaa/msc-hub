@@ -12,18 +12,24 @@
         [x-cloak] { display: none !important; }
     </style>
 </head>
-<body class="min-h-screen bg-gray-50 flex flex-col">
-    <x-organisms.site-header tone="blue" />
+<body class="min-h-screen bg-gray-50">
+    {{-- Navigasi menetap di sisi kiri; di ponsel ia menjadi laci yang
+         dibuka dari bilah atas. --}}
+    <div class="lg:flex" x-data="{ menuOpen: false }" @keydown.escape.window="menuOpen = false">
+        <x-organisms.site-sidebar tone="blue" />
 
-    {{-- Organism: reusable shadcn-style feedback notifications --}}
-    <x-organisms.flash-messages />
+        <div class="flex min-h-screen w-full min-w-0 flex-col">
+            <x-organisms.top-bar tone="blue" />
 
-    {{-- Main Content --}}
-    <main class="mx-auto w-full max-w-6xl flex-grow px-4 py-6">
-        @yield('content')
-    </main>
+            <x-organisms.flash-messages />
 
-    <x-organisms.site-footer />
+            <main class="mx-auto w-full max-w-5xl flex-grow px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
+                @yield('content')
+            </main>
+
+            <x-organisms.site-footer />
+        </div>
+    </div>
 
     @stack('scripts')
 </body>

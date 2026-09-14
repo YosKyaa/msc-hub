@@ -184,6 +184,20 @@ class RequesterDashboardTest extends TestCase
             ->assertDontSee('RB-ORANG-LAIN');
     }
 
+    /**
+     * Orang yang baru pertama mengajukan tidak tahu apa yang terjadi sesudah
+     * tombol kirim ditekan; dasbor menjawabnya sebelum ia bertanya.
+     */
+    public function test_the_dashboard_explains_what_happens_after_submitting(): void
+    {
+        $response = $this->signIn()->get(route('requester.dashboard'))->assertOk();
+
+        $response->assertSee('Bagaimana prosesnya?');
+        $response->assertSee('Anda mengajukan');
+        $response->assertSee('Tim MSC meninjau');
+        $response->assertSee('Selesai');
+    }
+
     public function test_a_requester_with_nothing_yet_is_pointed_at_what_to_do(): void
     {
         $response = $this->signIn()->get(route('requester.dashboard'))->assertOk();
