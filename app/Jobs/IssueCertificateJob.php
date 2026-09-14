@@ -11,8 +11,12 @@ use Illuminate\Support\Facades\Log;
 use Throwable;
 
 /**
- * Menerbitkan satu sertifikat lalu mengantrekan emailnya.
- * Idempotent: keikutsertaan yang sudah punya sertifikat dilewati.
+ * Menerbitkan satu sertifikat secara digital.
+ *
+ * Berhenti sampai di situ: sertifikatnya langsung bisa diverifikasi dan
+ * diunduh, tetapi emailnya baru dikirim ketika admin memintanya lewat
+ * CertificateBatchMailer. Idempotent: keikutsertaan yang sudah punya
+ * sertifikat dilewati.
  */
 class IssueCertificateJob implements ShouldQueue
 {
@@ -38,7 +42,7 @@ class IssueCertificateJob implements ShouldQueue
             return;
         }
 
-        SendCertificateEmailJob::dispatch($issuer->issue($participation));
+        $issuer->issue($participation);
     }
 
     public function failed(Throwable $exception): void

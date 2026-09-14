@@ -125,12 +125,16 @@ class ParticipationsRelationManager extends RelationManager
 
                 ImportParticipantsAction::make(),
 
+                // Penerbitan berhenti di tahap digital. Pengirimannya ada di
+                // tab Penerima Sertifikat sebagai keputusan terpisah.
                 Actions\Action::make('issueAllEligible')
-                    ->label('Terbitkan Semua Eligible')
+                    ->label('Terbitkan Digital')
                     ->icon('heroicon-o-academic-cap')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->modalDescription('Sertifikat diterbitkan di latar belakang. Email dikirim setelah kegiatan berstatus Dipublikasikan.')
+                    ->modalHeading('Terbitkan Sertifikat Secara Digital')
+                    ->modalDescription('Sertifikat langsung bisa diverifikasi dan diunduh. Email BELUM dikirim — kirim dari tab Penerima Sertifikat setelah hasilnya diperiksa.')
+                    ->modalSubmitActionLabel('Ya, Terbitkan')
                     ->visible(fn () => CertificatePermission::allowsIssuing())
                     ->action(fn () => $this->dispatchIssuing()),
             ])
@@ -176,9 +180,12 @@ class ParticipationsRelationManager extends RelationManager
                     ->visible(fn () => CertificatePermission::allows('edit'))
                     ->action(fn ($records) => $records->each->update(['attendance_status' => 'attended', 'eligible_at' => now()])),
                 Actions\BulkAction::make('issueCertificates')
-                    ->label('Terbitkan Sertifikat')
+                    ->label('Terbitkan Digital')
                     ->icon('heroicon-o-academic-cap')
                     ->requiresConfirmation()
+                    ->modalHeading('Terbitkan Sertifikat Secara Digital')
+                    ->modalDescription('Email belum dikirim. Kirim dari tab Penerima Sertifikat setelah hasilnya diperiksa.')
+                    ->modalSubmitActionLabel('Ya, Terbitkan')
                     ->visible(fn () => CertificatePermission::allowsIssuing())
                     ->action(fn (Collection $records) => $this->dispatchIssuing($records)),
                 Actions\DeleteBulkAction::make(),
@@ -206,8 +213,8 @@ class ParticipationsRelationManager extends RelationManager
         }
 
         Notification::make()
-            ->title('Penerbitan diantrekan')
-            ->body("{$batch->totalJobs} sertifikat sedang diproses di latar belakang.")
+            ->title('Penerbitan digital diantrekan')
+            ->body("{$batch->totalJobs} sertifikat sedang diterbitkan. Email belum dikirim — buka tab Penerima Sertifikat untuk mengirimnya.")
             ->success()
             ->send();
     }
