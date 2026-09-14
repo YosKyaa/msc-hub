@@ -6,7 +6,6 @@ use App\Enums\AttendanceAction;
 use App\Enums\EligibilityRule;
 use App\Filament\Concerns\AuthorizesCertificateModule;
 use App\Filament\Resources\CertificateEventResource\Pages;
-use App\Filament\Resources\CertificateEventResource\RelationManagers\CertificatesRelationManager;
 use App\Filament\Resources\CertificateEventResource\RelationManagers\ParticipationsRelationManager;
 use App\Models\CertificateEvent;
 use App\Models\Issuer;
@@ -278,7 +277,9 @@ class CertificateEventResource extends Resource
 
     public static function getRelations(): array
     {
-        return [ParticipationsRelationManager::class, CertificatesRelationManager::class];
+        // Satu tabel saja: peserta dan sertifikatnya adalah satu perjalanan,
+        // dan memisahkannya membuat orang yang sama muncul dua kali.
+        return [ParticipationsRelationManager::class];
     }
 
     public static function getPages(): array
