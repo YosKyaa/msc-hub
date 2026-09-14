@@ -1,12 +1,12 @@
 @extends('layouts.public')
 
-@section('title', 'Cek Status Request')
+@section('title', 'Request Konten Saya')
 
 @section('content')
-<div class="max-w-lg mx-auto">
+<div class="max-w-3xl mx-auto">
     <div class="text-center mb-6">
-        <h1 class="text-2xl font-bold text-gray-900">Cek Status Request</h1>
-        <p class="text-gray-500 mt-1">Masukkan kode request untuk melihat status</p>
+        <h1 class="text-2xl font-bold text-gray-900">Request Konten Saya</h1>
+        <p class="text-gray-500 mt-1">Pantau seluruh request atau cari menggunakan kode request.</p>
     </div>
 
     @if(!$requester)
@@ -54,10 +54,54 @@
                 </button>
             </form>
         </div>
-        
-        <p class="text-center text-sm text-gray-500 mt-4">
-            Anda hanya dapat melihat request yang dibuat dengan email {{ $requester['email'] }}
-        </p>
+
+        <section class="mt-8" aria-labelledby="request-history-title">
+            <div class="mb-4 flex items-end justify-between gap-4">
+                <div>
+                    <h2 id="request-history-title" class="text-lg font-semibold text-gray-900">Riwayat Request</h2>
+                    <p class="text-sm text-gray-500">Hanya request dari akun {{ $requester['email'] }}.</p>
+                </div>
+                <span class="rounded-full bg-gray-100 px-2.5 py-1 text-xs font-medium text-gray-600">
+                    {{ $contentRequests->count() }} request
+                </span>
+            </div>
+
+            @if($contentRequests->isEmpty())
+                <div class="rounded-xl border bg-white p-8 text-center">
+                    <p class="font-medium text-gray-900">Belum ada request konten</p>
+                    <p class="mt-1 text-sm text-gray-500">Request yang Anda ajukan akan tampil di sini.</p>
+                    <a href="{{ route('request.content') }}" class="mt-4 inline-flex rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">
+                        Ajukan Konten
+                    </a>
+                </div>
+            @else
+                <div class="space-y-3">
+                    @foreach($contentRequests as $contentRequest)
+                        @php
+                            $statusClass = match($contentRequest->status->value) {
+                                'approved', 'published' => 'bg-emerald-100 text-emerald-700',
+                                'rejected', 'need_revision' => 'bg-red-100 text-red-700',
+                                'in_progress', 'waiting_head_approval' => 'bg-amber-100 text-amber-700',
+                                'archived' => 'bg-gray-100 text-gray-600',
+                                default => 'bg-blue-100 text-blue-700',
+                            };
+                        @endphp
+                        <a href="{{ route('request.status.detail', ['request_code' => $contentRequest->request_code]) }}"
+                            class="flex items-center justify-between gap-4 rounded-xl border bg-white p-4 transition hover:border-blue-200 hover:shadow-sm">
+                            <div class="min-w-0">
+                                <div class="flex flex-wrap items-center gap-2">
+                                    <span class="font-mono font-semibold text-blue-700">{{ $contentRequest->request_code }}</span>
+                                    <span class="rounded-full px-2 py-0.5 text-xs font-medium {{ $statusClass }}">{{ $contentRequest->status->getLabel() }}</span>
+                                </div>
+                                <p class="mt-1 truncate text-sm text-gray-600">{{ $contentRequest->content_type->getLabel() }}</p>
+                                <p class="mt-1 text-xs text-gray-400">Diajukan {{ $contentRequest->created_at->format('d M Y, H:i') }}</p>
+                            </div>
+                            <svg class="size-5 shrink-0 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m9 18 6-6-6-6"/></svg>
+                        </a>
+                    @endforeach
+                </div>
+            @endif
+        </section>
     @endif
 </div>
 @endsection
