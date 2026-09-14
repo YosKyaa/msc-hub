@@ -3,6 +3,7 @@
 use App\Http\Controllers\AnnouncementPublicController;
 use App\Http\Controllers\AttendanceController;
 use App\Http\Controllers\Auth\GoogleAuthController;
+use App\Http\Controllers\Auth\LoginPortalController;
 use App\Http\Controllers\BorrowingFormController;
 use App\Http\Controllers\CertificatePublicController;
 use App\Http\Controllers\ContentRequestController;
@@ -17,6 +18,10 @@ Route::get('/msc-hub', [LandingController::class, 'index'])->name('landing.alias
 // Public Announcements
 Route::get('/announcements', [AnnouncementPublicController::class, 'index'])->name('announcements.index');
 Route::get('/announcements/{slug}', [AnnouncementPublicController::class, 'show'])->name('announcements.show');
+
+// Satu pintu masuk: pengunjung memilih mahasiswa/pengaju atau admin, lalu
+// diteruskan ke cara masuk masing-masing.
+Route::get('/masuk', [LoginPortalController::class, 'show'])->name('login.portal');
 
 // Google OAuth for Public Requester (rate limited)
 Route::prefix('auth/google')->name('auth.google.')->middleware('throttle:10,1')->group(function () {
