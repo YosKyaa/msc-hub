@@ -35,9 +35,20 @@ class Certificate extends Model
         });
     }
 
-    public function event(): BelongsTo { return $this->belongsTo(CertificateEvent::class, 'certificate_event_id'); }
-    public function participant(): BelongsTo { return $this->belongsTo(Participant::class); }
-    public function participation(): BelongsTo { return $this->belongsTo(CertificateEventParticipant::class, 'event_participant_id'); }
+    public function event(): BelongsTo
+    {
+        return $this->belongsTo(CertificateEvent::class, 'certificate_event_id');
+    }
+
+    public function participant(): BelongsTo
+    {
+        return $this->belongsTo(Participant::class);
+    }
+
+    public function participation(): BelongsTo
+    {
+        return $this->belongsTo(CertificateEventParticipant::class, 'event_participant_id');
+    }
 
     /**
      * Satu-satunya definisi validitas sertifikat: sudah terbit, belum dicabut,
@@ -67,6 +78,21 @@ class Certificate extends Model
     public function downloadUrl(): string
     {
         return route('certificates.download', $this->verification_token);
+    }
+
+    /**
+     * Nama berkas unduhan.
+     *
+     * Nomor resmi kampus memuat garis miring — "0001/CERT/MSC-JGU/IX/2026" —
+     * dan nama berkas tidak boleh memuatnya: header Content-Disposition
+     * menolaknya, sehingga setiap unduhan berujung galat. Karena itu nomornya
+     * diratakan lebih dulu, tetap terbaca tanpa memakai pemisah jalur.
+     */
+    public function downloadFileName(): string
+    {
+        $nomor = trim((string) preg_replace('/[^A-Za-z0-9]+/', '-', (string) $this->certificate_number), '-');
+
+        return 'Sertifikat-'.($nomor !== '' ? $nomor : $this->verification_token).'.pdf';
     }
 
     public function verificationUrl(): string

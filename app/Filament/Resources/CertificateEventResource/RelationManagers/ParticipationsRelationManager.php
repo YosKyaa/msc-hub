@@ -325,31 +325,32 @@ class ParticipationsRelationManager extends RelationManager
     /**
      * Ringkasan di atas tabel, supaya keadaan seluruh kegiatan terbaca tanpa
      * perlu menghitung baris satu per satu.
+     *
+     * Dihitung oleh basis data, bukan dengan memuat setiap peserta ke memori:
+     * satu kegiatan besar tidak boleh membuat halaman ini berat.
      */
     private function progressSummary(): string
     {
         /** @var CertificateEvent $event */
         $event = $this->getOwnerRecord();
 
-        $participations = $event->participations()->with('certificate')->get();
-        $jumlah = [];
+        $total = $event->participations()->count();
 
-        foreach ($participations as $participation) {
-            $label = CertificateStage::for($participation)->getLabel();
-            $jumlah[$label] = ($jumlah[$label] ?? 0) + 1;
-        }
-
-        if ($jumlah === []) {
+        if ($total === 0) {
             return 'Belum ada peserta. Tambahkan satu per satu atau impor dari berkas.';
         }
 
         $bagian = [];
 
-        foreach ($jumlah as $label => $total) {
-            $bagian[] = "{$total} {$label}";
+        foreach (CertificateStage::cases() as $stage) {
+            $jumlah = $stage->constrain($event->participations()->getQuery())->count();
+
+            if ($jumlah > 0) {
+                $bagian[] = $jumlah.' '.$stage->getLabel();
+            }
         }
 
-        $ringkasan = $participations->count().' orang: '.implode(' · ', $bagian);
+        $ringkasan = $total.' orang: '.implode(' · ', $bagian);
 
         // Sertifikat yang kehilangan pemiliknya tidak muncul di tabel ini,
         // jadi keberadaannya harus tetap diberitahukan.
@@ -364,20 +365,7 @@ class ParticipationsRelationManager extends RelationManager
 
     private function filterByStage(Builder $query, ?string $stage): Builder
     {
-        return match (CertificateStage::tryFrom((string) $stage)) {
-            CertificateStage::NOT_ELIGIBLE => $query->whereNull('eligible_at'),
-            CertificateStage::READY => $query->whereNotNull('eligible_at')->whereDoesntHave('certificate'),
-            CertificateStage::ISSUED => $query->whereHas('certificate', fn (Builder $c) => $c
-                ->whereNull('revoked_at')->whereNull('emailed_at')->whereNull('email_failed_at')->whereNotNull('recipient_email')),
-            CertificateStage::ISSUED_WITHOUT_EMAIL => $query->whereHas('certificate', fn (Builder $c) => $c
-                ->whereNull('revoked_at')->whereNull('emailed_at')->whereNull('recipient_email')),
-            CertificateStage::SENT => $query->whereHas('certificate', fn (Builder $c) => $c
-                ->whereNull('revoked_at')->whereNotNull('emailed_at')),
-            CertificateStage::FAILED => $query->whereHas('certificate', fn (Builder $c) => $c
-                ->whereNull('revoked_at')->whereNull('emailed_at')->whereNotNull('email_failed_at')),
-            CertificateStage::REVOKED => $query->whereHas('certificate', fn (Builder $c) => $c->whereNotNull('revoked_at')),
-            default => $query,
-        };
+        return CertificateStage::tryFrom((string) $stage)?->constrain($query) ?? $query;
     }
 
     /**

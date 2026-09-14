@@ -17,7 +17,11 @@ html, body { margin:0; padding:0; width:{{ $template->canvas_width }}px; height:
 .element { position:absolute; box-sizing:border-box; white-space:normal; }
 </style></head><body>
 <div class="canvas">
-<img class="background" src="{{ $backgroundDataUri }}" alt="">
+@if ($backgroundDataUri)
+    {{-- Latar sebagai <img>, bukan CSS: dompdf membuang seluruh aturan gaya
+         setelah url('data:...') berkutip tunggal. --}}
+    <img class="background" src="{{ $backgroundDataUri }}" alt="">
+@endif
 @foreach($template->elements ?? [] as $element)
     @php
         $variable = $element['variable'] ?? '';
