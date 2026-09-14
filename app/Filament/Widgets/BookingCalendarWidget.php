@@ -27,11 +27,15 @@ class BookingCalendarWidget extends CalendarWidget
     protected bool $eventClickEnabled = true;
     
     // Only visible to staff, head, and admin
+    /**
+     * Jadwal ini memuat nama peminjam dan keperluannya, jadi tidak pantas
+     * terbuka bagi siapa pun yang berhasil masuk panel. Izinnya disamakan
+     * dengan resource peminjaman — sebelumnya dipaksa selalu tampil oleh
+     * sisa penyetelan sementara.
+     */
     public static function canView(): bool
     {
-        return true; // DEBUG: Force show
-        // $user = auth()->user();
-        // return in_array($user->role, ['admin', 'staff', 'head']);
+        return auth()->user()?->can('room_bookings.view') ?? false;
     }
 
     public function getEvents(FetchInfo $fetchInfo): Collection|Builder|array

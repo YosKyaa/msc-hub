@@ -1,246 +1,191 @@
+@php
+    /**
+     * Dokumentasi panel.
+     *
+     * Sebelumnya halaman ini hanya membahas Projects, Assets, dan Tags —
+     * sepertiga sistem — sementara peminjaman, permintaan konten, dan
+     * sertifikat yang justru paling sering dikerjakan tidak disebut sama
+     * sekali. Susunannya kini mengikuti tiga alur kerja yang sebenarnya
+     * berjalan, masing-masing dari pengajuan sampai selesai.
+     */
+    $alur = [
+        [
+            'judul' => 'Permintaan Konten',
+            'ringkas' => 'Warga kampus minta dibuatkan foto, video, atau desain.',
+            'warna' => 'primary',
+            'langkah' => [
+                ['Pemohon mengajukan', 'Lewat halaman publik. Sistem memberi kode seperti CR-2026-0001.'],
+                ['Staf meninjau', 'Buka Permintaan Konten, tetapkan penanggung jawab dan tenggatnya.'],
+                ['Dikerjakan', 'Status diubah mengikuti perkembangan; pemohon memantaunya sendiri.'],
+                ['Kepala MSC menyetujui', 'Setelah disetujui, hasilnya dipublikasikan dan pemohon dikabari.'],
+            ],
+            'tautan' => ['filament.admin.resources.content-requests.index' => 'Buka Permintaan Konten'],
+        ],
+        [
+            'judul' => 'Peminjaman Ruangan & Alat',
+            'ringkas' => 'Pinjam studio, ruang rapat, kamera, lighting, dan audio.',
+            'warna' => 'warning',
+            'langkah' => [
+                ['Peminjam mengajukan', 'Memilih jadwal dan alat. Bentrok jadwal ditolak sistem sejak awal.'],
+                ['Staf menyetujui', 'Periksa jadwal dan kelengkapannya, lalu setujui atau tolak dengan alasan.'],
+                ['Kepala MSC menyetujui', 'Persetujuan kedua. Peminjam dikabari lewat email tiap status berubah.'],
+                ['Diambil & dikembalikan', 'Catat pengambilan dan pengembalian beserta kondisi alatnya.'],
+            ],
+            'tautan' => [
+                'filament.admin.resources.room-bookings.index' => 'Booking Ruangan',
+                'filament.admin.resources.inventory-bookings.index' => 'Peminjaman Alat',
+            ],
+        ],
+        [
+            'judul' => 'Sertifikat',
+            'ringkas' => 'Terbitkan sertifikat kegiatan, lengkap dengan halaman verifikasi.',
+            'warna' => 'success',
+            'langkah' => [
+                ['Siapkan kegiatan', 'Buat kegiatan, pilih templatnya, lalu publikasikan agar sertifikatnya sah.'],
+                ['Kumpulkan peserta', 'Lewat absensi QR, impor berkas, atau tambah satu per satu.'],
+                ['Terbitkan digital', 'Nomor diberikan dan halaman verifikasi langsung aktif. Email belum dikirim.'],
+                ['Kirim email', 'Setelah hasilnya diperiksa. Yang sudah menerima tidak dikirimi ulang.'],
+            ],
+            'tautan' => ['filament.admin.resources.certificate-events.index' => 'Buka Kegiatan Sertifikat'],
+        ],
+        [
+            'judul' => 'Arsip Media',
+            'ringkas' => 'Simpan hasil karya agar mudah dicari kembali.',
+            'warna' => 'gray',
+            'langkah' => [
+                ['Buat Project', 'Satu project untuk satu event atau kegiatan.'],
+                ['Tambah Asset', 'Foto, video, atau desain, beserta tautan sumber dan hasilnya.'],
+                ['Beri Tag', 'Supaya bisa ditemukan lewat pencarian nanti.'],
+            ],
+            'tautan' => [
+                'filament.admin.resources.projects.index' => 'Projects',
+                'filament.admin.resources.assets.index' => 'Assets',
+                'filament.admin.resources.tags.index' => 'Tags',
+            ],
+        ],
+    ];
+
+    $akses = [
+        ['Admin', 'Seluruh sistem, termasuk pengguna dan peran.'],
+        ['Kepala MSC', 'Persetujuan akhir untuk semua pengajuan, dan penerbitan sertifikat.'],
+        ['Staf MSC', 'Meninjau pengajuan, mengelola inventaris, arsip, dan sertifikat.'],
+        ['Dosen / Mahasiswa', 'Tidak masuk panel. Mengajukan lewat halaman publik.'],
+    ];
+
+    $tanya = [
+        [
+            'Kenapa sertifikat tidak bisa diterbitkan?',
+            'Kegiatannya belum memakai template yang aktif, atau belum ada peserta yang ditandai berhak. Keduanya disebutkan di pesan penolakannya.',
+        ],
+        [
+            'Sudah diterbitkan, kenapa emailnya belum sampai?',
+            'Menerbitkan dan mengirim memang dua langkah terpisah, supaya penerbitan yang keliru tidak terlanjur mendarat di kotak masuk. Tekan Kirim Email setelah hasilnya diperiksa.',
+        ],
+        [
+            'Email tidak pernah terkirim sama sekali.',
+            'Pengiriman email menunggu pekerja antrean. Pastikan `php artisan queue:work` berjalan di server. Panel akan memperingatkan bila antreannya menumpuk.',
+        ],
+        [
+            'Peserta salah ketik namanya di sertifikat.',
+            'Pakai tombol koreksi nama pada barisnya sebelum diterbitkan. Bila sudah terbit, cabut sertifikatnya lalu terbitkan ulang.',
+        ],
+        [
+            'Kenapa peserta yang sudah punya sertifikat tidak bisa dihapus?',
+            'Menghapusnya hanya melepaskan sertifikat dari pemiliknya — dokumennya tetap ada tetapi tidak terlihat lagi. Gunakan pencabutan bila sertifikatnya memang harus dibatalkan.',
+        ],
+    ];
+@endphp
+
 <x-filament-panels::page>
     <div class="space-y-6">
-        
-        {{-- Quick Start Card --}}
         <x-filament::section>
-            <x-slot name="heading">
-                <span class="text-xl">🚀 Quick Start</span>
+            <x-slot name="heading">Cara kerja MSC Hub</x-slot>
+            <x-slot name="description">
+                Semuanya berawal dari pengajuan warga kampus lewat halaman publik, lalu diproses di panel ini.
             </x-slot>
-            <x-slot name="description">Langkah cepat mulai mengarsip konten</x-slot>
-            
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <a href="{{ route('filament.admin.resources.projects.create') }}" 
-                   class="block p-4 bg-primary-50 dark:bg-primary-950 border border-primary-200 dark:border-primary-800 rounded-lg text-center hover:bg-primary-100 dark:hover:bg-primary-900 transition">
-                    <div class="text-2xl mb-1">📁</div>
-                    <div class="font-medium text-sm text-gray-900 dark:text-white">1. Buat Project</div>
-                    <div class="text-xs text-gray-500">Event/Kegiatan</div>
-                </a>
-                <a href="{{ route('filament.admin.resources.assets.create') }}" 
-                   class="block p-4 bg-success-50 dark:bg-success-950 border border-success-200 dark:border-success-800 rounded-lg text-center hover:bg-success-100 dark:hover:bg-success-900 transition">
-                    <div class="text-2xl mb-1">📦</div>
-                    <div class="font-medium text-sm text-gray-900 dark:text-white">2. Tambah Asset</div>
-                    <div class="text-xs text-gray-500">Foto/Video/Desain</div>
-                </a>
-                <div class="p-4 bg-warning-50 dark:bg-warning-950 border border-warning-200 dark:border-warning-800 rounded-lg text-center">
-                    <div class="text-2xl mb-1">🔗</div>
-                    <div class="font-medium text-sm text-gray-900 dark:text-white">3. Isi Link</div>
-                    <div class="text-xs text-gray-500">Source & Output</div>
-                </div>
-                <div class="p-4 bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-center">
-                    <div class="text-2xl mb-1">✅</div>
-                    <div class="font-medium text-sm text-gray-900 dark:text-white">4. Selesai!</div>
-                    <div class="text-xs text-gray-500">Arsip tersimpan</div>
-                </div>
-            </div>
+
+            <p class="text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                Ada empat hal yang dikerjakan di sini: <strong>permintaan konten</strong>,
+                <strong>peminjaman ruangan dan alat</strong>, <strong>penerbitan sertifikat</strong>, dan
+                <strong>arsip media</strong>. Tiga yang pertama selalu menempuh pola yang sama —
+                diajukan, ditinjau staf, disetujui Kepala MSC, lalu selesai — dan pemohon dikabari
+                lewat email pada tiap perubahan status.
+            </p>
+
+            <p class="mt-3 text-sm leading-relaxed text-gray-600 dark:text-gray-400">
+                Halaman depan panel menampilkan <strong>Perlu Tindakan Anda</strong>: apa saja yang
+                sedang menunggu, lengkap dengan jalan pintas ke sana. Mulailah dari situ.
+            </p>
         </x-filament::section>
 
-        {{-- Menu Utama --}}
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {{-- Projects --}}
-            <x-filament::section>
-                <x-slot name="heading">
-                    <span class="flex items-center gap-2">
-                        <span class="text-lg">📁</span>
-                        Projects
-                    </span>
-                </x-slot>
-                <div class="space-y-3">
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                        Kelompokkan aset berdasarkan event atau kegiatan.
-                    </p>
-                    <ul class="text-sm text-gray-500 space-y-1">
-                        <li>• Grup aset per event</li>
-                        <li>• Info: judul, unit, tanggal</li>
-                        <li>• Tambahkan tags</li>
-                    </ul>
-                    <div class="pt-2">
-                        <x-filament::link href="{{ route('filament.admin.resources.projects.index') }}">
-                            Buka Projects →
-                        </x-filament::link>
-                    </div>
+        @foreach ($alur as $item)
+            <x-filament::section collapsible :collapsed="! $loop->first">
+                <x-slot name="heading">{{ $loop->iteration }}. {{ $item['judul'] }}</x-slot>
+                <x-slot name="description">{{ $item['ringkas'] }}</x-slot>
+
+                <ol class="space-y-3">
+                    @foreach ($item['langkah'] as $nomor => $langkah)
+                        <li class="flex gap-3">
+                            <span @class([
+                                'flex size-7 shrink-0 items-center justify-center rounded-full text-sm font-semibold',
+                                'bg-primary-100 text-primary-700 dark:bg-primary-900 dark:text-primary-200' => $item['warna'] === 'primary',
+                                'bg-warning-100 text-warning-700 dark:bg-warning-900 dark:text-warning-200' => $item['warna'] === 'warning',
+                                'bg-success-100 text-success-700 dark:bg-success-900 dark:text-success-200' => $item['warna'] === 'success',
+                                'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200' => $item['warna'] === 'gray',
+                            ])>{{ $nomor + 1 }}</span>
+
+                            <span class="min-w-0">
+                                <span class="block text-sm font-medium text-gray-900 dark:text-white">{{ $langkah[0] }}</span>
+                                <span class="mt-0.5 block text-sm leading-relaxed text-gray-500 dark:text-gray-400">{{ $langkah[1] }}</span>
+                            </span>
+                        </li>
+                    @endforeach
+                </ol>
+
+                <div class="mt-5 flex flex-wrap gap-3 border-t border-gray-100 pt-4 dark:border-gray-800">
+                    @foreach ($item['tautan'] as $route => $label)
+                        <x-filament::link :href="route($route)">{{ $label }} &rarr;</x-filament::link>
+                    @endforeach
                 </div>
             </x-filament::section>
+        @endforeach
 
-            {{-- Assets --}}
+        <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
             <x-filament::section>
-                <x-slot name="heading">
-                    <span class="flex items-center gap-2">
-                        <span class="text-lg">📦</span>
-                        Assets
-                    </span>
-                </x-slot>
-                <div class="space-y-3">
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                        Arsip foto, video, desain, dan konten lainnya.
-                    </p>
-                    <ul class="text-sm text-gray-500 space-y-1">
-                        <li>• Link Drive/Figma/Canva</li>
-                        <li>• Link output IG/YT/Web</li>
-                        <li>• Filter tipe, platform, tahun</li>
-                    </ul>
-                    <div class="pt-2">
-                        <x-filament::link href="{{ route('filament.admin.resources.assets.index') }}" color="success">
-                            Buka Assets →
-                        </x-filament::link>
-                    </div>
-                </div>
-            </x-filament::section>
+                <x-slot name="heading">Siapa boleh apa</x-slot>
 
-            {{-- Tags --}}
-            <x-filament::section>
-                <x-slot name="heading">
-                    <span class="flex items-center gap-2">
-                        <span class="text-lg">🏷️</span>
-                        Tags
-                    </span>
-                </x-slot>
-                <div class="space-y-3">
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                        Kategorikan aset dan project dengan label.
-                    </p>
-                    <ul class="text-sm text-gray-500 space-y-1">
-                        <li>• Tag event rutin</li>
-                        <li>• Tag fakultas/unit</li>
-                        <li>• Buat saat input data</li>
-                    </ul>
-                    <div class="pt-2">
-                        <x-filament::link href="{{ route('filament.admin.resources.tags.index') }}" color="warning">
-                            Buka Tags →
-                        </x-filament::link>
-                    </div>
-                </div>
-            </x-filament::section>
-        </div>
-
-        {{-- Workflow --}}
-        <x-filament::section>
-            <x-slot name="heading">📋 Workflow Arsip Konten</x-slot>
-            
-            <div class="flex flex-wrap items-center justify-center gap-2 text-sm">
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded-full">
-                    <span class="font-bold">1</span> Buat Project
-                </span>
-                <span class="text-gray-400">→</span>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded-full">
-                    <span class="font-bold">2</span> Upload ke Cloud
-                </span>
-                <span class="text-gray-400">→</span>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded-full">
-                    <span class="font-bold">3</span> Input Asset + Link Source
-                </span>
-                <span class="text-gray-400">→</span>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-primary-100 dark:bg-primary-900 text-primary-700 dark:text-primary-300 rounded-full">
-                    <span class="font-bold">4</span> Publish Konten
-                </span>
-                <span class="text-gray-400">→</span>
-                <span class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-success-100 dark:bg-success-900 text-success-700 dark:text-success-300 rounded-full">
-                    <span class="font-bold">5</span> Update Link Output
-                </span>
-            </div>
-        </x-filament::section>
-
-        {{-- Two Column --}}
-        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {{-- Tips --}}
-            <x-filament::section>
-                <x-slot name="heading">💡 Tips & Shortcuts</x-slot>
-                
-                <div class="space-y-3">
-                    <div class="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                        <code class="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-xs">Ctrl+K</code>
-                        <span class="text-sm text-gray-600 dark:text-gray-400">Pencarian global</span>
-                    </div>
-                    <div class="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                        <code class="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-xs">☑️</code>
-                        <span class="text-sm text-gray-600 dark:text-gray-400">Bulk actions - ubah banyak sekaligus</span>
-                    </div>
-                    <div class="flex items-center gap-3 p-2 bg-gray-50 dark:bg-gray-800 rounded">
-                        <code class="px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded text-xs">⋮</code>
-                        <span class="text-sm text-gray-600 dark:text-gray-400">Menu aksi - duplikat, feature</span>
-                    </div>
-                    <div class="flex items-center gap-3 p-2 bg-warning-50 dark:bg-warning-900/30 rounded">
-                        <code class="px-2 py-1 bg-warning-200 dark:bg-warning-800 rounded text-xs">⭐</code>
-                        <span class="text-sm text-gray-600 dark:text-gray-400">Featured - tandai karya terbaik</span>
-                    </div>
-                </div>
-            </x-filament::section>
-
-            {{-- Tipe & Platform --}}
-            <x-filament::section>
-                <x-slot name="heading">📊 Tipe & Platform</x-slot>
-                
-                <div class="space-y-4">
-                    <div>
-                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Tipe Asset</div>
-                        <div class="flex flex-wrap gap-1.5">
-                            <x-filament::badge color="success">Foto</x-filament::badge>
-                            <x-filament::badge color="danger">Video</x-filament::badge>
-                            <x-filament::badge color="warning">Desain</x-filament::badge>
-                            <x-filament::badge color="info">Banner</x-filament::badge>
-                            <x-filament::badge color="gray">Dokumen</x-filament::badge>
-                            <x-filament::badge color="primary">Post</x-filament::badge>
+                <dl class="divide-y divide-gray-100 text-sm dark:divide-gray-800">
+                    @foreach ($akses as [$peran, $keterangan])
+                        <div class="grid gap-1 py-3 first:pt-0 last:pb-0 sm:grid-cols-[9rem_1fr] sm:gap-3">
+                            <dt class="font-medium text-gray-900 dark:text-white">{{ $peran }}</dt>
+                            <dd class="text-gray-500 dark:text-gray-400">{{ $keterangan }}</dd>
                         </div>
-                    </div>
-                    <div>
-                        <div class="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Platform</div>
-                        <div class="flex flex-wrap gap-1.5">
-                            <x-filament::badge color="gray">Instagram</x-filament::badge>
-                            <x-filament::badge color="gray">YouTube</x-filament::badge>
-                            <x-filament::badge color="gray">TikTok</x-filament::badge>
-                            <x-filament::badge color="gray">Drive</x-filament::badge>
-                            <x-filament::badge color="gray">Figma</x-filament::badge>
-                            <x-filament::badge color="gray">Canva</x-filament::badge>
+                    @endforeach
+                </dl>
+            </x-filament::section>
+
+            <x-filament::section>
+                <x-slot name="heading">Yang sering ditanyakan</x-slot>
+
+                <div class="space-y-4 text-sm">
+                    @foreach ($tanya as [$pertanyaan, $jawaban])
+                        <div>
+                            <p class="font-medium text-gray-900 dark:text-white">{{ $pertanyaan }}</p>
+                            <p class="mt-1 leading-relaxed text-gray-500 dark:text-gray-400">{{ $jawaban }}</p>
                         </div>
-                    </div>
+                    @endforeach
                 </div>
             </x-filament::section>
         </div>
 
-        {{-- Hak Akses --}}
         <x-filament::section>
-            <x-slot name="heading">🔐 Hak Akses</x-slot>
-            
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
-                    <thead>
-                        <tr class="border-b dark:border-gray-700">
-                            <th class="text-left py-2 px-3 font-medium text-gray-900 dark:text-white">Role</th>
-                            <th class="text-center py-2 px-3 font-medium text-gray-900 dark:text-white">Lihat</th>
-                            <th class="text-center py-2 px-3 font-medium text-gray-900 dark:text-white">Tambah</th>
-                            <th class="text-center py-2 px-3 font-medium text-gray-900 dark:text-white">Edit</th>
-                            <th class="text-center py-2 px-3 font-medium text-gray-900 dark:text-white">Hapus</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-gray-600 dark:text-gray-400">
-                        <tr class="border-b dark:border-gray-700/50">
-                            <td class="py-2 px-3">🔵 Staff MSC</td>
-                            <td class="text-center py-2 px-3">✅</td>
-                            <td class="text-center py-2 px-3">✅</td>
-                            <td class="text-center py-2 px-3">✅</td>
-                            <td class="text-center py-2 px-3">❌</td>
-                        </tr>
-                        <tr class="border-b dark:border-gray-700/50">
-                            <td class="py-2 px-3">🟣 Head MSC</td>
-                            <td class="text-center py-2 px-3">✅</td>
-                            <td class="text-center py-2 px-3">✅</td>
-                            <td class="text-center py-2 px-3">✅</td>
-                            <td class="text-center py-2 px-3">❌</td>
-                        </tr>
-                        <tr>
-                            <td class="py-2 px-3">🔴 Admin</td>
-                            <td class="text-center py-2 px-3">✅</td>
-                            <td class="text-center py-2 px-3">✅</td>
-                            <td class="text-center py-2 px-3">✅</td>
-                            <td class="text-center py-2 px-3">✅</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </x-filament::section>
+            <x-slot name="heading">Butuh bantuan?</x-slot>
 
-        {{-- Footer --}}
-        <div class="text-center text-sm text-gray-400 py-2">
-            Asset Vault v1.0 — Media & Strategic Communications JGU
-        </div>
+            <p class="text-sm text-gray-600 dark:text-gray-400">
+                Hubungi tim Media &amp; Strategic Communications, Jakarta Global University.
+                Sebutkan kode pengajuannya — misalnya <code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-800">CR-2026-0001</code>
+                atau <code class="rounded bg-gray-100 px-1.5 py-0.5 text-xs dark:bg-gray-800">ROOM-2026-0001</code> — supaya lebih cepat ditelusuri.
+            </p>
+        </x-filament::section>
     </div>
 </x-filament-panels::page>
