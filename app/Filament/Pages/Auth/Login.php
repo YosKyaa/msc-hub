@@ -28,6 +28,7 @@ class Login extends BaseLogin
                 Html::make($this->getDividerHtml()),
                 $this->getFormContentComponent(),
                 $this->getMultiFactorChallengeFormContentComponent(),
+                Html::make($this->getPortalLinkHtml()),
             ]);
     }
 
@@ -43,7 +44,7 @@ class Login extends BaseLogin
                         <svg style="height:20px;width:20px;flex-shrink:0;color:#ef4444;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.28 7.22a.75.75 0 00-1.06 1.06L8.94 10l-1.72 1.72a.75.75 0 101.06 1.06L10 11.06l1.72 1.72a.75.75 0 101.06-1.06L11.06 10l1.72-1.72a.75.75 0 00-1.06-1.06L10 8.94 8.28 7.22z" clip-rule="evenodd" />
                         </svg>
-                        <p style="font-size:14px;font-weight:500;color:#b91c1c;">' . e($error) . '</p>
+                        <p style="font-size:14px;font-weight:500;color:#b91c1c;">'.e($error).'</p>
                     </div>
                 </div>
             ';
@@ -56,7 +57,7 @@ class Login extends BaseLogin
                         <svg style="height:20px;width:20px;flex-shrink:0;color:#22c55e;" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.857-9.809a.75.75 0 00-1.214-.882l-3.483 4.79-1.88-1.88a.75.75 0 10-1.06 1.061l2.5 2.5a.75.75 0 001.137-.089l4-5.5z" clip-rule="evenodd" />
                         </svg>
-                        <p style="font-size:14px;font-weight:500;color:#15803d;">' . e($success) . '</p>
+                        <p style="font-size:14px;font-weight:500;color:#15803d;">'.e($success).'</p>
                     </div>
                 </div>
             ';
@@ -74,7 +75,7 @@ class Login extends BaseLogin
                 <p style="text-align:center;font-size:13px;color:#0369a1;margin-bottom:16px;font-weight:500;">
                     Login cepat untuk Staff JGU
                 </p>
-                <a href="' . $url . '" 
+                <a href="'.$url.'" 
                    style="display:flex;width:100%;align-items:center;justify-content:center;gap:12px;border-radius:10px;background-color:#ffffff;border:2px solid #e5e7eb;padding:14px 20px;font-size:15px;font-weight:600;color:#374151;text-decoration:none;box-shadow:0 2px 8px rgba(0,0,0,0.08);transition:all 0.2s;"
                    onmouseover="this.style.borderColor=\'#3b82f6\';this.style.boxShadow=\'0 4px 12px rgba(59,130,246,0.2)\'"
                    onmouseout="this.style.borderColor=\'#e5e7eb\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.08)\'">
@@ -90,6 +91,22 @@ class Login extends BaseLogin
                     Gunakan email <span style="font-weight:700;color:#0369a1;">@jgu.ac.id</span> Anda
                 </p>
             </div>
+        ';
+    }
+
+    /**
+     * Yang salah pintu tidak boleh buntu di sini: dari halaman login panel ia
+     * bisa kembali memilih masuk sebagai mahasiswa/pengaju.
+     */
+    protected function getPortalLinkHtml(): string
+    {
+        return '
+            <p style="margin-top:20px;text-align:center;font-size:13px;color:#6b7280;">
+                Bukan admin?
+                <a href="'.route('login.portal').'" style="font-weight:600;color:#2563eb;text-decoration:none;">
+                    Masuk sebagai mahasiswa/pengaju
+                </a>
+            </p>
         ';
     }
 
