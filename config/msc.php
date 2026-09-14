@@ -40,5 +40,10 @@ return [
             'idle_timeout' => (int) env('MSC_PANEL_IDLE_TIMEOUT', 120),
             'absolute_timeout' => (int) env('MSC_PANEL_ABSOLUTE_TIMEOUT', 480),
         ],
+
+        // Umur satu percobaan login Google, dihitung sejak pengguna diarahkan
+        // ke Google sampai ia kembali. Halaman login yang dibiarkan terbuka
+        // berjam-jam menghasilkan kode otorisasi basi.
+        'login_attempt_timeout' => (int) env('MSC_LOGIN_ATTEMPT_TIMEOUT', 15),
     ],
 ];
