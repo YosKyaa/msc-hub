@@ -42,6 +42,10 @@ class AdminPanelProvider extends PanelProvider
             ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
             ->sidebarCollapsibleOnDesktop()
             ->databaseNotifications()
+            // Tanpa server websocket, inilah cara panel tetap terasa hidup.
+            // Tiga puluh detik cukup cepat untuk pekerjaan harian tanpa
+            // membebani basis data dengan permintaan tiap beberapa detik.
+            ->databaseNotificationsPolling('30s')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
             ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
