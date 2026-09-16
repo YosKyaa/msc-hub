@@ -11,6 +11,7 @@ use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PublicBookingController;
 use App\Http\Controllers\RequesterDashboardController;
 use Illuminate\Support\Facades\Route;
+use Maatwebsite\Excel\Facades\Excel;
 
 // Landing Page
 Route::get('/', [LandingController::class, 'index'])->name('landing');
@@ -95,6 +96,17 @@ Route::post('/attend/{action}/{token}', [AttendanceController::class, 'store'])
 Route::get('/admin/attendance/{event}/qr/{action}', [AttendanceController::class, 'poster'])
     ->middleware(['auth', 'permission:certificates.view'])
     ->name('attendance.poster');
+
+// Berkas contoh untuk mengimpor peserta sertifikat. Diunduh dari dalam
+// modal impor, jadi hanya berguna bagi yang boleh menambah peserta.
+Route::get('/admin/peserta/template-import', function () {
+    return Excel::download(
+        new App\Exports\ParticipantImportTemplate,
+        App\Exports\ParticipantImportTemplate::FILENAME,
+    );
+})
+    ->middleware(['auth', 'permission:certificates.create'])
+    ->name('certificates.import-template');
 
 // Formulir resmi peminjaman (FM/JGU/L.89). Bawaannya pratinjau di browser;
 // tambahkan ?unduh=1 untuk mengunduh berkasnya.
