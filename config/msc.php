@@ -14,6 +14,35 @@ return [
     ))),
 
     /*
+    | Identitas situs untuk mesin pencari dan pratinjau tautan.
+    |
+    | Dikumpulkan di sini supaya judul, deskripsi, dan gambar yang muncul di
+    | hasil pencarian maupun saat tautannya dibagikan tidak ditulis ulang
+    | berbeda-beda di tiap halaman.
+    */
+    'seo' => [
+        'site_name' => env('MSC_SITE_NAME', 'MSC Hub — Jakarta Global University'),
+        'description' => env('MSC_SITE_DESCRIPTION', 'Portal layanan Media & Strategic Communications Jakarta Global University: pengajuan konten, peminjaman ruangan dan alat multimedia, serta penerbitan dan verifikasi sertifikat kegiatan.'),
+        'image' => env('MSC_SITE_IMAGE', 'img/jgucover.png'),
+        'locale' => 'id_ID',
+        'organization' => [
+            'name' => 'Media & Strategic Communications, Jakarta Global University',
+            'short_name' => 'MSC Hub',
+            'street' => 'Jl. Boulevard Grand Depok City',
+            'city' => 'Depok',
+            'region' => 'Jawa Barat',
+            'postal_code' => '16412',
+            'country' => 'ID',
+        ],
+    ],
+
+    /*
+    | Alamat yang disebut ketika pengunjung diminta menghubungi tim MSC,
+    | misalnya saat daftar penerima sebuah kegiatan belum dibuka.
+    */
+    'contact_email' => env('MSC_CONTACT_EMAIL', 'media@jgu.ac.id'),
+
+    /*
     | Penerbitan sertifikat.
     |
     | Sampai sejumlah ini sertifikat diterbitkan langsung saat tombol ditekan,

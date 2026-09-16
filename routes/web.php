@@ -11,6 +11,7 @@ use App\Http\Controllers\LandingController;
 use App\Http\Controllers\PublicBookingController;
 use App\Http\Controllers\RequesterDashboardController;
 use Illuminate\Support\Facades\Route;
+use Maatwebsite\Excel\Facades\Excel;
 
 // Landing Page
 Route::get('/', [LandingController::class, 'index'])->name('landing');
@@ -96,6 +97,17 @@ Route::get('/admin/attendance/{event}/qr/{action}', [AttendanceController::class
     ->middleware(['auth', 'permission:certificates.view'])
     ->name('attendance.poster');
 
+// Berkas contoh untuk mengimpor peserta sertifikat. Diunduh dari dalam
+// modal impor, jadi hanya berguna bagi yang boleh menambah peserta.
+Route::get('/admin/peserta/template-import', function () {
+    return Excel::download(
+        new App\Exports\ParticipantImportTemplate,
+        App\Exports\ParticipantImportTemplate::FILENAME,
+    );
+})
+    ->middleware(['auth', 'permission:certificates.create'])
+    ->name('certificates.import-template');
+
 // Formulir resmi peminjaman (FM/JGU/L.89). Bawaannya pratinjau di browser;
 // tambahkan ?unduh=1 untuk mengunduh berkasnya.
 Route::middleware(['auth'])->prefix('admin/form-peminjaman')->name('borrowing-form.')->group(function () {
@@ -108,6 +120,15 @@ Route::middleware(['auth'])->prefix('admin/form-peminjaman')->name('borrowing-fo
 });
 
 // Public certificate authenticity and download
+// Peta situs untuk mesin pencari, dibentuk dari data yang sebenarnya.
+Route::get('/sitemap.xml', App\Http\Controllers\SitemapController::class)->name('sitemap');
+Route::get('/robots.txt', [App\Http\Controllers\SitemapController::class, 'robots'])->name('robots');
+
+// Daftar penerima sertifikat sebuah kegiatan, bila admin membukanya.
+Route::get('/kegiatan/{slug}/penerima', App\Http\Controllers\CertificateRecipientsController::class)
+    ->middleware('throttle:60,1')
+    ->name('certificates.recipients');
+
 Route::get('/verify/certificate/{token}', [CertificatePublicController::class, 'verify'])->name('certificates.verify');
 Route::get('/certificates/{token}/download', [CertificatePublicController::class, 'download'])->name('certificates.download');
 
