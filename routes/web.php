@@ -120,6 +120,10 @@ Route::middleware(['auth'])->prefix('admin/form-peminjaman')->name('borrowing-fo
 });
 
 // Public certificate authenticity and download
+// Peta situs untuk mesin pencari, dibentuk dari data yang sebenarnya.
+Route::get('/sitemap.xml', App\Http\Controllers\SitemapController::class)->name('sitemap');
+Route::get('/robots.txt', [App\Http\Controllers\SitemapController::class, 'robots'])->name('robots');
+
 // Daftar penerima sertifikat sebuah kegiatan, bila admin membukanya.
 Route::get('/kegiatan/{slug}/penerima', App\Http\Controllers\CertificateRecipientsController::class)
     ->middleware('throttle:60,1')

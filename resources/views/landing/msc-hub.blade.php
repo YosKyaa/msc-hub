@@ -5,7 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/png" href="{{ asset('img/jgusolo.png') }}">
-    <title>MSC Hub - Portal Layanan Media JGU</title>
+
+    <x-organisms.seo
+        description="Ajukan pembuatan konten, pinjam ruangan dan alat multimedia, serta verifikasi sertifikat kegiatan di Jakarta Global University. Satu portal untuk seluruh layanan Media & Strategic Communications."
+        :canonical="route('landing')" />
+
+    {{-- Data terstruktur: memberi tahu mesin pencari bahwa halaman ini milik
+         sebuah unit di JGU, lengkap dengan alamat dan layanannya, sehingga
+         hasil pencariannya tidak hanya berupa satu baris tautan. --}}
+    @php
+        $org = config('msc.seo.organization');
+
+        $dataTerstruktur = [
+            '@context' => 'https://schema.org',
+            '@graph' => [
+                [
+                    '@type' => 'Organization',
+                    '@id' => url('/').'#organisasi',
+                    'name' => $org['name'],
+                    'alternateName' => $org['short_name'],
+                    'url' => url('/'),
+                    'logo' => asset('img/jgu.png'),
+                    'email' => config('msc.contact_email'),
+                    'parentOrganization' => [
+                        '@type' => 'CollegeOrUniversity',
+                        'name' => 'Jakarta Global University',
+                    ],
+                    'address' => [
+                        '@type' => 'PostalAddress',
+                        'streetAddress' => $org['street'],
+                        'addressLocality' => $org['city'],
+                        'addressRegion' => $org['region'],
+                        'postalCode' => $org['postal_code'],
+                        'addressCountry' => $org['country'],
+                    ],
+                ],
+                [
+                    '@type' => 'WebSite',
+                    '@id' => url('/').'#situs',
+                    'name' => config('msc.seo.site_name'),
+                    'url' => url('/'),
+                    'inLanguage' => 'id-ID',
+                    'publisher' => ['@id' => url('/').'#organisasi'],
+                ],
+            ],
+        ];
+    @endphp
+
+    <script type="application/ld+json">{!! json_encode($dataTerstruktur, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 
     {{-- Google Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
