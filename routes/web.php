@@ -120,6 +120,11 @@ Route::middleware(['auth'])->prefix('admin/form-peminjaman')->name('borrowing-fo
 });
 
 // Public certificate authenticity and download
+// Daftar penerima sertifikat sebuah kegiatan, bila admin membukanya.
+Route::get('/kegiatan/{slug}/penerima', App\Http\Controllers\CertificateRecipientsController::class)
+    ->middleware('throttle:60,1')
+    ->name('certificates.recipients');
+
 Route::get('/verify/certificate/{token}', [CertificatePublicController::class, 'verify'])->name('certificates.verify');
 Route::get('/certificates/{token}/download', [CertificatePublicController::class, 'download'])->name('certificates.download');
 
