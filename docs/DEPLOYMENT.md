@@ -36,6 +36,50 @@ composer --version
 lewat CDN dan panel memakai CSS bawaan Filament, jadi tidak ada aset yang perlu
 dikompilasi.
 
+### Batas ukuran unggahan
+
+Bawaan PHP hanya 2 MB. Desain latar sertifikat dan lampiran pengajuan biasanya
+lebih besar dari itu, dan berkas yang melewati batas ditolak PHP **sebelum**
+Laravel sempat melihatnya — yang muncul di layar hanyalah `failed to upload`,
+tanpa menyebut sebab maupun angkanya.
+
+Periksa dulu yang berlaku sekarang:
+
+```bash
+php -i | grep -E 'upload_max_filesize|post_max_size|memory_limit'
+```
+
+Bila masih 2 MB, naikkan di `php.ini` milik PHP-FPM
+(`/etc/php/8.2/fpm/php.ini`, sesuaikan versinya):
+
+```ini
+upload_max_filesize = 16M
+post_max_size = 20M
+memory_limit = 256M
+```
+
+`post_max_size` harus lebih besar daripada `upload_max_filesize` karena satu
+kiriman formulir memuat berkas **beserta** isian lainnya. Lalu muat ulang:
+
+```bash
+sudo systemctl reload php8.2-fpm
+```
+
+Bila memakai Nginx, batasnya ada dua lapis — tambahkan di blok `server`:
+
+```nginx
+client_max_body_size 20M;
+```
+
+Formulir di panel menyebut angkanya sendiri mengikuti pengaturan ini, jadi
+setelah diubah tidak ada yang perlu disunting di kode.
+
+> Desain latar ditanam ke dalam **setiap** PDF sertifikat. Latar 8 MB membuat
+> tiap sertifikat ikut ± 10 MB, dan seribu peserta berarti 10 GB terkirim lewat
+> email. Kompres latar ke bawah 1 MB; pada kanvas 1123 × 794 px hasilnya tidak
+> akan terlihat berbeda.
+
+
 ---
 
 ## 1. Cadangkan basis data — wajib
