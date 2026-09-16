@@ -69,11 +69,45 @@ class PublicRecipientListTest extends TestCase
         $event = $this->event(terbuka: false);
         $this->issue($event, 'Budi Santoso', 'budi@student.jgu.ac.id');
 
-        $this->get($event->publicRecipientsUrl())->assertNotFound();
+        // Tertutup: tidak ada satu pun nama yang bocor.
+        $this->get($event->publicRecipientsUrl())
+            ->assertForbidden()
+            ->assertDontSee('Budi Santoso');
 
         $event->update(['recipients_public' => true]);
 
         $this->get($event->publicRecipientsUrl())->assertOk()->assertSee('Budi Santoso');
+    }
+
+    /**
+     * Yang membuka tautannya umumnya sudah memegangnya dari penyelenggara,
+     * jadi halaman kosong bertulisan 404 tidak menolong siapa pun. Ia berhak
+     * tahu apa yang terjadi dan ke mana harus bertanya.
+     */
+    public function test_a_closed_list_explains_itself_instead_of_showing_404(): void
+    {
+        $event = $this->event(terbuka: false);
+
+        $response = $this->get($event->publicRecipientsUrl())->assertForbidden();
+
+        $response->assertSee('Daftar penerima belum dibuka');
+        $response->assertSee('Seminar Kewirausahaan');
+        $response->assertSee(config('msc.contact_email'));
+        $response->assertSee('Hubungi tim Media &amp; Strategic Communications', false);
+    }
+
+    /**
+     * Pemilik sertifikat tidak perlu daftar ini sama sekali untuk memeriksa
+     * miliknya sendiri, dan itu disebutkan supaya ia tidak menunggu sia-sia.
+     */
+    public function test_a_closed_list_points_owners_at_their_own_certificate(): void
+    {
+        $event = $this->event(terbuka: false);
+
+        $this->get($event->publicRecipientsUrl())
+            ->assertForbidden()
+            ->assertSee('Sudah punya sertifikatnya?')
+            ->assertSee('kode QR');
     }
 
     public function test_a_brand_new_event_starts_closed(): void
@@ -92,7 +126,9 @@ class PublicRecipientListTest extends TestCase
         $event = $this->event(terbuka: true, status: 'draft');
         $this->issue($event, 'Budi Santoso', 'budi@student.jgu.ac.id');
 
-        $this->get($event->publicRecipientsUrl())->assertNotFound();
+        $this->get($event->publicRecipientsUrl())
+            ->assertForbidden()
+            ->assertDontSee('Budi Santoso');
     }
 
     // -------------------------------------------------------- isinya
@@ -154,6 +190,10 @@ class PublicRecipientListTest extends TestCase
             ->assertDontSee('Budi Santoso');
     }
 
+    /**
+     * Kegiatan yang memang tidak ada tetap 404: tidak ada yang bisa
+     * dikatakan tentangnya, dan mengarang penjelasan justru menyesatkan.
+     */
     public function test_an_event_nobody_knows_is_simply_not_found(): void
     {
         $this->get(route('certificates.recipients', 'kegiatan-entah-apa'))->assertNotFound();

@@ -24,10 +24,17 @@ class CertificateRecipientsController extends Controller
             ->where('slug', $slug)
             ->firstOrFail();
 
-        // Kegiatan yang daftarnya tidak dibuka tidak mengakui keberadaannya
-        // sama sekali, ketimbang memberi tahu bahwa daftarnya ada tapi
-        // tertutup.
-        abort_unless($event->recipientsArePublic(), 404);
+        // Daftar yang belum dibuka dijawab dengan penjelasan, bukan halaman
+        // kosong bertulisan 404: yang membukanya umumnya sudah memegang
+        // tautannya dari penyelenggara, jadi ia berhak tahu apa yang terjadi
+        // dan ke mana harus bertanya. Kegiatan yang memang tidak ada tetap
+        // 404, karena tidak ada yang bisa dikatakan tentangnya.
+        if (! $event->recipientsArePublic()) {
+            return response()->view('certificates.recipients-closed', [
+                'event' => $event,
+                'kontak' => (string) config('msc.contact_email'),
+            ], 403);
+        }
 
         $cari = trim((string) $request->query('cari', ''));
 
