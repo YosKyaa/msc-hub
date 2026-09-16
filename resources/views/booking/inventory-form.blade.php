@@ -64,6 +64,31 @@
                     <option value="Staff" {{ old('unit') == 'Staff' ? 'selected' : '' }}>Staff</option>
                 </select>
             </div>
+                <div class="grid gap-4 sm:grid-cols-2">
+                    <div>
+                        <label for="requester_phone" class="block text-sm font-medium text-gray-700 mb-1">
+                            No. HP Peminjam
+                        </label>
+                        <input type="tel" name="requester_phone" id="requester_phone" maxlength="30"
+                            value="{{ old('requester_phone') }}"
+                            placeholder="08xxxxxxxxxx"
+                            class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500">
+                        <p class="mt-1 text-xs text-gray-500">Dicantumkan pada formulir resmi peminjaman.</p>
+                        @error('requester_phone')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                    <div>
+                        <label for="supervisor_name" class="block text-sm font-medium text-gray-700 mb-1">
+                            Penanggung Jawab (Dosen)
+                        </label>
+                        <input type="text" name="supervisor_name" id="supervisor_name" maxlength="255"
+                            value="{{ old('supervisor_name') }}"
+                            placeholder="Nama dosen penanggung jawab"
+                            class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500">
+                        <p class="mt-1 text-xs text-gray-500">Dicantumkan pada formulir resmi peminjaman.</p>
+                        @error('supervisor_name')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
+                    </div>
+                </div>
+
 
             <div>
                 <label for="purpose" class="block text-sm font-medium text-gray-700 mb-1">Keperluan</label>
@@ -139,10 +164,19 @@
                     class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
                     Batal
                 </a>
-                <button type="submit" 
-                    class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-medium">
-                    Ajukan Peminjaman
-                </button>
+                <x-molecules.confirm-submit
+                    label="Ajukan Peminjaman"
+                    heading="Kirim pengajuan peminjaman alat?"
+                    description="Pengajuan akan dikirim ke tim MSC untuk ditinjau. Periksa kembali sebelum melanjutkan."
+                    confirm-label="Ya, Ajukan"
+                    :summary="[
+                        'Nama peminjam' => 'requester_name',
+                        'Unit / Fakultas' => 'unit',
+                        'Mulai' => 'start_at',
+                        'Selesai' => 'end_at',
+                        'Alat dipinjam' => 'items[]',
+                        'Keperluan' => 'purpose',
+                    ]" />
             </div>
         </form>
     </div>
@@ -196,51 +230,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const form = document.querySelector('form');
-    
-    // Form submission with SweetAlert
-    form.addEventListener('submit', function(e) {
-        e.preventDefault();
-        
-        Swal.fire({
-            title: 'Konfirmasi Peminjaman Alat',
-            html: `
-                <div class="text-left space-y-2">
-                    <p class="text-sm text-gray-600">Pastikan semua data sudah benar:</p>
-                    <ul class="text-sm text-gray-700 list-disc list-inside space-y-1 mt-3">
-                        <li>Unit/Fakultas sudah dipilih</li>
-                        <li>Alat yang dipinjam sudah dipilih</li>
-                        <li>Waktu peminjaman pada hari Senin - Jumat</li>
-                        <li>Maksimal 2x peminjaman per bulan</li>
-                    </ul>
-                </div>
-            `,
-            icon: 'question',
-            showCancelButton: true,
-            confirmButtonColor: '#4F46E5',
-            cancelButtonColor: '#6B7280',
-            confirmButtonText: 'Ya, Submit',
-            cancelButtonText: 'Batal',
-            reverseButtons: true
-        }).then((result) => {
-            if (result.isConfirmed) {
-                Swal.fire({
-                    title: 'Memproses...',
-                    text: 'Mohon tunggu sebentar',
-                    allowOutsideClick: false,
-                    allowEscapeKey: false,
-                    didOpen: () => {
-                        Swal.showLoading();
-                    }
-                });
-                form.submit();
-            }
-        });
-    });
-});
-</script>
 @endpush
 @endsection

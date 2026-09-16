@@ -2,6 +2,8 @@
 .DS_Store
 .env
 .env.backup
+.env.backup-*
+.env.*.backup
 .env.production
 .phpactor.json
 .phpunit.result.cache
@@ -22,3 +24,11 @@
 Homestead.json
 Homestead.yaml
 Thumbs.db
+
+# Catatan kerja: spesifikasi, hasil curah gagasan, dan coretan yang tidak ikut
+# dirilis. Dokumentasi yang memang bagian dari proyek sudah terlacak lebih dulu,
+# dan aturan ini tidak memengaruhi berkas yang sudah terlacak.
+*.md
+!README.md
+# Panduan rilis memang bagian dari proyek, bukan catatan kerja.
+!docs/DEPLOYMENT.md

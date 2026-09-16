@@ -1,22 +1,22 @@
 @extends('layouts.booking')
 
-@section('title', 'Booking Saya')
+@section('title', 'Riwayat Booking')
 
 @section('content')
     <div class="space-y-6">
-        <div class="flex items-center justify-between">
-            <div class="mr-6"> <!-- Added margin-right to create spacing -->
-                <h1 class="text-2xl font-bold text-gray-900">Booking Saya</h1>
-                <p class="text-gray-600">Daftar semua booking yang Anda ajukan.</p>
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+                <h1 class="text-2xl font-bold text-gray-900">Riwayat Booking</h1>
+                <p class="mt-1 text-gray-600">Pantau status peminjaman alat dan ruangan Anda.</p>
             </div>
-            <div class="flex gap-2">
+            <div class="grid grid-cols-2 gap-2 sm:flex">
                 <a href="{{ route('booking.inventory') }}"
                     class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">
-                    + Pinjam Alat
+                    Pinjam Alat
                 </a>
                 <a href="{{ route('booking.room') }}"
                     class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium">
-                    + Booking Ruangan
+                    Booking Ruangan
                 </a>
             </div>
         </div>
@@ -70,9 +70,9 @@
                         @foreach ($inventoryBookings as $booking)
                             <a href="{{ route('my.bookings.detail', ['type' => 'inventory', 'code' => $booking->booking_code]) }}"
                                 class="block bg-white rounded-xl border p-4 hover:shadow-md transition">
-                                <div class="flex items-start justify-between">
+                                <div class="flex items-start justify-between gap-3">
                                     <div>
-                                        <div class="flex items-center gap-2">
+                                        <div class="flex flex-wrap items-center gap-2">
                                             <span
                                                 class="font-mono font-bold text-indigo-600">{{ $booking->booking_code }}</span>
                                             @php
@@ -130,9 +130,9 @@
                         @foreach ($roomBookings as $booking)
                             <a href="{{ route('my.bookings.detail', ['type' => 'room', 'code' => $booking->booking_code]) }}"
                                 class="block bg-white rounded-xl border p-4 hover:shadow-md transition">
-                                <div class="flex items-start justify-between">
+                                <div class="flex items-start justify-between gap-3">
                                     <div>
-                                        <div class="flex items-center gap-2">
+                                        <div class="flex flex-wrap items-center gap-2">
                                             <span
                                                 class="font-mono font-bold text-indigo-600">{{ $booking->booking_code }}</span>
                                             @php
@@ -171,7 +171,3 @@
         </div>
     </div>
 @endsection
-
-@push('scripts')
-    <script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-@endpush

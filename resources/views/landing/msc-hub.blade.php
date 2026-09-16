@@ -5,7 +5,54 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/png" href="{{ asset('img/jgusolo.png') }}">
-    <title>MSC Hub - Portal Layanan Media JGU</title>
+
+    <x-organisms.seo
+        description="Ajukan pembuatan konten, pinjam ruangan dan alat multimedia, serta verifikasi sertifikat kegiatan di Jakarta Global University. Satu portal untuk seluruh layanan Media & Strategic Communications."
+        :canonical="route('landing')" />
+
+    {{-- Data terstruktur: memberi tahu mesin pencari bahwa halaman ini milik
+         sebuah unit di JGU, lengkap dengan alamat dan layanannya, sehingga
+         hasil pencariannya tidak hanya berupa satu baris tautan. --}}
+    @php
+        $org = config('msc.seo.organization');
+
+        $dataTerstruktur = [
+            '@context' => 'https://schema.org',
+            '@graph' => [
+                [
+                    '@type' => 'Organization',
+                    '@id' => url('/').'#organisasi',
+                    'name' => $org['name'],
+                    'alternateName' => $org['short_name'],
+                    'url' => url('/'),
+                    'logo' => asset('img/jgu.png'),
+                    'email' => config('msc.contact_email'),
+                    'parentOrganization' => [
+                        '@type' => 'CollegeOrUniversity',
+                        'name' => 'Jakarta Global University',
+                    ],
+                    'address' => [
+                        '@type' => 'PostalAddress',
+                        'streetAddress' => $org['street'],
+                        'addressLocality' => $org['city'],
+                        'addressRegion' => $org['region'],
+                        'postalCode' => $org['postal_code'],
+                        'addressCountry' => $org['country'],
+                    ],
+                ],
+                [
+                    '@type' => 'WebSite',
+                    '@id' => url('/').'#situs',
+                    'name' => config('msc.seo.site_name'),
+                    'url' => url('/'),
+                    'inLanguage' => 'id-ID',
+                    'publisher' => ['@id' => url('/').'#organisasi'],
+                ],
+            ],
+        ];
+    @endphp
+
+    <script type="application/ld+json">{!! json_encode($dataTerstruktur, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) !!}</script>
 
     {{-- Google Fonts --}}
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -124,43 +171,27 @@
                 {{-- Desktop Nav --}}
                 <nav class="hidden lg:flex items-center gap-8">
                     <a href="{{ route('request.content') }}" class="text-sm text-gray-600 hover:text-accent transition font-medium">Ajukan Konten</a>
-                    <a href="{{ route('request.status') }}" class="text-sm text-gray-600 hover:text-accent transition font-medium">Cek Status</a>
+                    <a href="{{ route('request.status') }}" class="text-sm text-gray-600 hover:text-accent transition font-medium">Konten Saya</a>
                     <a href="{{ route('booking.inventory') }}" class="text-sm text-gray-600 hover:text-accent transition font-medium">Pinjam Inventaris</a>
                     <a href="{{ route('booking.room') }}" class="text-sm text-gray-600 hover:text-accent transition font-medium">Booking Ruang</a>
+                    @if($requester)
+                        <a href="{{ route('my.bookings') }}" class="text-sm text-gray-600 hover:text-accent transition font-medium">Riwayat Booking</a>
+                    @endif
                 </nav>
 
                 {{-- Right Section --}}
                 <div class="hidden lg:flex items-center gap-4">
                     @if($requester)
-                        <div class="flex items-center gap-3">
-                            @if($requester['avatar'] ?? null)
-                                <img src="{{ $requester['avatar'] }}" alt="" class="w-9 h-9 rounded-full ring-2 ring-accent/20">
-                            @else
-                                <div class="w-9 h-9 bg-accent/10 rounded-full flex items-center justify-center">
-                                    <span class="text-accent font-semibold">{{ substr($requester['name'], 0, 1) }}</span>
-                                </div>
-                            @endif
-                            <div class="text-sm">
-                                <div class="text-gray-800 font-medium">{{ Str::limit($requester['name'], 15) }}</div>
-                                <a href="{{ route('my.bookings') }}" class="text-xs text-accent hover:underline">My Bookings</a>
-                            </div>
-                            <form action="{{ route('auth.google.logout') }}" method="POST">
-                                @csrf
-                                <button type="submit" class="text-xs text-gray-400 hover:text-red-500 ml-2">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-                                </button>
-                            </form>
-                        </div>
+                        <x-molecules.account-menu :requester="$requester" logout-route="auth.google.logout" tone="blue" />
                     @else
-                        <a href="{{ route('auth.google.redirect') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-dark text-white rounded-full text-sm font-medium hover:bg-gray-800 transition">
-                            <svg class="w-4 h-4" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/></svg>
+                        {{-- Satu pintu masuk. Pengunjung tidak perlu tahu lebih
+                             dulu dirinya peminjam atau admin; pilihannya ada di
+                             halaman berikutnya. --}}
+                        <a href="{{ route('login.portal') }}" class="inline-flex items-center gap-2 px-5 py-2.5 bg-dark text-white rounded-full text-sm font-medium hover:bg-gray-800 transition">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 17l5-5-5-5m5 5H3"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/></svg>
                             Masuk
                         </a>
                     @endif
-                    <a href="/panel" class="inline-flex items-center gap-2 px-4 py-2 bg-gray-100 text-gray-700 rounded-full text-sm font-medium hover:bg-gray-200 transition">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                        Panel Admin
-                    </a>
                 </div>
 
                 {{-- Mobile Menu Button --}}
@@ -179,13 +210,7 @@
                 @if($requester)
                     <div class="px-3 py-3 bg-gray-50 rounded-xl mb-3">
                         <div class="flex items-center gap-3">
-                            @if($requester['avatar'] ?? null)
-                                <img src="{{ $requester['avatar'] }}" alt="" class="w-10 h-10 rounded-full">
-                            @else
-                                <div class="w-10 h-10 bg-accent/10 rounded-full flex items-center justify-center">
-                                    <span class="text-accent font-semibold">{{ substr($requester['name'], 0, 1) }}</span>
-                                </div>
-                            @endif
+                            <x-atoms.avatar :name="$requester['name']" tone="blue" />
                             <div>
                                 <div class="font-medium text-gray-900">{{ $requester['name'] }}</div>
                                 <div class="text-xs text-gray-500">{{ $requester['email'] }}</div>
@@ -199,7 +224,7 @@
                 </a>
                 <a href="{{ route('request.status') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-gray-50 transition">
                     <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
-                    Cek Status
+                    Konten Saya
                 </a>
                 <a href="{{ route('booking.inventory') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-700 hover:bg-gray-50 transition">
                     <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>
@@ -212,7 +237,7 @@
                 @if($requester)
                     <a href="{{ route('my.bookings') }}" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-accent bg-accent/5 transition">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
-                        My Bookings
+                        Riwayat Booking
                     </a>
                     <form action="{{ route('auth.google.logout') }}" method="POST" class="pt-2 border-t mt-2">
                         @csrf
@@ -222,17 +247,11 @@
                         </button>
                     </form>
                 @else
-                    <a href="{{ route('auth.google.redirect') }}" class="flex items-center justify-center gap-2 mx-3 mt-3 px-4 py-3 bg-dark text-white rounded-xl font-medium hover:bg-gray-800 transition">
-                        <svg class="w-5 h-5" viewBox="0 0 24 24"><path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/></svg>
-                        Masuk dengan Google
+                    <a href="{{ route('login.portal') }}" class="flex items-center justify-center gap-2 mx-3 mt-3 px-4 py-3 bg-dark text-white rounded-xl font-medium hover:bg-gray-800 transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 17l5-5-5-5m5 5H3"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4"/></svg>
+                        Masuk
                     </a>
                 @endif
-                <div class="border-t mt-3 pt-3">
-                    <a href="/panel" class="flex items-center gap-3 px-3 py-2.5 rounded-xl text-gray-600 hover:bg-gray-50 transition">
-                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                        Panel Admin
-                    </a>
-                </div>
             </div>
         </div>
     </header>
@@ -264,31 +283,22 @@
                             Platform terpadu untuk pengajuan konten, peminjaman inventaris, dan booking ruang di Media & Strategic Communications.
                         </p>
 
+                        {{-- Semua ajakan di sini melewati pintu masuk yang sama.
+                             Ketiganya butuh login, jadi mengarahkannya langsung
+                             ke formulir hanya berujung pentalan ke Google. --}}
                         <div class="flex flex-wrap gap-4">
-                            <a href="{{ route('request.content') }}" class="inline-flex items-center gap-2 px-6 py-3.5 bg-dark text-white rounded-full font-semibold hover:bg-gray-800 transition shadow-lg shadow-gray-900/10">
+                            <a href="{{ route('login.portal') }}" class="inline-flex items-center gap-2 px-6 py-3.5 bg-dark text-white rounded-full font-semibold hover:bg-gray-800 transition shadow-lg shadow-gray-900/10">
                                 <span>Ajukan Konten</span>
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
                             </a>
-                            <a href="{{ route('booking.room') }}" class="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-gray-900 rounded-full font-semibold hover:bg-gray-50 transition border border-gray-200">
+                            <a href="{{ route('login.portal') }}" class="inline-flex items-center gap-2 px-6 py-3.5 bg-white text-gray-900 rounded-full font-semibold hover:bg-gray-50 transition border border-gray-200">
                                 <span>Booking Ruang</span>
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                             </a>
-                        </div>
-
-                        {{-- Quick Stats --}}
-                        <div class="grid grid-cols-3 gap-6 mt-12 pt-8 border-t border-gray-200">
-                            <div>
-                                <div class="text-3xl font-bold text-gray-900">1x</div>
-                                <div class="text-sm text-gray-500">Klik Request</div>
-                            </div>
-                            <div>
-                                <div class="text-3xl font-bold text-gray-900">Online</div>
-                                <div class="text-sm text-gray-500">Proses Digital</div>
-                            </div>
-                            <div>
-                                <div class="text-3xl font-bold text-gray-900">Realtime</div>
-                                <div class="text-sm text-gray-500">Tracking Status</div>
-                            </div>
+                            <a href="{{ route('login.portal') }}" class="inline-flex items-center gap-2 px-6 py-3.5 text-blue-700 rounded-full font-semibold hover:bg-blue-50 transition border border-blue-200">
+                                <span>Cek Status</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                            </a>
                         </div>
                     </div>
 
@@ -353,10 +363,10 @@
 
                 <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                     @foreach($announcementsPinned as $announcement)
-                        <x-landing.announcement-card :announcement="$announcement" :pinned="true" />
+                        <x-molecules.landing.announcement-card :announcement="$announcement" :pinned="true" />
                     @endforeach
                     @foreach($announcementsLatest as $announcement)
-                        <x-landing.announcement-card :announcement="$announcement" />
+                        <x-molecules.landing.announcement-card :announcement="$announcement" />
                     @endforeach
                 </div>
             </div>
