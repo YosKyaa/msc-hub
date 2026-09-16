@@ -10,6 +10,7 @@ use App\Filament\Resources\CertificateEventResource\RelationManagers\Participati
 use App\Models\CertificateEvent;
 use App\Models\Issuer;
 use App\Services\Certificates\CertificateNumberFormat;
+use App\Support\CertificatePermission;
 use BackedEnum;
 use Filament\Actions;
 use Filament\Forms\Components\DatePicker;
@@ -18,6 +19,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Actions as FormActions;
 use Filament\Schemas\Components\Grid;
@@ -121,6 +123,21 @@ class CertificateEventResource extends Resource
                                 ->default('draft')
                                 ->required()
                                 ->helperText('Sertifikat baru sah dan emailnya terkirim setelah status Dipublikasikan.')
+                                ->columnSpanFull(),
+
+                            // Membuka daftar nama orang ke publik adalah
+                            // keputusan yang harus diambil sadar, jadi
+                            // akibatnya ditulis apa adanya di sini.
+                            Toggle::make('recipients_public')
+                                ->label('Buka daftar penerima untuk umum')
+                                ->helperText(fn (?CertificateEvent $record) => new HtmlString(
+                                    'Siapa pun tanpa perlu masuk dapat melihat <strong>nama, peran, dan nomor sertifikat</strong> '
+                                    .'seluruh penerima, serta membuka halaman verifikasi masing-masing. '
+                                    .'Alamat email tidak pernah ditampilkan. Berlaku setelah kegiatan berstatus Dipublikasikan.'
+                                    .($record?->exists
+                                        ? '<br><span style="color:rgb(113 113 122);">Tautannya: <code>'.e($record->publicRecipientsUrl()).'</code></span>'
+                                        : '')
+                                ))
                                 ->columnSpanFull(),
                         ])->columns(2),
                     ]),
@@ -256,6 +273,12 @@ class CertificateEventResource extends Resource
             TextColumn::make('participations_count')->label('Terdaftar')->counts('participations'),
             TextColumn::make('certificates_count')->label('Penerima')->counts('certificates'),
             IconColumn::make('attendance_enabled')->label('Absensi')->boolean(),
+            IconColumn::make('recipients_public')
+                ->label('Daftar publik')
+                ->boolean()
+                ->tooltip(fn (CertificateEvent $record) => $record->recipientsArePublic()
+                    ? 'Daftar penerima terbuka untuk umum'
+                    : 'Daftar penerima tertutup'),
             TextColumn::make('status')->badge()->color(fn ($state) => match ($state) {
                 'published' => 'success','archived' => 'gray',default => 'warning'
             }),
@@ -270,6 +293,42 @@ class CertificateEventResource extends Resource
                     AttendanceAction::cases(),
                 ),
             )->label('QR Absensi')->icon('heroicon-o-qr-code')->button(),
+            // Buka-tutup tanpa perlu membuka formulirnya: keputusan ini
+            // sering diambil mendadak, sebelum atau sesudah acara.
+            Actions\Action::make('toggleRecipients')
+                ->label(fn (CertificateEvent $record) => $record->recipients_public ? 'Tutup Daftar' : 'Buka Daftar')
+                ->icon(fn (CertificateEvent $record) => $record->recipients_public ? 'heroicon-o-lock-closed' : 'heroicon-o-globe-alt')
+                ->color(fn (CertificateEvent $record) => $record->recipients_public ? 'gray' : 'info')
+                ->button()
+                ->requiresConfirmation()
+                ->modalHeading(fn (CertificateEvent $record) => $record->recipients_public
+                    ? 'Tutup Daftar Penerima'
+                    : 'Buka Daftar Penerima untuk Umum')
+                ->modalDescription(fn (CertificateEvent $record) => $record->recipients_public
+                    ? 'Daftarnya tidak lagi bisa dibuka siapa pun, dan tautannya menjadi tidak ditemukan.'
+                    : 'Siapa pun tanpa perlu masuk dapat melihat nama, peran, dan nomor sertifikat seluruh penerima, '
+                        .'serta membuka halaman verifikasi masing-masing. Alamat email tidak pernah ditampilkan.')
+                ->modalSubmitActionLabel(fn (CertificateEvent $record) => $record->recipients_public ? 'Ya, Tutup' : 'Ya, Buka')
+                ->visible(fn () => CertificatePermission::allowsIssuing())
+                ->action(function (CertificateEvent $record): void {
+                    $record->update(['recipients_public' => ! $record->recipients_public]);
+
+                    Notification::make()
+                        ->title($record->recipients_public ? 'Daftar penerima dibuka' : 'Daftar penerima ditutup')
+                        ->body($record->recipients_public
+                            ? 'Tautannya: '.$record->publicRecipientsUrl()
+                            : 'Daftarnya tidak lagi dapat dibuka siapa pun.')
+                        ->success()
+                        ->send();
+                }),
+
+            Actions\Action::make('openRecipients')
+                ->label('Lihat Daftar')
+                ->icon('heroicon-o-arrow-top-right-on-square')
+                ->url(fn (CertificateEvent $record) => $record->publicRecipientsUrl())
+                ->openUrlInNewTab()
+                ->visible(fn (CertificateEvent $record) => $record->recipientsArePublic()),
+
             Actions\EditAction::make(),
             Actions\DeleteAction::make(),
         ]);
