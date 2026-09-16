@@ -2,6 +2,7 @@
 
 namespace App\Support;
 
+use App\Models\Certificate;
 use App\Models\CertificateEventParticipant;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -31,6 +32,17 @@ enum CertificateStage: string
             return $participation->isEligible() ? self::READY : self::NOT_ELIGIBLE;
         }
 
+        return self::ofCertificate($certificate);
+    }
+
+    /**
+     * Tahap sebuah sertifikat yang sudah terbit.
+     *
+     * Dipisahkan supaya daftar sertifikat lintas kegiatan bisa memakai
+     * aturan yang sama tanpa harus menempuh pesertanya lebih dulu.
+     */
+    public static function ofCertificate(Certificate $certificate): self
+    {
         if ($certificate->revoked_at !== null) {
             return self::REVOKED;
         }
@@ -44,6 +56,29 @@ enum CertificateStage: string
         }
 
         return blank($certificate->recipient_email) ? self::ISSUED_WITHOUT_EMAIL : self::ISSUED;
+    }
+
+    /**
+     * Bentuk kueri tahap ini langsung di atas tabel sertifikat.
+     *
+     * @param  Builder<Certificate>  $query
+     * @return Builder<Certificate>
+     */
+    public function constrainCertificates(Builder $query): Builder
+    {
+        return match ($this) {
+            // Dua tahap ini milik peserta yang belum punya sertifikat sama
+            // sekali, jadi tidak pernah cocok di tabel ini.
+            self::NOT_ELIGIBLE, self::READY => $query->whereRaw('1 = 0'),
+            self::ISSUED => $query->whereNull('revoked_at')->whereNull('emailed_at')
+                ->whereNull('email_failed_at')->whereNotNull('recipient_email'),
+            self::ISSUED_WITHOUT_EMAIL => $query->whereNull('revoked_at')->whereNull('emailed_at')
+                ->whereNull('recipient_email'),
+            self::SENT => $query->whereNull('revoked_at')->whereNotNull('emailed_at'),
+            self::FAILED => $query->whereNull('revoked_at')->whereNull('emailed_at')
+                ->whereNotNull('email_failed_at'),
+            self::REVOKED => $query->whereNotNull('revoked_at'),
+        };
     }
 
     public function getLabel(): string
