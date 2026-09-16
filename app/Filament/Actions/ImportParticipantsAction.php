@@ -41,6 +41,19 @@ class ImportParticipantsAction extends Action
                 Step::make('Unggah Berkas')
                     ->description('Format .xlsx atau .csv sesuai template resmi, maksimal '.ParticipantImportParser::MAX_ROWS.' baris data.')
                     ->schema([
+                        // Tautan template diletakkan tepat di langkah ini:
+                        // di situlah orang menyadari ia belum punya berkasnya.
+                        Text::make(new HtmlString(
+                            '<a href="'.route('certificates.import-template').'" '
+                            .'style="display:inline-flex;align-items:center;gap:0.5rem;font-weight:600;color:rgb(29 78 216);text-decoration:none;">'
+                            .'<svg style="width:1rem;height:1rem;" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">'
+                            .'<path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>'
+                            .'Unduh template Excel</a>'
+                            .'<span style="display:block;margin-top:0.375rem;font-size:0.8125rem;color:rgb(113 113 122);">'
+                            .'Berisi nama kolom yang benar, contoh isian, pilihan peran siap klik, dan lembar petunjuk. '
+                            .'Nama pada sertifikat dicetak apa adanya, jadi pakai template ini agar tidak salah ketik.</span>'
+                        )),
+
                         FileUpload::make('file')
                             ->label('Berkas peserta')
                             ->disk(ParticipantImportSession::TEMP_DISK)
