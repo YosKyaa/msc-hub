@@ -30,3 +30,5 @@ Thumbs.db
 # dan aturan ini tidak memengaruhi berkas yang sudah terlacak.
 *.md
 !README.md
+# Panduan rilis memang bagian dari proyek, bukan catatan kerja.
+!docs/DEPLOYMENT.md
