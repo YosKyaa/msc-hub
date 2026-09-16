@@ -14,6 +14,12 @@ return [
     ))),
 
     /*
+    | Alamat yang disebut ketika pengunjung diminta menghubungi tim MSC,
+    | misalnya saat daftar penerima sebuah kegiatan belum dibuka.
+    */
+    'contact_email' => env('MSC_CONTACT_EMAIL', 'media@jgu.ac.id'),
+
+    /*
     | Penerbitan sertifikat.
     |
     | Sampai sejumlah ini sertifikat diterbitkan langsung saat tombol ditekan,
