@@ -14,6 +14,11 @@
     <link rel="icon" type="image/png" href="{{ asset('img/jgusolo.png') }}">
     <title>QR {{ $action->getLabel() }} — {{ $event->name }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Tombolnya alat bantu layar, bukan bagian poster: ia tidak boleh
+           ikut tercetak ketika halaman ini dicetak langsung dari peramban. */
+        @media print { .no-print { display: none !important; } }
+    </style>
 </head>
 <body class="min-h-screen bg-white flex flex-col items-center justify-center px-6 py-10 text-center">
     <img src="{{ asset('img/jgu.png') }}" alt="Logo JGU" class="h-12 w-auto mb-6">
@@ -39,6 +44,15 @@
 
     <p class="text-base sm:text-lg text-gray-700">Pindai QR di atas, lalu masuk dengan akun Google JGU Anda.</p>
     <p class="mt-2 text-sm sm:text-base font-mono text-gray-500 break-all max-w-2xl">{{ $attendanceUrl }}</p>
+
+    <a href="{{ request()->fullUrlWithQuery(['unduh' => 1]) }}"
+       class="no-print mt-8 inline-flex items-center gap-2 rounded-lg bg-{{ $accent }}-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-{{ $accent }}-700">
+        <svg class="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0 4-4m-4 4-4-4M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/>
+        </svg>
+        Unduh PDF
+    </a>
+    <p class="no-print mt-2 text-xs text-gray-400">Lembar A4 siap cetak untuk ditempel di lokasi acara.</p>
 
     <p class="mt-10 text-xs text-gray-400">Media &amp; Strategic Communications — Jakarta Global University</p>
 </body>
