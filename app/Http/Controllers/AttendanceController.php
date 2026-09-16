@@ -7,8 +7,11 @@ use App\Models\CertificateEvent;
 use App\Services\Certificates\AttendanceService;
 use App\Services\Certificates\ParticipantRegistry;
 use App\Services\QrCodeGenerator;
+use App\Support\PdfLetterhead;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Str;
 
 /**
  * Halaman absensi publik per kegiatan. Check-in dan check-out punya token, URL,
@@ -72,18 +75,46 @@ class AttendanceController extends Controller
     /**
      * Halaman QR layar penuh untuk diproyeksikan di lokasi kegiatan.
      */
-    public function poster(CertificateEvent $event, AttendanceAction $action, QrCodeGenerator $qrCodes)
+    public function poster(Request $request, CertificateEvent $event, AttendanceAction $action, QrCodeGenerator $qrCodes)
     {
         abort_unless($event->attendance_enabled && $event->attendanceToken($action), 404);
 
         $url = $event->attendanceUrl($action);
 
-        return view('attendance.poster', [
+        $data = [
             'action' => $action,
             'event' => $event,
             'attendanceUrl' => $url,
             'qrDataUri' => $qrCodes->dataUri($url, scale: 12),
-        ]);
+        ];
+
+        // Bawaannya halaman untuk diproyeksikan di layar; ?unduh=1
+        // menghasilkan lembar A4 yang siap dicetak dan ditempel, mengikuti
+        // kebiasaan yang sama seperti formulir peminjaman.
+        if ($request->boolean('unduh')) {
+            return $this->posterPdf($data);
+        }
+
+        return view('attendance.poster', $data);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function posterPdf(array $data)
+    {
+        /** @var CertificateEvent $event */
+        $event = $data['event'];
+
+        /** @var AttendanceAction $action */
+        $action = $data['action'];
+
+        $berkas = 'QR-'.Str::slug($action->getLabel()).'-'.Str::slug($event->name).'.pdf';
+
+        return Pdf::loadView('pdf.attendance-poster', [
+            ...$data,
+            'logoDataUri' => PdfLetterhead::logoDataUri(),
+        ])->setPaper('a4', 'portrait')->download($berkas);
     }
 
     /**
