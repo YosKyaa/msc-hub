@@ -3,17 +3,21 @@
 namespace App\Filament\Resources\CertificateTemplateResource\Pages;
 
 use App\Filament\Resources\CertificateTemplateResource;
+use App\Support\CertificateElement;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\Concerns\InteractsWithRecord;
 use Filament\Resources\Pages\Page;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class EditCertificateLayout extends Page
 {
     use InteractsWithRecord;
 
     protected static string $resource = CertificateTemplateResource::class;
+
     protected string $view = 'filament.resources.certificate-template-resource.pages.edit-certificate-layout';
+
     protected static ?string $title = 'Editor Visual Sertifikat';
 
     public array $elements = [];
@@ -39,7 +43,11 @@ class EditCertificateLayout extends Page
             'elements.*.font_family' => ['required', 'string', 'max:100'],
             'elements.*.font_size' => ['required', 'integer', 'min:6', 'max:200'],
             'elements.*.font_weight' => ['required', 'integer', 'in:400,600,700'],
-            'elements.*.align' => ['required', 'in:left,center,right'],
+            'elements.*.align' => ['required', Rule::in(CertificateElement::ALIGNMENTS)],
+            // Perataan tegak baru ada belakangan, jadi template lama tidak
+            // punya kuncinya sama sekali; CertificateElement yang memutuskan
+            // bawaannya saat digambar.
+            'elements.*.valign' => ['nullable', Rule::in(CertificateElement::VERTICAL_ALIGNMENTS)],
             'elements.*.color' => ['required', 'regex:/^#[0-9a-fA-F]{6}$/'],
         ])->validate();
 
