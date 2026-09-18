@@ -265,12 +265,41 @@ sudo supervisorctl start msc-hub-worker:*
 sudo supervisorctl status
 ```
 
-> Panel akan memperingatkan sendiri bila antreannya tertahan lebih dari lima
-> menit, jadi Anda tidak perlu memantaunya terus-menerus.
+> Panel memperingatkan sendiri bila tidak ada pekerja yang berjalan — seketika,
+> bukan setelah menunggu. Pekerja meninggalkan denyut tiap kali menengok
+> antrean, dan panel membacanya sebelum menjanjikan email akan terkirim.
 
 Bila Supervisor belum tersedia, alternatif sementara: setel
 `QUEUE_CONNECTION=sync`. Email dikirim langsung dalam permintaan — menekan
 tombol terasa lebih lambat, tetapi tidak ada yang menumpuk.
+
+### Laju kirim email
+
+Hampir semua penyedia SMTP menolak kiriman yang terlalu rapat. Milik kampus
+menjawab `550 5.7.0 Too many emails per second` lalu menggugurkan sisanya —
+sehingga mengirim seratus sertifikat sekaligus justru membuat sebagian besarnya
+tidak sampai.
+
+Kirimannya karena itu dijarakkan. Sesuaikan dengan paket SMTP yang dipakai:
+
+```dotenv
+# Email sertifikat per menit. 20 (satu tiap tiga detik) aman untuk paket
+# gratis kebanyakan; naikkan bila paketnya memang mengizinkan.
+MSC_CERTIFICATE_EMAILS_PER_MINUTE=20
+```
+
+Seratus peserta pada 20 per menit berarti lima menit. Panel menyebutkan
+perkiraan itu saat tombol kirim ditekan.
+
+### Buktikan emailnya jalan sebelum peserta yang kena
+
+Jangan menunggu pengiriman massal untuk tahu SMTP-nya salah setel. Buka satu
+kegiatan di panel, tekan **Kirim Email Uji**, isi alamat Anda sendiri.
+
+Email itu menempuh jalur yang sama persis — templat, kop penerbit, sambungan
+SMTP yang sama — tetapi hanya ke satu alamat, dan peserta tidak menerima apa
+pun. Bila gagal, jawaban server email ditampilkan apa adanya, misalnya
+`535 5.7.8 Username and Password not accepted`.
 
 ---
 

@@ -16,7 +16,9 @@ use App\Policies\AssetPolicy;
 use App\Policies\ContentRequestPolicy;
 use App\Policies\ProjectPolicy;
 use App\Policies\TagPolicy;
+use App\Support\QueueHealth;
 use Illuminate\Auth\Events\Login;
+use Illuminate\Queue\Events\Looping;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
@@ -47,6 +49,12 @@ class AppServiceProvider extends ServiceProvider
         RoomBooking::observe(RoomBookingObserver::class);
         InventoryBooking::observe(InventoryBookingObserver::class);
         ContentRequest::observe(ContentRequestObserver::class);
+
+        // Laravel tidak mencatat pekerja antreannya di mana pun, sehingga
+        // panel tidak punya cara tahu apakah pekerjaan yang dititipkan benar-
+        // benar akan dikerjakan. Peristiwa Looping berbunyi tiap kali pekerja
+        // menengok antrean, dan itulah denyut yang dipakai QueueHealth.
+        Event::listen(Looping::class, fn () => QueueHealth::recordWorkerHeartbeat());
 
         // Login mempertahankan isi sesi sebelumnya, jadi batas keras panel
         // harus dihitung ulang dari sini agar tidak mewarisi jam lama.
