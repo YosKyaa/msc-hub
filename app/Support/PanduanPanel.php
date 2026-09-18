@@ -62,20 +62,22 @@ class PanduanPanel
                 'warna' => 'success',
                 'ikon' => 'heroicon-o-academic-cap',
                 'langkah' => [
-                    ['Siapkan kegiatan', 'Buat kegiatan, pilih templat dan penerbitnya, lalu publikasikan agar sertifikatnya sah.'],
-                    ['Kumpulkan peserta', 'Lewat absensi QR, impor berkas, atau tambah satu per satu. Tandai siapa yang berhak menerima.'],
-                    ['Terbitkan digital', 'Nomor diberikan dan halaman verifikasi langsung aktif. Email BELUM dikirim.'],
+                    ['Siapkan desainnya', 'Di menu Desain Sertifikat: unggah gambar latar, lalu atur letak nama, nomor, dan QR. Satu desain bisa dipakai berkali-kali.'],
+                    ['Buat kegiatan', 'Di menu Kegiatan & Peserta: pilih desain dan penerbitnya, lalu ubah statusnya menjadi Dipublikasikan agar sertifikatnya sah.'],
+                    ['Daftarkan peserta', 'Impor dari Excel, tambah satu per satu, atau biarkan masuk sendiri lewat absensi QR. Lalu tandai siapa yang berhak menerima.'],
+                    ['Terbitkan digital', 'Nomor diberikan dan halaman verifikasinya langsung aktif. Email BELUM dikirim, jadi hasilnya masih bisa diperiksa dulu.'],
                     ['Kirim email', 'Setelah hasilnya diperiksa. Yang sudah menerima tidak dikirimi ulang.'],
                 ],
                 'catatan' => [
+                    'Setiap kegiatan menampilkan alur empat langkahnya di bagian paling atas, lengkap dengan angka dan satu kalimat tentang apa yang harus dikerjakan berikutnya.',
                     'Menerbitkan dan mengirim sengaja dipisah, supaya penerbitan yang keliru tidak terlanjur mendarat di kotak masuk peserta.',
                     'Tiap penerbit — Rektorat, SCD, jurusan, MSC — memegang pola dan urutan nomornya sendiri, dan nomornya bisa diselaraskan dengan register yang sudah berjalan.',
                     'Peserta yang sudah memegang sertifikat tidak bisa dihapus; gunakan pencabutan bila dokumennya memang harus dibatalkan.',
                 ],
                 'tautan' => [
-                    'filament.admin.resources.certificate-events.index' => 'Kegiatan Sertifikat',
+                    'filament.admin.resources.certificate-events.index' => 'Kegiatan & Peserta',
+                    'filament.admin.resources.certificate-templates.index' => 'Desain Sertifikat',
                     'filament.admin.resources.issuers.index' => 'Penerbit',
-                    'filament.admin.resources.certificate-templates.index' => 'Templat Sertifikat',
                 ],
             ],
 

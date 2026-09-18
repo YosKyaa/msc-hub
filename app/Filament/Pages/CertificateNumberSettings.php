@@ -31,7 +31,7 @@ class CertificateNumberSettings extends Page
 
     protected static string|UnitEnum|null $navigationGroup = 'Sertifikat';
 
-    protected static ?string $navigationLabel = 'Penomoran Sertifikat';
+    protected static ?string $navigationLabel = 'Format Nomor';
 
     protected static ?string $title = 'Penomoran Sertifikat';
 
