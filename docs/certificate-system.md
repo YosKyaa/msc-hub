@@ -8,7 +8,8 @@
 - chillerlan/php-qrcode 5.0.5 untuk QR PNG; paket sudah tersedia pada proyek.
 - Alpine.js untuk editor visual drag-and-drop tanpa SPA tambahan.
 - maatwebsite/excel 3.1 untuk import peserta dari .xlsx/.csv.
-- Laravel queue (driver database) untuk penerbitan batch dan pengiriman email sertifikat.
+- Laravel queue (driver database) untuk pengiriman email sertifikat, dan untuk
+  penerbitan yang pesertanya melebihi batas penerbitan langsung.
 
 Fabric.js tidak digunakan pada MVP karena state canvas Fabric harus dirender ulang secara identik di server. Editor koordinat menghasilkan JSON sederhana dan PDF yang lebih deterministik. Jika kebutuhan desain berkembang menjadi rotasi, shape, curved text, atau layer kompleks, Fabric.js dapat ditambahkan sebagai editor sambil mempertahankan schema elemen internal.
 
@@ -26,13 +27,14 @@ Tipe identitas: mahasiswa, dosen, staf, dan guest. Peran kegiatan bawaan: pesert
 2. Input manual admin         ├─► CertificateEventParticipant ─► review admin
 3. Import Excel               ┘            │
                                            ▼
-                        Bus::batch(IssueCertificateJob) ─► Certificate + nomor + UUID
-                                           │
-                                           ▼
-                              SendCertificateEmailJob (antre)
+              1. Terbitkan Digital (langsung s.d. 100 orang,
+                 di atasnya Bus::batch) ─► Certificate + nomor + UUID
                                            │
                                            ▼
                           verifikasi publik /verify/certificate/{token}
+                                           │
+                                           ▼
+              2. Kirim Email ─► SendCertificateEmailJob (antre, dijarakkan)
 ```
 
 ## Absensi
@@ -103,23 +105,42 @@ Admin selalu dapat menimpa flag kelayakan untuk ketiga aturan.
 
 ## Alur staf
 
-1. Buat desain latar PNG/JPG tanpa nama, nomor, dan QR.
-2. Buat Template Sertifikat dan unggah desain.
-3. Setelah template disimpan, sistem otomatis membuka Editor Visual.
-4. Tambahkan variabel dari toolbar, lalu drag, resize, dan atur tipografi langsung di atas desain. Gunakan Preview Bersih untuk memeriksa hasil tanpa garis editor.
-5. Buat event sertifikat dan pilih template.
+Menu **Sertifikat** di panel diurutkan menurut urutan kerjanya: Kegiatan &
+Peserta, Desain Sertifikat, Cari Sertifikat, lalu dua pengaturan yang diisi
+sekali saja (Penerbit dan Format Nomor).
+
+1. Buat desain latar PNG/JPG tanpa nama, nomor, dan QR. Maksimal mengikuti
+   batas PHP di server; kompres ke bawah 1 MB karena gambar ini ditanam ke
+   dalam **setiap** PDF sertifikat.
+2. Buka **Desain Sertifikat**, unggah latarnya, lalu tekan **Atur Letak
+   Tulisan** untuk membuka editor visual.
+3. Tambahkan variabel dari toolbar, lalu geser, ubah ukuran, dan atur
+   tipografi serta perataannya langsung di atas desain. Elemen yang teksnya
+   tidak muat ditandai merah. Gunakan Preview Bersih untuk melihat hasilnya
+   tanpa garis editor.
+4. Buka **Kegiatan & Peserta**, buat kegiatan, pilih desain dan penerbitnya.
+5. Ubah statusnya menjadi `Dipublikasikan`. Selama masih `draft`, sertifikat
+   belum sah dan emailnya tidak bisa dikirim.
 6. Isi peserta lewat salah satu jalur: aktifkan absensi QR (pasang QR check-in
    di pintu masuk dan QR check-out menjelang acara bubar), tambahkan manual per
-   email, atau import Excel.
+   email, atau impor Excel.
 7. Tandai kehadiran dan kelayakan secara individual atau bulk.
-8. Tekan "Terbitkan Semua Eligible" (atau pilih baris lalu bulk action).
-   Penerbitan berjalan di antrean; hasilnya dikabarkan lewat notifikasi panel.
-9. Periksa contoh PDF, lalu ubah event menjadi `Dipublikasikan`.
-10. Publikasi membuat QR valid dan otomatis mengirim email yang masih tertunda.
-    Sertifikat dapat dicabut sewaktu-waktu tanpa mengubah QR.
+8. Tekan **1. Terbitkan Digital**. Nomor diberikan dan halaman verifikasinya
+   langsung aktif — email belum dikirim.
+9. Periksa hasilnya lewat tombol lihat atau unduh pada salah satu peserta.
+10. Tekan **2. Kirim Email**. Sertifikat dapat dicabut sewaktu-waktu tanpa
+    mengubah QR.
 
-Antrean wajib berjalan (`php artisan queue:work`) agar langkah 8 dan 10
-menghasilkan sertifikat dan email.
+Setiap kegiatan menampilkan keempat langkah itu di bagian paling atas
+halamannya, lengkap dengan angka tiap langkah dan satu kalimat tentang apa yang
+harus dikerjakan berikutnya (`App\Support\CertificateProgress`).
+
+**Penerbitan tidak lagi memerlukan antrean** selama pesertanya tidak lebih dari
+`MSC_INLINE_ISSUE_LIMIT` (bawaan 100): sertifikatnya dibuat seketika saat tombol
+ditekan. Di atas angka itu penerbitan dipecah ke antrean.
+
+**Pengiriman email selalu lewat antrean**, jadi `php artisan queue:work` wajib
+berjalan di server untuk langkah 10.
 
 ## Variabel bawaan
 
@@ -139,7 +160,35 @@ Variabel tambahan per penerima disimpan dalam field `variables` dan dapat dikemb
 
 ## Editor visual
 
-Editor mendukung penambahan elemen dari toolbar, drag-and-drop, resize dengan handle, layer selection, duplicate, delete, custom text, custom font TTF, warna, alignment, keyboard arrow untuk nudging, preview bersih, dan koordinat numerik sebagai kontrol presisi. Maksimal 50 elemen per template dan seluruh payload divalidasi ulang di server sebelum disimpan.
+Editor mendukung penambahan elemen dari toolbar, geser dan ubah ukuran,
+pemilihan layer, duplikat, hapus, teks statis, font TTF sendiri, warna,
+perataan mendatar (kiri/tengah/kanan) dan tegak (atas/tengah/bawah), tombol
+panah untuk menggeser presisi, preview bersih, serta koordinat numerik.
+Maksimal 50 elemen per template dan seluruh payload divalidasi ulang di server
+sebelum disimpan.
+
+### Satu tata letak, tiga penggambar
+
+Sertifikat yang sama digambar tiga kali: di editor, di halaman verifikasi, dan
+di dalam PDF. Ketiganya dulu menyusun CSS-nya sendiri-sendiri dan karenanya
+tidak pernah benar-benar sama — editor meratakan teks ke tengah secara tegak
+lalu **menyembunyikan** yang meluber, sementara dua lainnya menempelkan teks ke
+atas dan membiarkannya meluber. Admin melihat satu baris rapi saat merancang,
+penerima menerima baris bertumpuk.
+
+Seluruh keputusan tata letak kini tinggal di `App\Support\CertificateElement`.
+Yang berbeda antar ketiganya hanya satuan: piksel kanvas untuk PDF, persen dan
+`cqw` untuk pratinjau. Editor tidak lagi memotong teks yang tidak muat —
+elemennya ditandai merah beserta alasannya.
+
+Perataan tegak dipasang lewat `display:table-cell` yang **membawa tingginya
+sendiri**. Dompdf menerima `vertical-align` pada bentuk lain lalu mengabaikannya
+diam-diam, jadi `tests/Feature/CertificateLayoutParityTest.php` memeriksa
+koordinat yang sungguh dihasilkan PDF, bukan sekadar bahwa aturannya tertulis.
+
+Template lama tidak punya kunci `valign`; bawaannya rata tengah, mengikuti apa
+yang selama ini ditampilkan editor, supaya desain yang terlanjur dibuat tidak
+bergeser.
 
 ## Import peserta
 
@@ -274,21 +323,74 @@ route unduh, aksi panel, serta job pengiriman email.
 
 ## Penerbitan dan email
 
-Penerbitan berjalan asinkron: satu `IssueCertificateJob` per peserta eligible di
-dalam satu `Bus::batch`. Setiap job idempotent — keikutsertaan yang sudah punya
-sertifikat dilewati, dan unique index pada `certificates.event_participant_id`
-menjaga hal itu di level database. Nomor sertifikat khusus dari import dipakai
-apa adanya; selebihnya dibuat otomatis dan diperiksa keunikannya.
+Keduanya sengaja dipisah menjadi dua tombol. Menerbitkan **tidak** mengirim
+apa pun: nomor diberikan dan halaman verifikasinya aktif, sehingga penerbitan
+yang keliru tidak terlanjur mendarat di kotak masuk peserta.
+
+### Penerbitan
+
+Sampai `MSC_INLINE_ISSUE_LIMIT` peserta (bawaan 100) sertifikat dibuat seketika
+di dalam permintaan itu juga; di atasnya dipecah menjadi `Bus::batch` berisi
+`IssueCertificateJob`. Keputusannya ada di `CertificateBatchIssuer`.
+
+Setiap job idempotent — keikutsertaan yang sudah punya sertifikat dilewati, dan
+unique index pada `certificates.event_participant_id` menjaga hal itu di level
+database. Nomor sertifikat khusus dari impor dipakai apa adanya; selebihnya
+dibuat otomatis dan diperiksa keunikannya.
+
+### Pengiriman email
 
 `SendCertificateEmailJob` mengirim satu email per sertifikat berisi tautan unduh
-dan tautan verifikasi (PDF tidak dilampirkan, agar penerima selalu mendapat
-versi terbaru). Idempotensinya dijaga kolom `emailed_at`; kegagalan final
-dicatat pada `email_failed_at` dan `email_error`, dan dapat ditindaklanjuti
-dengan aksi "Kirim Ulang Email".
+dan tautan verifikasi. PDF tidak dilampirkan, agar penerima selalu mendapat
+versi terbaru. Idempotensinya dijaga kolom `emailed_at`.
 
-Email hanya dikirim untuk sertifikat valid. Bila penerbitan dilakukan sebelum
-publikasi, email menyusul otomatis saat kegiatan diubah menjadi
-`Dipublikasikan` (`CertificateEventObserver`).
+Email hanya dikirim untuk sertifikat valid, yaitu setelah kegiatannya
+`Dipublikasikan`. **Publikasi tidak mengirim email dengan sendirinya** — admin
+harus menekan "2. Kirim Email".
+
+### Laju kirim
+
+Hampir semua penyedia SMTP menolak kiriman yang terlalu rapat; milik kampus
+menjawab `550 5.7.0 Too many emails per second` lalu menggugurkan sisanya,
+sehingga melepas seratus email sekaligus justru membuat sebagian besarnya tidak
+sampai.
+
+`CertificateBatchMailer` karena itu menjarakkan tiap job menurut
+`MSC_CERTIFICATE_EMAILS_PER_MINUTE` (bawaan 20, yaitu satu tiap tiga detik).
+Perkiraan lamanya disebutkan di panel saat tombol ditekan.
+
+### Ketika gagal
+
+Sebab kegagalan dicatat pada **percobaan pertama**, bukan setelah ketiganya
+habis: `email_failed_at` dan `email_error` diisi seketika, dan kejadiannya
+masuk log sebagai `warning`. Bila seluruh percobaan menyerah, `failed()`
+mencatatnya sebagai `error`.
+
+Ini penting karena `failed()` baru berjalan tujuh menit kemudian — dan tidak
+pernah berjalan sama sekali bila antreannya tidak ada yang mengerjakan. Tanpa
+pencatatan per percobaan, panel hanya berkata "belum terkirim" tanpa menyebut
+sebabnya.
+
+Kolom `email_error` ditampilkan di tabel peserta sebagai "Kendala email", dan
+dapat ditindaklanjuti dengan aksi "Kirim Ulang Email". Alur empat langkah di
+atas halaman kegiatan ikut menyebut berapa email yang gagal.
+
+### Memastikan emailnya jalan
+
+Tombol **Kirim Email Uji** di header tiap kegiatan mengirim satu email ke
+alamat yang diisi, menempuh jalur yang sama persis — templat, kop penerbit,
+sambungan SMTP yang sama — tanpa menyentuh peserta mana pun. Bila gagal,
+jawaban server email ditampilkan apa adanya, misalnya
+`535 5.7.8 Username and Password not accepted`. Lihat `CertificateMailProbe`.
+
+### Antrean yang tidak dikerjakan
+
+Laravel tidak mencatat pekerja antreannya di mana pun, sehingga panel dulu
+menjanjikan "email diantrekan" tanpa tahu apakah ada yang akan mengerjakannya.
+Pekerja kini meninggalkan denyut tiap kali menengok antrean (peristiwa
+`Looping` → `QueueHealth::recordWorkerHeartbeat()`), dan panel membacanya
+sebelum berjanji. Peringatannya muncul seketika, bukan setelah lima menit
+pekerjaan menumpuk.
 
 `APP_URL` wajib menunjuk domain produksi karena dipakai membentuk URL absolut
 pada QR dan tombol email.
