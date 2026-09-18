@@ -51,6 +51,19 @@ return [
     */
     'certificates' => [
         'inline_issue_limit' => (int) env('MSC_INLINE_ISSUE_LIMIT', 100),
+
+        /*
+         * Berapa email sertifikat yang boleh dikirim tiap menit.
+         *
+         * Hampir semua penyedia SMTP menolak kiriman yang terlalu rapat —
+         * milik kampus menjawab "550 Too many emails per second" lalu
+         * menggugurkan sisanya. Mengirim seratus email sekaligus karena itu
+         * justru membuat sebagian besarnya tidak sampai.
+         *
+         * Angkanya diatur menurut paket SMTP yang dipakai. 20 per menit
+         * (satu tiap tiga detik) aman untuk paket gratis kebanyakan.
+         */
+        'emails_per_minute' => (int) env('MSC_CERTIFICATE_EMAILS_PER_MINUTE', 20),
     ],
 
     /*

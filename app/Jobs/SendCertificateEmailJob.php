@@ -42,8 +42,19 @@ class SendCertificateEmailJob implements ShouldQueue
             return;
         }
 
-        Notification::route('mail', $certificate->recipient_email)
-            ->notify(new CertificateIssued($certificate));
+        try {
+            Notification::route('mail', $certificate->recipient_email)
+                ->notify(new CertificateIssued($certificate));
+        } catch (Throwable $exception) {
+            // Dicatat sekarang juga, bukan menunggu percobaan terakhir.
+            // failed() baru berjalan setelah ketiga percobaan habis — tujuh
+            // menit kemudian — dan tidak pernah berjalan sama sekali bila
+            // antreannya memang tidak ada yang mengerjakan. Selama itu panel
+            // hanya berkata "belum terkirim" tanpa menyebut sebabnya.
+            $this->record($certificate, $exception, terakhir: false);
+
+            throw $exception;
+        }
 
         $certificate->forceFill([
             'emailed_at' => now(),
@@ -54,15 +65,38 @@ class SendCertificateEmailJob implements ShouldQueue
 
     public function failed(Throwable $exception): void
     {
-        $this->certificate->forceFill([
+        $this->record($this->certificate, $exception, terakhir: true);
+    }
+
+    /**
+     * Simpan sebabnya di sertifikatnya sekaligus di log.
+     *
+     * Kolomnya dibaca panel — admin melihat alasannya di tabel peserta tanpa
+     * perlu membuka berkas log — sedangkan lognya yang dipakai menelusuri
+     * kejadiannya di server.
+     */
+    private function record(Certificate $certificate, Throwable $exception, bool $terakhir): void
+    {
+        $pesan = Str::limit($exception->getMessage(), 250);
+
+        $certificate->forceFill([
             'email_failed_at' => now(),
-            'email_error' => Str::limit($exception->getMessage(), 250),
+            'email_error' => $pesan,
         ])->save();
 
-        Log::warning('Gagal mengirim email sertifikat.', [
-            'certificate_id' => $this->certificate->id,
-            'certificate_number' => $this->certificate->certificate_number,
-            'exception' => $exception,
-        ]);
+        $konteks = [
+            'certificate_id' => $certificate->id,
+            'certificate_number' => $certificate->certificate_number,
+            'recipient_email' => $certificate->recipient_email,
+            'attempt' => $this->attempts(),
+            'error' => $pesan,
+        ];
+
+        // Percobaan yang masih akan diulang cukup dicatat sebagai peringatan;
+        // yang benar-benar menyerah dicatat sebagai galat agar terlihat saat
+        // log dipindai.
+        $terakhir
+            ? Log::error('Email sertifikat gagal terkirim dan tidak dicoba lagi.', $konteks + ['exception' => $exception])
+            : Log::warning('Percobaan mengirim email sertifikat gagal.', $konteks);
     }
 }

@@ -422,13 +422,26 @@ class ParticipationsRelationManager extends RelationManager
         // admin harus tahu bila antreannya ternyata tidak dikerjakan.
         $peringatan = QueueHealth::warning();
 
-        Notification::make()
+        // Kirimannya sengaja dijarakkan supaya penyedia SMTP tidak menolak,
+        // jadi lamanya disebutkan di muka — kalau tidak, admin menunggu satu
+        // menit lalu menyimpulkan emailnya tidak jalan.
+        $menit = app(CertificateBatchMailer::class)->estimatedMinutesFor($batch->totalJobs);
+
+        $pemberitahuan = Notification::make()
             ->title('Email diantrekan')
-            ->body("{$batch->totalJobs} email sertifikat sedang dikirim di latar belakang."
+            ->body("{$batch->totalJobs} email sertifikat sedang dikirim di latar belakang, "
+                ."diperkirakan selesai dalam {$menit} menit. Kirimannya dijarakkan agar tidak ditolak penyedia email."
                 .($peringatan === null ? '' : ' '.$peringatan))
-            ->status($peringatan === null ? 'success' : 'warning')
-            ->persistent($peringatan !== null)
-            ->send();
+            ->status($peringatan === null ? 'success' : 'warning');
+
+        // persistent() di Filament tidak menerima argumen: memanggilnya dengan
+        // false tetap membuat pemberitahuannya menetap, sehingga yang perlu
+        // ditindaklanjuti tidak lagi bisa dibedakan dari yang baik-baik saja.
+        if ($peringatan !== null) {
+            $pemberitahuan->persistent();
+        }
+
+        $pemberitahuan->send();
     }
 
     private function pendingEmailSummary(): string

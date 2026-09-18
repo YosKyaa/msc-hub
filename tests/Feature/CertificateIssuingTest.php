@@ -16,6 +16,7 @@ use App\Services\Certificates\CertificateIssuer;
 use App\Support\QueueHealth;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Bus;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Facades\Queue;
@@ -235,6 +236,51 @@ class CertificateIssuingTest extends TestCase
 
         $this->assertTrue(QueueHealth::isStalled());
         $this->assertStringContainsString('queue:work', (string) QueueHealth::warning());
+    }
+
+    /**
+     * Menumpuknya pekerjaan baru terlihat setelah lima menit, padahal admin
+     * sudah keburu menutup halamannya dan mengira emailnya terkirim. Tidak
+     * adanya pekerja bisa dikatakan seketika — asal pekerjanya memang
+     * meninggalkan jejak.
+     */
+    public function test_a_queue_nobody_is_working_is_reported_at_once(): void
+    {
+        config(['queue.default' => 'database']);
+        Cache::forget(QueueHealth::HEARTBEAT_KEY);
+
+        DB::table('jobs')->insert([
+            'queue' => 'default',
+            'payload' => '{}',
+            'attempts' => 0,
+            'reserved_at' => null,
+            'available_at' => now()->getTimestamp(),
+            'created_at' => now()->getTimestamp(),
+        ]);
+
+        // Baru saja diantrekan, jadi belum terhitung menumpuk.
+        $this->assertFalse(QueueHealth::isStalled());
+        $this->assertFalse(QueueHealth::hasWorker());
+        $this->assertStringContainsString('Tidak ada pekerja antrean', (string) QueueHealth::warning());
+
+        // Satu denyut pekerja sudah cukup untuk menenangkannya.
+        QueueHealth::recordWorkerHeartbeat();
+
+        $this->assertTrue(QueueHealth::hasWorker());
+        $this->assertNull(QueueHealth::warning());
+    }
+
+    /**
+     * Antrean kosong tidak perlu pekerja. Peringatan yang berbunyi saat tidak
+     * ada apa-apa akan diabaikan justru ketika ia benar-benar penting.
+     */
+    public function test_an_idle_queue_is_not_complained_about(): void
+    {
+        config(['queue.default' => 'database']);
+        Cache::forget(QueueHealth::HEARTBEAT_KEY);
+
+        $this->assertSame(0, QueueHealth::pendingCount());
+        $this->assertNull(QueueHealth::warning());
     }
 
     // ------------------------------------------- terbit dulu, kirim kemudian
