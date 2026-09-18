@@ -7,6 +7,7 @@
 ])
 
 @php
+    use App\Support\CertificateElement;
     use Illuminate\Support\Facades\Storage;
 
     $canvasWidth = max(1, (int) $template->canvas_width);
@@ -24,6 +25,12 @@
     @push('styles')
         <style>
             .cert-preview { container-type: inline-size; }
+
+            /* table/table-cell, sama seperti PDF: hanya pasangan inilah yang
+               dipahami dompdf dan peramban dengan hasil yang sama. */
+            .cert-preview-element { position: absolute; display: table; box-sizing: border-box; }
+            .cert-preview-element > div { display: table-cell; }
+
             @foreach($template->fonts ?? [] as $fontPath)
                 @font-face {
                     font-family: "{{ pathinfo($fontPath, PATHINFO_FILENAME) }}";
@@ -43,30 +50,25 @@
          class="absolute inset-0 h-full w-full {{ $muted ? 'opacity-40 grayscale' : '' }}"
          loading="lazy">
 
-    @foreach($template->elements ?? [] as $element)
-        @php
-            $variable = $element['variable'] ?? '';
-            $value = $variable === 'qr_code' ? null : ($values[$variable] ?? ($element['text'] ?? ''));
-        @endphp
-
-        <div class="absolute {{ $muted ? 'opacity-40' : '' }}"
-             style="left:{{ $percentX($element['x'] ?? 0) }};
-                    top:{{ $percentY($element['y'] ?? 0) }};
-                    width:{{ $percentX($element['width'] ?? 300) }};
-                    height:{{ $percentY($element['height'] ?? 60) }};
-                    text-align:{{ $element['align'] ?? 'center' }};
-                    font-family:'{{ $element['font_family'] ?? 'DejaVu Sans' }}', ui-sans-serif, system-ui, sans-serif;
-                    font-size:{{ $containerWidth($element['font_size'] ?? 28) }};
-                    font-weight:{{ $element['font_weight'] ?? 400 }};
-                    color:{{ $element['color'] ?? '#111827' }};
-                    line-height:1.2;">
-            @if($variable === 'qr_code')
-                @if($qrDataUri)
-                    <img src="{{ $qrDataUri }}" alt="QR verifikasi" class="h-full w-full">
+    @foreach(CertificateElement::collect($template->elements) as $element)
+        <div class="cert-preview-element {{ $muted ? 'opacity-40' : '' }}"
+             style="{{ $element->boxCss(
+                 $percentX($element->x()),
+                 $percentY($element->y()),
+                 $percentX($element->width()),
+                 $percentY($element->height()),
+             ) }}">
+            {{-- Tinggi selnya relatif terhadap kotaknya, bukan kanvas: kotak
+                 luarnyalah yang sudah diukur terhadap kanvas. --}}
+            <div style="{{ $element->contentCss($containerWidth($element->fontSize()), '100%') }}">
+                @if($element->isQr())
+                    @if($qrDataUri)
+                        <img src="{{ $qrDataUri }}" alt="QR verifikasi" style="width:100%;height:100%;">
+                    @endif
+                @else
+                    {{ $element->value($values) }}
                 @endif
-            @else
-                {{ $value }}
-            @endif
+            </div>
         </div>
     @endforeach
 

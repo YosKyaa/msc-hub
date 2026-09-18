@@ -4,6 +4,10 @@
     membuang SELURUH aturan setelahnya, termasuk `.element { position:absolute }`,
     sehingga elemen menumpuk di kiri atas dan desain latar tidak tergambar.
     Lihat tests/Feature/CertificatePdfTest.php.
+
+    Perataan dan tipografinya diputuskan App\Support\CertificateElement, sama
+    persis dengan editor dan halaman verifikasi. Lihat
+    tests/Feature/CertificateLayoutParityTest.php.
 --}}
 <!DOCTYPE html>
 <html><head><meta charset="utf-8"><style>
@@ -14,7 +18,10 @@ html, body { margin:0; padding:0; width:{{ $template->canvas_width }}px; height:
 @endforeach
 .canvas { position:relative; width:{{ $template->canvas_width }}px; height:{{ $template->canvas_height }}px; }
 .background { position:absolute; left:0; top:0; width:{{ $template->canvas_width }}px; height:{{ $template->canvas_height }}px; }
-.element { position:absolute; box-sizing:border-box; white-space:normal; }
+{{-- table/table-cell, bukan flexbox: hanya pasangan inilah yang dipahami
+     dompdf dan peramban dengan hasil yang sama. --}}
+.element { position:absolute; display:table; box-sizing:border-box; }
+.element-content { display:table-cell; }
 </style></head><body>
 <div class="canvas">
 @if ($backgroundDataUri)
@@ -22,17 +29,20 @@ html, body { margin:0; padding:0; width:{{ $template->canvas_width }}px; height:
          setelah url('data:...') berkutip tunggal. --}}
     <img class="background" src="{{ $backgroundDataUri }}" alt="">
 @endif
-@foreach($template->elements ?? [] as $element)
-    @php
-        $variable = $element['variable'] ?? '';
-        $value = $variable === 'qr_code' ? null : ($values[$variable] ?? ($element['text'] ?? ''));
-    @endphp
-    <div class="element" style="left:{{ $element['x'] ?? 0 }}px;top:{{ $element['y'] ?? 0 }}px;width:{{ $element['width'] ?? 300 }}px;height:{{ $element['height'] ?? 60 }}px;text-align:{{ $element['align'] ?? 'center' }};font-family:'{{ $element['font_family'] ?? 'DejaVu Sans' }}';font-size:{{ $element['font_size'] ?? 28 }}px;font-weight:{{ $element['font_weight'] ?? 400 }};color:{{ $element['color'] ?? '#111827' }};line-height:1.2;">
-        @if($variable === 'qr_code')
-            <img src="{{ $qrDataUri }}" alt="QR verifikasi" style="width:100%;height:100%;">
-        @else
-            {{ $value }}
-        @endif
+@foreach(\App\Support\CertificateElement::collect($template->elements) as $element)
+    <div class="element" style="{{ $element->boxCss(
+        $element->x().'px',
+        $element->y().'px',
+        $element->width().'px',
+        $element->height().'px',
+    ) }}">
+        <div class="element-content" style="{{ $element->contentCss($element->fontSize().'px', $element->height().'px') }}">
+            @if($element->isQr())
+                <img src="{{ $qrDataUri }}" alt="QR verifikasi" style="width:{{ $element->width() }}px;height:{{ $element->height() }}px;">
+            @else
+                {{ $element->value($values) }}
+            @endif
+        </div>
     </div>
 @endforeach
 </div>

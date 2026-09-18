@@ -18,8 +18,15 @@
 .cert-layer-list{display:flex;flex-direction:column;gap:5px}.cert-layer{display:flex;width:100%;align-items:center;gap:8px;padding:9px;border:1px solid transparent;border-radius:8px;background:transparent;text-align:left;cursor:pointer}.cert-layer:hover{background:rgb(249 250 251)}.cert-layer.is-active{border-color:rgb(251 191 36);background:rgb(255 251 235);color:rgb(146 64 14)}
 .cert-workspace{min-width:0}.cert-stage{overflow:auto;padding:28px;border:1px solid rgb(203 213 225);border-radius:12px;background:rgb(226 232 240)}.dark .cert-stage{background:rgb(3 7 18);border-color:rgb(55 65 81)}
 .cert-canvas{position:relative;margin:0 auto;overflow:hidden;background-color:#fff;box-shadow:0 18px 45px rgba(15,23,42,.24);user-select:none;-webkit-user-select:none}
-.cert-element{position:absolute;display:flex;align-items:center;overflow:visible;box-sizing:border-box;touch-action:none;cursor:move}.cert-element.is-editing{outline:2px solid rgb(37 99 235)}.cert-element.is-idle{outline:1px dashed rgba(37,99,235,.55)}.cert-element.is-idle:hover{outline:2px solid rgb(37 99 235)}
-.cert-element-content{width:100%;overflow:hidden}.cert-resize{position:absolute;right:-8px;bottom:-8px;width:17px;height:17px;padding:0;border:2px solid white;border-radius:50%;background:rgb(37 99 235);box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:nwse-resize}
+.cert-element{position:absolute;display:table;box-sizing:border-box;touch-action:none;cursor:move}.cert-element.is-editing{outline:2px solid rgb(37 99 235)}.cert-element.is-idle{outline:1px dashed rgba(37,99,235,.55)}.cert-element.is-idle:hover{outline:2px solid rgb(37 99 235)}.cert-element.is-overflowing{outline:2px solid rgb(220 38 38)}
+/* table-cell, bukan flexbox: bentuk yang sama dengan PDF dan halaman
+   verifikasi, sehingga yang terlihat di sini itulah yang dicetak.
+   Teks yang meluber TIDAK disembunyikan — dulu editor memotongnya, jadi
+   admin melihat satu baris rapi sementara penerima menerima dua baris
+   bertumpuk. */
+.cert-element-content{display:table-cell}.cert-resize{position:absolute;right:-8px;bottom:-8px;width:17px;height:17px;padding:0;border:2px solid white;border-radius:50%;background:rgb(37 99 235);box-shadow:0 1px 4px rgba(0,0,0,.35);cursor:nwse-resize}
+.cert-overflow{position:absolute;left:0;top:-11px;z-index:5;padding:1px 6px;border-radius:5px;background:rgb(220 38 38);color:#fff;font-size:10px;font-weight:700;white-space:nowrap;pointer-events:none}
+.cert-warning{display:flex;gap:7px;padding:9px 10px;border:1px solid rgb(254 202 202);border-radius:8px;background:rgb(254 242 242);font-size:12px;line-height:1.45;color:rgb(153 27 27)}
 .cert-qr{display:flex;height:100%;align-items:center;justify-content:center;background:#fff;text-align:center;font-size:10px;font-weight:700;color:rgb(17 24 39)}
 .cert-help{margin-top:9px;text-align:center;font-size:12px;color:rgb(107 114 128)}
 .cert-properties{display:flex;flex-direction:column;gap:14px}.cert-properties-header{display:flex;align-items:center;justify-content:space-between}.cert-icon-actions{display:flex;gap:4px}.cert-icon-btn{width:32px;height:32px;border:0;border-radius:7px;background:transparent;cursor:pointer}.cert-icon-btn:hover{background:rgb(243 244 246)}
@@ -70,11 +77,13 @@
                     style="width:min(100%, {{ $record->canvas_width }}px);aspect-ratio:{{ $record->canvas_width }}/{{ $record->canvas_height }};background-image:url('{{ \Illuminate\Support\Facades\Storage::disk('public')->url($record->background_path) }}');background-size:100% 100%;background-repeat:no-repeat;">
                     <template x-for="(element,index) in elements" :key="element.id">
                         <div @pointerdown.prevent="preview || startDrag($event,index)" class="cert-element"
-                            :class="!preview && selected===index ? 'is-editing' : (!preview ? 'is-idle' : '')"
+                            :data-index="index"
+                            :class="preview ? '' : [selected===index ? 'is-editing' : 'is-idle', overflowing.includes(element.id) && 'is-overflowing']"
                             :style="elementStyle(element)">
-                            <div class="cert-element-content" :style="element.variable==='qr_code' ? 'height:100%' : ''">
+                            <span x-show="!preview && overflowing.includes(element.id)" class="cert-overflow">Teks melebihi kotak</span>
+                            <div class="cert-element-content" :style="contentStyle(element)">
                                 <template x-if="element.variable==='qr_code'"><div class="cert-qr">QR<br>CODE</div></template>
-                                <template x-if="element.variable!=='qr_code'"><div x-text="previewValue(element)"></div></template>
+                                <template x-if="element.variable!=='qr_code'"><span x-text="previewValue(element)"></span></template>
                             </div>
                             <button x-show="!preview && selected===index" @pointerdown.stop.prevent="startResize($event,index)" type="button" class="cert-resize" aria-label="Ubah ukuran"></button>
                         </div>
@@ -101,7 +110,11 @@
                         <label class="cert-field">Ketebalan<select x-model.number="elements[selected].font_weight"><option value="400">Regular</option><option value="600">Semi Bold</option><option value="700">Bold</option></select></label>
                         <label class="cert-field">Warna<input type="color" x-model="elements[selected].color"></label>
                     </div>
-                    <div><p class="cert-field">Perataan</p><div class="cert-align"><button type="button" @click="elements[selected].align='left'" :class="elements[selected].align==='left'&&'is-active'">Kiri</button><button type="button" @click="elements[selected].align='center'" :class="elements[selected].align==='center'&&'is-active'">Tengah</button><button type="button" @click="elements[selected].align='right'" :class="elements[selected].align==='right'&&'is-active'">Kanan</button></div></div>
+                    <div><p class="cert-field">Perataan mendatar</p><div class="cert-align"><button type="button" @click="elements[selected].align='left'" :class="elements[selected].align==='left'&&'is-active'" title="Rata kiri">⇤ Kiri</button><button type="button" @click="elements[selected].align='center'" :class="elements[selected].align==='center'&&'is-active'" title="Rata tengah">↔ Tengah</button><button type="button" @click="elements[selected].align='right'" :class="elements[selected].align==='right'&&'is-active'" title="Rata kanan">Kanan ⇥</button></div></div>
+                    <div><p class="cert-field">Perataan tegak</p><div class="cert-align"><button type="button" @click="elements[selected].valign='top'" :class="elements[selected].valign==='top'&&'is-active'" title="Rata atas">⇞ Atas</button><button type="button" @click="elements[selected].valign='middle'" :class="elements[selected].valign==='middle'&&'is-active'" title="Rata tengah">↕ Tengah</button><button type="button" @click="elements[selected].valign='bottom'" :class="elements[selected].valign==='bottom'&&'is-active'" title="Rata bawah">⇟ Bawah</button></div></div>
+                    <template x-if="overflowing.includes(elements[selected].id)">
+                        <p class="cert-warning"><span>⚠</span><span>Teksnya tidak muat di dalam kotak, jadi akan meluber ke elemen lain di sertifikat yang tercetak. Lebarkan kotaknya, kecilkan ukuran hurufnya, atau tinggikan kotaknya.</span></p>
+                    </template>
                     <div class="cert-fields-2 cert-divider"><label class="cert-field">X<input type="number" x-model.number="elements[selected].x"></label><label class="cert-field">Y<input type="number" x-model.number="elements[selected].y"></label><label class="cert-field">Lebar<input type="number" x-model.number="elements[selected].width"></label><label class="cert-field">Tinggi<input type="number" x-model.number="elements[selected].height"></label></div>
                 </div>
             </template>
@@ -112,19 +125,37 @@
 
 <script>
 function certificateEditor(initialElements,width,height){return{
-    elements:(initialElements||[]).map((e,i)=>({...e,id:e.id||crypto.randomUUID()})),selected:-1,preview:false,operation:null,saving:false,
+    elements:(initialElements||[]).map((e)=>({align:'center',valign:'middle',...e,id:e.id||crypto.randomUUID()})),selected:-1,preview:false,operation:null,saving:false,overflowing:[],
     labels:{recipient_name:'Nama penerima',recipient_role:'Peran',certificate_number:'Nomor sertifikat',event_name:'Nama kegiatan',event_date:'Tanggal kegiatan',organizer:'Penyelenggara',signatory_name:'Nama penandatangan',signatory_title:'Jabatan penandatangan',verification_url:'URL verifikasi',qr_code:'QR verifikasi',custom_text:'Teks statis'},
-    init(){window.addEventListener('keydown',(e)=>{if(this.selected<0||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName))return;const el=this.elements[this.selected];if(e.key==='Delete'){this.removeSelected();return}const step=e.shiftKey?10:1;if(e.key==='ArrowLeft')el.x-=step;if(e.key==='ArrowRight')el.x+=step;if(e.key==='ArrowUp')el.y-=step;if(e.key==='ArrowDown')el.y+=step;});},
-    addElement(variable){const qr=variable==='qr_code';this.elements.push({id:crypto.randomUUID(),label:this.labels[variable],variable,text:variable==='custom_text'?'Teks Anda':'',x:Math.round(width*.3),y:Math.round(height*.4),width:qr?120:Math.round(width*.4),height:qr?120:60,font_family:'DejaVu Sans',font_size:qr?12:28,font_weight:variable==='recipient_name'?700:400,align:'center',color:'#111827'});this.selected=this.elements.length-1;this.preview=false;},
+    init(){window.addEventListener('keydown',(e)=>{if(this.selected<0||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName))return;const el=this.elements[this.selected];if(e.key==='Delete'){this.removeSelected();return}const step=e.shiftKey?10:1;if(e.key==='ArrowLeft')el.x-=step;if(e.key==='ArrowRight')el.x+=step;if(e.key==='ArrowUp')el.y-=step;if(e.key==='ArrowDown')el.y+=step;});
+        // Teks yang tidak muat diukur dari DOM, bukan ditaksir: hanya peramban
+        // yang tahu persis di mana sebuah kata berganti baris.
+        this.$watch('elements',()=>this.$nextTick(()=>this.checkFit()),{deep:true});
+        window.addEventListener('resize',()=>this.checkFit());
+        this.$nextTick(()=>this.checkFit());},
+    checkFit(){const canvas=this.$refs.canvas;if(!canvas)return;const meluber=[];
+        canvas.querySelectorAll('[data-index]').forEach(node=>{const el=this.elements[+node.dataset.index];if(!el||el.variable==='qr_code')return;
+            const cell=node.querySelector('.cert-element-content');if(!cell)return;
+            // 1 px kelonggaran: pembulatan sub-piksel peramban tidak boleh
+            // memicu peringatan palsu.
+            if(cell.scrollHeight>node.clientHeight+1||cell.scrollWidth>node.clientWidth+1)meluber.push(el.id);});
+        this.overflowing=meluber;},
+    addElement(variable){const qr=variable==='qr_code';this.elements.push({id:crypto.randomUUID(),label:this.labels[variable],variable,text:variable==='custom_text'?'Teks Anda':'',x:Math.round(width*.3),y:Math.round(height*.4),width:qr?120:Math.round(width*.4),height:qr?120:60,font_family:'DejaVu Sans',font_size:qr?12:28,font_weight:variable==='recipient_name'?700:400,align:'center',valign:'middle',color:'#111827'});this.selected=this.elements.length-1;this.preview=false;},
     syncLabel(){this.elements[this.selected].label=this.labels[this.elements[this.selected].variable]},
     previewValue(e){return({recipient_name:'Nama Penerima',recipient_role:'Panitia',certificate_number:'CERT-2026-0001',event_name:'Nama Kegiatan',event_date:'12 Juli 2026',organizer:'Jakarta Global University',signatory_name:'Nama Penandatangan',signatory_title:'Jabatan',verification_url:'msc.jgu.ac.id/verify/...',custom_text:e.text})[e.variable]||e.variable},
-    elementStyle(e){const scale=this.$refs.canvas?this.$refs.canvas.clientWidth/width:1;return`left:${e.x/width*100}%;top:${e.y/height*100}%;width:${e.width/width*100}%;height:${e.height/height*100}%;font-size:${Math.max(6,e.font_size*scale)}px;font-family:${e.font_family};font-weight:${e.font_weight};color:${e.color};text-align:${e.align};line-height:1.2;`},
+    // Cerminan App\Support\CertificateElement: kotak luar hanya posisi dan
+    // ukuran, perataan serta tipografinya di selnya. Dijaga
+    // tests/Feature/CertificateLayoutParityTest.php.
+    elementStyle(e){return`left:${e.x/width*100}%;top:${e.y/height*100}%;width:${e.width/width*100}%;height:${e.height/height*100}%;`},
+    contentStyle(e){const scale=this.$refs.canvas?this.$refs.canvas.clientWidth/width:1;const dasar=`height:100%;vertical-align:${e.valign||'middle'};text-align:${e.align||'center'};`;
+        if(e.variable==='qr_code')return dasar;
+        return dasar+`font-family:${e.font_family};font-size:${Math.max(6,e.font_size*scale)}px;font-weight:${e.font_weight};color:${e.color};line-height:1.2;`},
     metrics(){const r=this.$refs.canvas.getBoundingClientRect();return{sx:width/r.width,sy:height/r.height}},
     startDrag(ev,index){this.selected=index;const m=this.metrics(),e=this.elements[index];this.operation={type:'drag',index,startX:ev.clientX,startY:ev.clientY,x:e.x,y:e.y,...m};this.listen()},
     startResize(ev,index){const m=this.metrics(),e=this.elements[index];this.operation={type:'resize',index,startX:ev.clientX,startY:ev.clientY,width:e.width,height:e.height,...m};this.listen()},
     listen(){this.onMove=e=>this.move(e);this.onStop=()=>this.stop();window.addEventListener('pointermove',this.onMove);window.addEventListener('pointerup',this.onStop,{once:true})},
     move(ev){const o=this.operation;if(!o)return;const e=this.elements[o.index];if(o.type==='drag'){e.x=Math.max(0,Math.min(width-e.width,Math.round(o.x+(ev.clientX-o.startX)*o.sx)));e.y=Math.max(0,Math.min(height-e.height,Math.round(o.y+(ev.clientY-o.startY)*o.sy)))}else{e.width=Math.max(30,Math.min(width-e.x,Math.round(o.width+(ev.clientX-o.startX)*o.sx)));e.height=Math.max(20,Math.min(height-e.y,Math.round(o.height+(ev.clientY-o.startY)*o.sy)))}},
-    stop(){this.operation=null;window.removeEventListener('pointermove',this.onMove)},duplicateSelected(){if(this.selected<0)return;const copy={...this.elements[this.selected],id:crypto.randomUUID(),x:this.elements[this.selected].x+15,y:this.elements[this.selected].y+15};this.elements.push(copy);this.selected=this.elements.length-1},removeSelected(){if(this.selected<0)return;this.elements.splice(this.selected,1);this.selected=Math.min(this.selected,this.elements.length-1)},togglePreview(){this.preview=!this.preview;if(this.preview)this.selected=-1},async save(){this.saving=true;try{await this.$wire.save(this.elements.map(({id,...e})=>e))}finally{this.saving=false}}
+    stop(){this.operation=null;window.removeEventListener('pointermove',this.onMove);this.$nextTick(()=>this.checkFit())},duplicateSelected(){if(this.selected<0)return;const copy={...this.elements[this.selected],id:crypto.randomUUID(),x:this.elements[this.selected].x+15,y:this.elements[this.selected].y+15};this.elements.push(copy);this.selected=this.elements.length-1},removeSelected(){if(this.selected<0)return;this.elements.splice(this.selected,1);this.selected=Math.min(this.selected,this.elements.length-1)},togglePreview(){this.preview=!this.preview;if(this.preview)this.selected=-1},async save(){this.saving=true;try{await this.$wire.save(this.elements.map(({id,...e})=>e))}finally{this.saving=false}}
 }}
 </script>
 </x-filament-panels::page>
