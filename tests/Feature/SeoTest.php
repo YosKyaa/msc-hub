@@ -125,6 +125,23 @@ class SeoTest extends TestCase
 
         $this->assertNotFalse($xml, 'Peta situs bukan XML yang sah.');
         $this->assertGreaterThan(0, count($xml->url));
+
+        // Deklarasinya harus persis di awal berkas, tanpa spasi atau baris
+        // kosong mendahuluinya. simplexml tetap menerima berkas tanpa
+        // deklarasi, jadi tanpa pemeriksaan ini baris itu bisa rusak tanpa ada
+        // test yang gagal.
+        //
+        // Penutupnya dirangkai dari dua potong, sama seperti di
+        // resources/views/sitemap.blade.php: sebagian pengurai mencari tanda
+        // penutup PHP tanpa peduli ia berada di dalam string, lalu salah
+        // membaca sisa berkasnya. PHP sendiri bahkan mengakhiri mode PHP bila
+        // tanda itu muncul di dalam komentar satu baris, jadi ia tidak boleh
+        // ditulis utuh di mana pun — termasuk di kalimat ini.
+        $this->assertStringStartsWith(
+            '<?xml version="1.0" encoding="UTF-8"?'.'>'."\n",
+            $response->getContent(),
+            'Deklarasi XML tidak berada tepat di awal peta situs.',
+        );
     }
 
     public function test_the_sitemap_grows_with_the_content(): void
