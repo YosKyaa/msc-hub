@@ -66,11 +66,13 @@ class PanduanPanel
                     ['Buat kegiatan', 'Di menu Kegiatan & Peserta: pilih desain dan penerbitnya, lalu ubah statusnya menjadi Dipublikasikan agar sertifikatnya sah.'],
                     ['Daftarkan peserta', 'Impor dari Excel, tambah satu per satu, atau biarkan masuk sendiri lewat absensi QR. Lalu tandai siapa yang berhak menerima.'],
                     ['Terbitkan digital', 'Nomor diberikan dan halaman verifikasinya langsung aktif. Email BELUM dikirim, jadi hasilnya masih bisa diperiksa dulu.'],
-                    ['Kirim email', 'Setelah hasilnya diperiksa. Yang sudah menerima tidak dikirimi ulang.'],
+                    ['Kirim email', 'Setelah hasilnya diperiksa. Yang sudah menerima tidak dikirimi ulang. Kirimannya dijarakkan beberapa detik agar tidak ditolak penyedia email, jadi seratus peserta memakan sekitar lima menit.'],
                 ],
                 'catatan' => [
                     'Setiap kegiatan menampilkan alur empat langkahnya di bagian paling atas, lengkap dengan angka dan satu kalimat tentang apa yang harus dikerjakan berikutnya.',
                     'Menerbitkan dan mengirim sengaja dipisah, supaya penerbitan yang keliru tidak terlanjur mendarat di kotak masuk peserta.',
+                    'Ragu emailnya jalan atau tidak? Tombol Kirim Email Uji di atas halaman kegiatan mengirim satu contoh ke alamat Anda sendiri, lewat jalur yang sama persis dan tanpa menyentuh peserta.',
+                    'Email yang gagal terkirim tercatat sebabnya di kolom Kendala email pada tabel peserta, dan jumlahnya ikut disebut di alur empat langkah.',
                     'Tiap penerbit — Rektorat, SCD, jurusan, MSC — memegang pola dan urutan nomornya sendiri, dan nomornya bisa diselaraskan dengan register yang sudah berjalan.',
                     'Peserta yang sudah memegang sertifikat tidak bisa dihapus; gunakan pencabutan bila dokumennya memang harus dibatalkan.',
                 ],
@@ -137,7 +139,27 @@ class PanduanPanel
                     ],
                     [
                         'Email tidak pernah terkirim sama sekali.',
-                        'Pengiriman email menunggu pekerja antrean. Pastikan php artisan queue:work berjalan di server. Panel akan memperingatkan bila antreannya menumpuk.',
+                        'Buka kegiatannya lalu tekan Kirim Email Uji dan isi alamat Anda sendiri. Email itu menempuh jalur yang sama persis tanpa menyentuh peserta, dan bila gagal jawaban server emailnya ditampilkan apa adanya — di situlah sebabnya terbaca.',
+                    ],
+                    [
+                        'Kenapa emailnya lama sekali sampainya?',
+                        'Kirimannya sengaja dijarakkan beberapa detik. Penyedia email menolak kiriman yang terlalu rapat lalu menggugurkan sisanya, sehingga mengirim serentak justru membuat sebagian besarnya tidak sampai. Perkiraan lamanya disebutkan saat tombol kirim ditekan.',
+                    ],
+                    [
+                        'Ada peserta yang emailnya gagal. Bagaimana tahu sebabnya?',
+                        'Di tabel peserta, tampilkan kolom Kendala email lewat tombol pengaturan kolom. Sebabnya tercatat di situ, misalnya alamat tidak ditemukan atau kotak masuknya penuh. Setelah dibereskan, pakai tombol Kirim Ulang Email pada barisnya.',
+                    ],
+                    [
+                        'Panel bilang tidak ada pekerja antrean.',
+                        'Email hanya akan menumpuk dan tidak terkirim. Minta pengelola server menjalankan php artisan queue:work, atau menghidupkan kembali layanan Supervisor-nya. Setelah hidup, email yang menumpuk terkirim sendiri tanpa perlu ditekan ulang.',
+                    ],
+                    [
+                        'Tulisan di sertifikat meluber atau bertumpuk.',
+                        'Buka Desain Sertifikat lalu Atur Letak Tulisan. Elemen yang teksnya tidak muat ditandai merah. Lebarkan kotaknya, kecilkan ukuran hurufnya, atau tinggikan kotaknya.',
+                    ],
+                    [
+                        'Desain latarnya gagal diunggah.',
+                        'Berkasnya melebihi batas yang diterima server. Keterangan di bawah isiannya menyebut batas yang berlaku. Kompres gambarnya — latar yang besar juga membuat setiap PDF sertifikat ikut berat.',
                     ],
                     [
                         'Peserta salah ketik namanya di sertifikat.',
