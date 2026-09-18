@@ -40,7 +40,7 @@ class CertificateResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Sertifikat Terbit';
 
-    protected static ?int $navigationSort = 70;
+    protected static ?int $navigationSort = 30;
 
     protected static ?string $recordTitleAttribute = 'certificate_number';
 

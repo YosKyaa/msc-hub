@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Filament\Pages\DokumentasiTopik;
+use App\Filament\Resources\CertificateEventResource;
+use App\Filament\Resources\CertificateTemplateResource;
 use App\Models\User;
 use App\Support\PanduanPanel;
 use Database\Seeders\RoleSeeder;
@@ -116,8 +118,24 @@ class PanelDocumentationTest extends TestCase
     {
         $response = $this->topic('sertifikat');
 
-        $response->assertSee('Nomor diberikan dan halaman verifikasi langsung aktif. Email BELUM dikirim.');
+        // Yang dijaga adalah maksudnya, bukan kalimatnya: menerbitkan tidak
+        // mengirim email, dan itu disengaja.
+        $response->assertSee('Email BELUM dikirim');
+        $response->assertSee('halaman verifikasinya langsung aktif');
         $response->assertSee('penerbitan yang keliru tidak terlanjur mendarat di kotak masuk peserta');
+    }
+
+    /**
+     * Panduan menyebut nama menu apa adanya, jadi ia mudah basi begitu
+     * menunya diganti nama — dan panduan yang menyebut menu yang tidak ada
+     * justru lebih membingungkan daripada tidak ada panduan.
+     */
+    public function test_the_guide_names_menus_that_actually_exist(): void
+    {
+        $response = $this->topic('sertifikat');
+
+        $response->assertSee(CertificateEventResource::getNavigationLabel());
+        $response->assertSee(CertificateTemplateResource::getNavigationLabel());
     }
 
     /**

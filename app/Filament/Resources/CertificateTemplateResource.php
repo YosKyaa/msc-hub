@@ -36,7 +36,9 @@ class CertificateTemplateResource extends Resource
 
     protected static string|UnitEnum|null $navigationGroup = 'Sertifikat';
 
-    protected static ?string $navigationLabel = 'Template Sertifikat';
+    protected static ?string $navigationLabel = 'Desain Sertifikat';
+
+    protected static ?int $navigationSort = 20;
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -80,10 +82,21 @@ class CertificateTemplateResource extends Resource
             TextColumn::make('events_count')->label('Event')->counts('events'),
             TextColumn::make('canvas_width')->label('Ukuran')->formatStateUsing(fn ($record) => "{$record->canvas_width} × {$record->canvas_height}"),
             IconColumn::make('is_active')->label('Aktif')->boolean(),
-        ])->actions([
-            Actions\Action::make('editor')->label('Editor Visual')->icon('heroicon-o-cursor-arrow-rays')->url(fn ($record) => static::getUrl('editor', ['record' => $record])),
-            Actions\EditAction::make(), Actions\DeleteAction::make(),
-        ]);
+        ])
+            ->emptyStateHeading('Belum ada desain sertifikat')
+            ->emptyStateDescription('Desain adalah gambar latar sertifikat beserta letak nama, nomor, dan QR di atasnya. Satu desain bisa dipakai berkali-kali oleh kegiatan yang berbeda.')
+            ->emptyStateIcon('heroicon-o-photo')
+            ->actions([
+                // Menaruh elemen di atas desain adalah pekerjaan yang
+                // sesungguhnya di sini, jadi tombolnya menonjol.
+                Actions\Action::make('editor')
+                    ->label('Atur Letak Tulisan')
+                    ->icon('heroicon-o-cursor-arrow-rays')
+                    ->color('primary')
+                    ->button()
+                    ->url(fn ($record) => static::getUrl('editor', ['record' => $record])),
+                Actions\EditAction::make(), Actions\DeleteAction::make(),
+            ]);
     }
 
     public static function getPages(): array

@@ -137,6 +137,9 @@ class ParticipationsRelationManager extends RelationManager
                 SelectFilter::make('role')->label('Peran')->options(ParticipantRole::options()),
                 SelectFilter::make('source')->label('Asal pendaftaran')->options(ParticipantSource::options()),
             ])
+            ->emptyStateHeading('Belum ada peserta')
+            ->emptyStateDescription('Tambahkan satu per satu, atau impor sekaligus dari Excel. Templat Excel-nya bisa diunduh dari tombol impor.')
+            ->emptyStateIcon('heroicon-o-user-group')
             ->headerActions([
                 Actions\Action::make('addParticipant')
                     ->label('Tambah Peserta')
