@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Notifications\Concerns\ReportsDeliveryFailure;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -10,11 +11,14 @@ use Illuminate\Notifications\Notification;
 class BookingStatusUpdated extends Notification implements ShouldQueue
 {
     use Queueable;
+    use ReportsDeliveryFailure;
 
     public $booking;
+
     public string $type; // 'ROOM' or 'INVENTORY'
 
     public $tries = 5;
+
     public $backoff = [10, 30, 60, 120, 240];
 
     /**
@@ -79,5 +83,16 @@ class BookingStatusUpdated extends Notification implements ShouldQueue
                 'actionUrl' => $url,
                 'actionText' => 'Lihat detail booking',
             ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function failureContext(): array
+    {
+        return [
+            'booking_code' => $this->booking->booking_code,
+            'type' => $this->type,
+        ];
     }
 }

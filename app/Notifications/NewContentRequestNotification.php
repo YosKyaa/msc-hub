@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\User;
+use App\Notifications\Concerns\ReportsDeliveryFailure;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -12,6 +13,7 @@ use Illuminate\Notifications\Notification;
 class NewContentRequestNotification extends Notification implements ShouldQueue
 {
     use Queueable;
+    use ReportsDeliveryFailure;
 
     public $contentRequest;
 
@@ -125,5 +127,15 @@ class NewContentRequestNotification extends Notification implements ShouldQueue
                     ->url(url('/panel'), shouldOpenInNewTab: true),
             ])
             ->getDatabaseMessage();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function failureContext(): array
+    {
+        return [
+            'request_code' => $this->contentRequest->request_code,
+        ];
     }
 }

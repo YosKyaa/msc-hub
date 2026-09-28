@@ -5,6 +5,7 @@ namespace App\Notifications;
 use App\Filament\Resources\InventoryBookingResource;
 use App\Filament\Resources\RoomBookingResource;
 use App\Models\User;
+use App\Notifications\Concerns\ReportsDeliveryFailure;
 use Filament\Notifications\Notification as FilamentNotification;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -15,6 +16,7 @@ use Throwable;
 class NewBookingNotification extends Notification implements ShouldQueue
 {
     use Queueable;
+    use ReportsDeliveryFailure;
 
     public $booking;
 
@@ -154,5 +156,16 @@ class NewBookingNotification extends Notification implements ShouldQueue
             // tetap lebih baik daripada tautan yang mati.
             return url('/panel');
         }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function failureContext(): array
+    {
+        return [
+            'booking_code' => $this->booking->booking_code,
+            'type' => $this->type,
+        ];
     }
 }

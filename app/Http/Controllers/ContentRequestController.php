@@ -57,24 +57,28 @@ class ContentRequestController extends Controller
         // Generate request code
         $requestCode = ContentRequest::generateRequestCode();
 
-        // Create content request
+        // Isian opsional dibaca dengan `?? null`: validate() hanya
+        // mengembalikan kunci yang benar-benar terkirim, sehingga isian
+        // yang tidak ikut terkirim — pilihan yang dibiarkan kosong,
+        // misalnya — membuat pembacaan langsung melempar dan pengaju
+        // melihat 500 atas permintaan yang sebenarnya sah.
         $contentRequest = ContentRequest::create([
             'request_code' => $requestCode,
             'requester_name' => $validated['requester_name'],
             'requester_email' => $requester['email'],
             'requester_google_id' => $requester['google_id'],
             'requester_type' => $validated['requester_type'],
-            'unit' => $validated['unit'],
-            'phone' => $validated['phone'],
+            'unit' => $validated['unit'] ?? null,
+            'phone' => $validated['phone'] ?? null,
             'content_type' => $validated['content_type'],
-            'platform_target' => $validated['platform_target'],
-            'purpose' => $validated['purpose'],
-            'audience' => $validated['audience'],
-            'event_date' => $validated['event_date'],
-            'location' => $validated['location'],
+            'platform_target' => $validated['platform_target'] ?? null,
+            'purpose' => $validated['purpose'] ?? null,
+            'audience' => $validated['audience'] ?? null,
+            'event_date' => $validated['event_date'] ?? null,
+            'location' => $validated['location'] ?? null,
             'deadline' => $validated['deadline'],
-            'materials_link' => $validated['materials_link'],
-            'notes' => $validated['notes'],
+            'materials_link' => $validated['materials_link'] ?? null,
+            'notes' => $validated['notes'] ?? null,
             'status' => RequestStatus::INCOMING,
         ]);
 

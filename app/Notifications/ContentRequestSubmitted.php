@@ -3,6 +3,7 @@
 namespace App\Notifications;
 
 use App\Models\ContentRequest;
+use App\Notifications\Concerns\ReportsDeliveryFailure;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -11,8 +12,10 @@ use Illuminate\Notifications\Notification;
 class ContentRequestSubmitted extends Notification implements ShouldQueue
 {
     use Queueable;
+    use ReportsDeliveryFailure;
 
     public $tries = 5;
+
     public $backoff = [10, 30, 60, 120, 240];
 
     public function __construct(public ContentRequest $contentRequest) {}
@@ -45,5 +48,15 @@ class ContentRequestSubmitted extends Notification implements ShouldQueue
                 'actionUrl' => route('request.status.detail', ['request_code' => $request->request_code]),
                 'actionText' => 'Lihat request saya',
             ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function failureContext(): array
+    {
+        return [
+            'request_code' => $this->contentRequest->request_code,
+        ];
     }
 }

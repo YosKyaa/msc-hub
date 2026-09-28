@@ -2,6 +2,7 @@
 
 namespace App\Notifications;
 
+use App\Notifications\Concerns\ReportsDeliveryFailure;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -10,10 +11,12 @@ use Illuminate\Notifications\Notification;
 class ContentRequestStatusUpdated extends Notification implements ShouldQueue
 {
     use Queueable;
+    use ReportsDeliveryFailure;
 
     public $contentRequest;
 
     public $tries = 5;
+
     public $backoff = [10, 30, 60, 120, 240];
 
     /**
@@ -47,7 +50,7 @@ class ContentRequestStatusUpdated extends Notification implements ShouldQueue
             'published' => 'Selesai dan dipublikasikan',
             default => $this->contentRequest->status->getLabel(),
         };
-        
+
         $url = route('request.status.detail', ['request_code' => $code]);
         $tone = match ($this->contentRequest->status->value) {
             'approved', 'published' => 'success',
@@ -73,5 +76,15 @@ class ContentRequestStatusUpdated extends Notification implements ShouldQueue
                 'actionUrl' => $url,
                 'actionText' => 'Lihat detail request',
             ]);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    protected function failureContext(): array
+    {
+        return [
+            'request_code' => $this->contentRequest->request_code,
+        ];
     }
 }
