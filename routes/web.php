@@ -129,8 +129,17 @@ Route::get('/kegiatan/{slug}/penerima', App\Http\Controllers\CertificateRecipien
     ->middleware('throttle:60,1')
     ->name('certificates.recipients');
 
-Route::get('/verify/certificate/{token}', [CertificatePublicController::class, 'verify'])->name('certificates.verify');
-Route::get('/certificates/{token}/download', [CertificatePublicController::class, 'download'])->name('certificates.download');
+Route::get('/verify/certificate/{token}', [CertificatePublicController::class, 'verify'])
+    ->middleware('throttle:60,1')
+    ->name('certificates.verify');
+
+// Lebih ketat daripada halaman lain: tiap unduhan merender ulang PDF beserta
+// desain latar yang ditanam ke dalamnya, jadi satu tautan yang dipukul
+// berulang-ulang cukup untuk menghabiskan memori server. Dua puluh per menit
+// masih jauh di atas kebutuhan orang yang benar-benar mengambil sertifikatnya.
+Route::get('/certificates/{token}/download', [CertificatePublicController::class, 'download'])
+    ->middleware('throttle:20,1')
+    ->name('certificates.download');
 
 // Log Viewer — hanya untuk admin yang sudah login ke panel.
 Route::get('logs', [\Rap2hpoutre\LaravelLogViewer\LogViewerController::class, 'index'])
