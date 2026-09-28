@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesByPermission;
 use App\Filament\Resources\FeaturedWorkResource\Pages;
 use App\Models\FeaturedWork;
 use BackedEnum;
@@ -23,6 +24,8 @@ use UnitEnum;
 
 class FeaturedWorkResource extends Resource
 {
+    use AuthorizesByPermission;
+
     protected static ?string $model = FeaturedWork::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-star';
@@ -39,9 +42,9 @@ class FeaturedWorkResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'title';
 
-    public static function canAccess(): bool
+    protected static function permissionPrefix(): string
     {
-        return auth()->user()?->can('featured_works.view') ?? false;
+        return 'featured_works';
     }
 
     public static function form(Schema $schema): Schema

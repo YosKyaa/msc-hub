@@ -32,6 +32,16 @@ class ContentRequestPolicy
         return $user->hasRole('admin');
     }
 
+    /**
+     * Hapus massal punya penjaga tersendiri di Filament. Tanpa metode ini ia
+     * jatuh ke bawaan yang mengizinkan, sehingga tombol hapus per baris sudah
+     * tertutup tetapi menghapus sekaligus tetap bisa.
+     */
+    public function deleteAny(User $user): bool
+    {
+        return $user->hasRole('admin');
+    }
+
     public function restore(User $user, ContentRequest $contentRequest): bool
     {
         return $user->hasRole('admin');

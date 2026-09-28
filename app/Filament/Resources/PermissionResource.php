@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesByPermission;
 use App\Filament\Resources\PermissionResource\Pages;
 use BackedEnum;
 use Filament\Actions;
@@ -17,6 +18,8 @@ use UnitEnum;
 
 class PermissionResource extends Resource
 {
+    use AuthorizesByPermission;
+
     protected static ?string $model = Permission::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-key';
@@ -33,9 +36,9 @@ class PermissionResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    public static function canAccess(): bool
+    protected static function permissionPrefix(): string
     {
-        return auth()->user()?->hasPermissionTo('permissions.view') ?? false;
+        return 'permissions';
     }
 
     public static function form(Schema $schema): Schema

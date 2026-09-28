@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesByPermission;
 use App\Filament\Resources\UserResource\Pages;
 use App\Models\User;
 use BackedEnum;
@@ -18,6 +19,8 @@ use UnitEnum;
 
 class UserResource extends Resource
 {
+    use AuthorizesByPermission;
+
     protected static ?string $model = User::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-users';
@@ -34,9 +37,9 @@ class UserResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    public static function canAccess(): bool
+    protected static function permissionPrefix(): string
     {
-        return auth()->user()?->hasPermissionTo('users.view') ?? false;
+        return 'users';
     }
 
     public static function form(Schema $schema): Schema

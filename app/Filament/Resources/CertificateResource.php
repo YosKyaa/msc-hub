@@ -65,6 +65,26 @@ class CertificateResource extends Resource
         return false;
     }
 
+    /**
+     * Hapus massal punya penjaga tersendiri di Filament, dan tanpa metode ini
+     * ia jatuh ke bawaan yang mengizinkan — tombol hapus per baris tertutup,
+     * tetapi menghapus seluruh sertifikat sekaligus tetap bisa.
+     */
+    public static function canDeleteAny(): bool
+    {
+        return false;
+    }
+
+    public static function canForceDelete(mixed $record): bool
+    {
+        return false;
+    }
+
+    public static function canForceDeleteAny(): bool
+    {
+        return false;
+    }
+
     public static function table(Table $table): Table
     {
         return $table

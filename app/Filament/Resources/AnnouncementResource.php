@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesByPermission;
 use App\Enums\AnnouncementCategory;
 use App\Filament\Resources\AnnouncementResource\Pages;
 use App\Models\Announcement;
@@ -29,6 +30,8 @@ use UnitEnum;
 
 class AnnouncementResource extends Resource
 {
+    use AuthorizesByPermission;
+
     protected static ?string $model = Announcement::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-megaphone';
@@ -45,9 +48,9 @@ class AnnouncementResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'title';
 
-    public static function canAccess(): bool
+    protected static function permissionPrefix(): string
     {
-        return auth()->user()?->can('announcements.view') ?? false;
+        return 'announcements';
     }
 
     public static function getGloballySearchableAttributes(): array

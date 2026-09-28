@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesByPermission;
 use App\Enums\InventoryCategory;
 use App\Enums\InventoryCondition;
 use App\Filament\Resources\InventoryItemResource\Pages;
@@ -25,6 +26,8 @@ use Filament\Tables\Table;
 
 class InventoryItemResource extends Resource
 {
+    use AuthorizesByPermission;
+
     protected static ?string $model = InventoryItem::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-cube';
@@ -37,9 +40,9 @@ class InventoryItemResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    public static function canAccess(): bool
+    protected static function permissionPrefix(): string
     {
-        return auth()->user()?->can('inventory.view') ?? false;
+        return 'inventory';
     }
 
     public static function form(Schema $form): Schema

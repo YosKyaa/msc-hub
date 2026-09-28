@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesByPermission;
 use App\Filament\Resources\RoleResource\Pages;
 use BackedEnum;
 use Filament\Actions;
@@ -17,6 +18,8 @@ use UnitEnum;
 
 class RoleResource extends Resource
 {
+    use AuthorizesByPermission;
+
     protected static ?string $model = Role::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shield-check';
@@ -33,9 +36,9 @@ class RoleResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    public static function canAccess(): bool
+    protected static function permissionPrefix(): string
     {
-        return auth()->user()?->hasPermissionTo('roles.view') ?? false;
+        return 'roles';
     }
 
     public static function form(Schema $schema): Schema

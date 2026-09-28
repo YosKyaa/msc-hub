@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Filament\Concerns\AuthorizesByPermission;
 use App\Enums\BookingStatus;
 use App\Enums\InventoryCategory;
 use App\Filament\Actions\BorrowingFormAction;
@@ -29,6 +30,8 @@ use UnitEnum;
 
 class RoomBookingResource extends Resource
 {
+    use AuthorizesByPermission;
+
     protected static ?string $model = RoomBooking::class;
 
     protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-building-office';
@@ -41,9 +44,9 @@ class RoomBookingResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'booking_code';
 
-    public static function canAccess(): bool
+    protected static function permissionPrefix(): string
     {
-        return auth()->user()?->can('room_bookings.view') ?? false;
+        return 'room_bookings';
     }
 
     public static function getNavigationBadge(): ?string

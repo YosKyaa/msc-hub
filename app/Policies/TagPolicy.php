@@ -42,7 +42,17 @@ class TagPolicy
         return $user->hasRole('admin');
     }
 
+    public function restoreAny(User $user): bool
+    {
+        return $user->hasRole('admin');
+    }
+
     public function forceDelete(User $user, Tag $tag): bool
+    {
+        return $user->hasRole('admin');
+    }
+
+    public function forceDeleteAny(User $user): bool
     {
         return $user->hasRole('admin');
     }
