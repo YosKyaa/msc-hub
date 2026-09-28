@@ -377,9 +377,7 @@ class BorrowingFormTest extends TestCase
      */
     private function drawnText(string $pdf): string
     {
-        preg_match_all('/stream?
-(.*?)?
-endstream/s', $pdf, $streams);
+        preg_match_all('/stream\r?\n(.*?)\r?\nendstream/s', $pdf, $streams);
 
         $text = '';
 
@@ -425,11 +423,7 @@ endstream/s', $pdf, $streams);
     {
         $pdf = $this->pdf($this->roomBooking());
 
-        preg_match_all('/stream
-?
-(.*?)
-?
-endstream/s', $pdf, $streams);
+        preg_match_all('/stream\r?\n(.*?)\r?\nendstream/s', $pdf, $streams);
         $content = '';
 
         foreach ($streams[1] as $stream) {

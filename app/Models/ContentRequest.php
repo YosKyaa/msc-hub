@@ -8,6 +8,7 @@ use App\Enums\ContentType;
 use App\Enums\Platform;
 use App\Enums\RequestStatus;
 use App\Enums\RequesterType;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -15,6 +16,8 @@ use Illuminate\Support\Facades\DB;
 
 class ContentRequest extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'request_code',
         'requester_name',

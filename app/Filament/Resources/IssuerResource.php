@@ -124,6 +124,45 @@ class IssuerResource extends Resource
         ]);
     }
 
+    /**
+     * Keadaan register nomor sebuah penerbit, dibaca sekali per baris.
+     *
+     * Kolom "Nomor berikutnya" menampilkan dua angka yang berasal dari
+     * pembacaan yang sama, tetapi Filament memanggil state() dan description()
+     * terpisah — sehingga tiap baris memukul basis data dua kali untuk satu
+     * angka. Hasilnya karena itu diingat per objek baris.
+     *
+     * Ingatannya sengaja di sini, bukan di CertificateNumberCounter: penghitung
+     * itu juga dibaca saat menerbitkan sertifikat, dan di sana angka basi
+     * berarti nomor ganda. WeakMap melepaskan barisnya begitu tabel selesai
+     * digambar, jadi tidak ada yang tertinggal antar permintaan.
+     *
+     * @return array{berurut: bool, terakhir: ?int, berikutnya: ?int}
+     */
+    protected static function nomorRegister(Issuer $record): array
+    {
+        static $diingat = null;
+        $diingat ??= new \WeakMap;
+
+        if (isset($diingat[$record])) {
+            return $diingat[$record];
+        }
+
+        $counter = app(CertificateNumberCounter::class);
+
+        if ($counter->currentScope($record) === null) {
+            return $diingat[$record] = ['berurut' => false, 'terakhir' => null, 'berikutnya' => null];
+        }
+
+        $terakhir = $counter->lastNumber($record);
+
+        return $diingat[$record] = [
+            'berurut' => true,
+            'terakhir' => $terakhir,
+            'berikutnya' => $terakhir === null ? $record->startingNumber() : $terakhir + 1,
+        ];
+    }
+
     public static function table(Table $table): Table
     {
         return $table
@@ -145,18 +184,18 @@ class IssuerResource extends Resource
                     ->badge()
                     ->color('info')
                     ->state(function (Issuer $record): string {
-                        $counter = app(CertificateNumberCounter::class);
+                        ['berurut' => $berurut, 'berikutnya' => $berikutnya] = static::nomorRegister($record);
 
-                        if ($counter->currentScope($record) === null) {
-                            return 'Per kegiatan';
-                        }
-
-                        return (string) $counter->nextNumber($record);
+                        return $berurut ? (string) $berikutnya : 'Per kegiatan';
                     })
-                    ->description(function (Issuer $record): ?string {
-                        $last = app(CertificateNumberCounter::class)->lastNumber($record);
+                    ->description(function (Issuer $record): string {
+                        ['berurut' => $berurut, 'terakhir' => $terakhir] = static::nomorRegister($record);
 
-                        return $last === null ? 'Belum ada yang terbit' : 'Terakhir terpakai: '.$last;
+                        return match (true) {
+                            ! $berurut => 'Nomor diulang tiap kegiatan',
+                            $terakhir === null => 'Belum ada yang terbit',
+                            default => 'Terakhir terpakai: '.$terakhir,
+                        };
                     }),
                 IconColumn::make('is_house')->label('Penerbit rumah')->boolean()->alignCenter(),
                 IconColumn::make('is_active')->label('Aktif')->boolean()->alignCenter(),
