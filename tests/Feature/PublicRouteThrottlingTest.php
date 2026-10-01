@@ -32,6 +32,7 @@ class PublicRouteThrottlingTest extends TestCase
     private const TANPA_BATAS = [
         'landing',
         'landing.alias',
+        'bio',
         'announcements.index',
         'announcements.show',
         'sitemap',

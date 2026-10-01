@@ -14,6 +14,19 @@ return [
     ))),
 
     /*
+    | Halaman tautan ringkas di /bio, untuk ditaruh di bio Instagram.
+    |
+    | Semuanya boleh dikosongkan: tautan yang kosong tidak ditampilkan, jadi
+    | tidak ada akun yang ditebak-tebak lalu tercetak di halaman publik.
+    */
+    'bio' => [
+        'tagline' => env('MSC_BIO_TAGLINE', 'Layanan media dan peminjaman fasilitas untuk sivitas Jakarta Global University.'),
+        'instagram' => env('MSC_BIO_INSTAGRAM', ''),
+        'whatsapp' => env('MSC_BIO_WHATSAPP', ''),
+        'website' => env('MSC_BIO_WEBSITE', 'https://jgu.ac.id'),
+    ],
+
+    /*
     | Identitas situs untuk mesin pencari dan pratinjau tautan.
     |
     | Dikumpulkan di sini supaya judul, deskripsi, dan gambar yang muncul di

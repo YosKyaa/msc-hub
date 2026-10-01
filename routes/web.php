@@ -17,6 +17,9 @@ use Maatwebsite\Excel\Facades\Excel;
 Route::get('/', [LandingController::class, 'index'])->name('landing');
 Route::get('/msc-hub', [LandingController::class, 'index'])->name('landing.alias');
 
+// Tautan ringkas untuk bio Instagram: satu halaman, tombol besar, tanpa menu.
+Route::get('/bio', App\Http\Controllers\BioController::class)->name('bio');
+
 // Public Announcements
 Route::get('/announcements', [AnnouncementPublicController::class, 'index'])->name('announcements.index');
 Route::get('/announcements/{slug}', [AnnouncementPublicController::class, 'show'])->name('announcements.show');

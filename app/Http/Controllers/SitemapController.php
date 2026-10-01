@@ -35,6 +35,9 @@ class SitemapController extends Controller
             ['loc' => route('landing'), 'priority' => '1.0', 'changefreq' => 'weekly'],
             ['loc' => route('announcements.index'), 'priority' => '0.8', 'changefreq' => 'daily'],
             ['loc' => route('request.content'), 'priority' => '0.7', 'changefreq' => 'monthly'],
+            // Alamat yang dibagikan dari bio Instagram, jadi orang mencarinya
+            // juga lewat mesin pencari.
+            ['loc' => route('bio'), 'priority' => '0.7', 'changefreq' => 'monthly'],
         ];
 
         foreach (Announcement::visible()->latest('published_at')->get() as $pengumuman) {
