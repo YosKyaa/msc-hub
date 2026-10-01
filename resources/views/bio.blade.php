@@ -120,33 +120,53 @@
                     </div>
                 </section>
             @endforeach
+
+            {{-- Kontak admin.
+                 Orang yang bingung mengisi formulir lebih cepat tertolong
+                 dengan bertanya kepada orang daripada membaca satu paragraf
+                 lagi, jadi ketiganya disebut dengan nama. --}}
+            @if (! empty($admin))
+                <section>
+                    <h2 class="px-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                        Butuh bantuan?
+                    </h2>
+                    <p class="mt-1 px-1 text-xs text-gray-500">Tanya langsung ke admin MSC.</p>
+
+                    <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                        @foreach ($admin as $orang)
+                            <a href="{{ $orang['url'] }}"
+                               @if (! str_starts_with($orang['url'], 'mailto:')) target="_blank" rel="noopener noreferrer" @endif
+                               class="bio-tombol flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm hover:border-blue-300 hover:shadow-md sm:flex-col sm:gap-2 sm:py-4 sm:text-center">
+                                <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold text-blue-700">
+                                    {{ $orang['inisial'] }}
+                                </span>
+                                <span class="min-w-0">
+                                    <span class="block text-sm font-semibold leading-tight text-gray-900">{{ $orang['nama'] }}</span>
+                                    <span class="mt-0.5 block text-xs text-gray-500">{{ $orang['via'] }}</span>
+                                </span>
+                            </a>
+                        @endforeach
+                    </div>
+                </section>
+            @endif
         </main>
 
         {{-- Kaki --}}
         <footer class="mt-10 text-center">
-            @if (! empty($sosial))
-                <div class="flex items-center justify-center gap-3">
-                    @foreach ($sosial as $tautan)
-                        <a href="{{ $tautan['url'] }}"
-                           @if (! str_starts_with($tautan['url'], 'mailto:')) target="_blank" rel="noopener noreferrer" @endif
-                           title="{{ $tautan['label'] }}"
-                           class="bio-tombol flex size-11 items-center justify-center rounded-full border border-gray-200 bg-white text-gray-600 shadow-sm hover:border-blue-300 hover:text-blue-700">
-                            <span class="sr-only">{{ $tautan['label'] }}</span>
-                            <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
-                                 stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-                                <path d="{{ $tautan['icon'] }}" />
-                            </svg>
-                        </a>
-                    @endforeach
-                </div>
+            @if (filled(config('msc.bio.website')))
+                <a href="{{ config('msc.bio.website') }}" target="_blank" rel="noopener noreferrer"
+                   class="text-xs font-medium text-gray-600 hover:text-blue-700 hover:underline">
+                    jgu.ac.id
+                </a>
+                <span class="px-1.5 text-xs text-gray-300">·</span>
             @endif
+            <a href="{{ route('landing') }}" class="text-xs font-medium text-blue-700 hover:underline">
+                Situs lengkap MSC Hub
+            </a>
 
-            <p class="mt-6 text-xs text-gray-500">
+            <p class="mt-4 text-xs text-gray-500">
                 &copy; {{ date('Y') }} Jakarta Global University
             </p>
-            <a href="{{ route('landing') }}" class="mt-1 inline-block text-xs font-medium text-blue-700 hover:underline">
-                Buka situs lengkapnya
-            </a>
         </footer>
     </div>
 </body>

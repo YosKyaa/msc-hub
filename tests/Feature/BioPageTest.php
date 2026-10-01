@@ -113,43 +113,90 @@ class BioPageTest extends TestCase
             ->assertSee(route('bio'), false);
     }
 
-    // ------------------------------------------------------ media sosial
+    // --------------------------------------------------------- kontak admin
 
     /**
-     * Akun yang tidak diisi tidak boleh ditebak-tebak lalu tercetak di
-     * halaman publik.
+     * Orang yang bingung mengisi formulir lebih cepat tertolong dengan
+     * bertanya kepada orang. Ketiganya karena itu disebut dengan nama, bukan
+     * disembunyikan di balik satu tombol "kontak" yang tidak jelas menuju siapa.
      */
-    public function test_an_unset_social_account_is_simply_not_shown(): void
+    public function test_the_three_admins_are_named(): void
     {
-        config(['msc.bio.instagram' => '', 'msc.bio.whatsapp' => '']);
-
         $response = $this->get(route('bio'))->assertOk();
 
-        $response->assertDontSee('instagram.com', false);
-        $response->assertDontSee('wa.me', false);
+        $response->assertSee('Butuh bantuan?');
+        $response->assertSee('Hadi');
+        $response->assertSee('Chika');
+        $response->assertSee('Yosua');
     }
 
-    public function test_a_configured_account_is_shown(): void
+    public function test_a_phone_number_becomes_a_whatsapp_link(): void
     {
-        config([
-            'msc.bio.instagram' => '@msc.jgu',
-            'msc.bio.whatsapp' => '+62 812-3456-7890',
-        ]);
+        config(['msc.bio.admins' => 'Hadi:+62 812-3456-7890']);
+
+        $this->get(route('bio'))
+            ->assertOk()
+            // Spasi dan strip dibuang: orang menuliskan nomor apa adanya.
+            ->assertSee('https://wa.me/6281234567890', false)
+            ->assertSee('WhatsApp');
+    }
+
+    public function test_an_address_with_an_at_sign_becomes_an_email_link(): void
+    {
+        config(['msc.bio.admins' => 'Chika:chika@jgu.ac.id']);
+
+        $this->get(route('bio'))
+            ->assertOk()
+            ->assertSee('mailto:chika@jgu.ac.id', false)
+            ->assertSee('Email');
+    }
+
+    /**
+     * Keduanya boleh bercampur, karena nomor ketiga admin tidak selalu
+     * terkumpul sekaligus.
+     */
+    public function test_phone_and_email_may_be_mixed(): void
+    {
+        config(['msc.bio.admins' => 'Hadi:628111,Chika:chika@jgu.ac.id']);
 
         $response = $this->get(route('bio'))->assertOk();
 
-        // Tanda @ dan tanda baca nomor dibuang saat menyusun alamatnya.
-        $response->assertSee('https://instagram.com/msc.jgu', false);
-        $response->assertSee('https://wa.me/6281234567890', false);
+        $response->assertSee('https://wa.me/628111', false);
+        $response->assertSee('mailto:chika@jgu.ac.id', false);
+    }
+
+    /**
+     * Baris yang tidak lengkap dilewati, bukan menghasilkan tombol kosong
+     * yang tidak menuju ke mana-mana.
+     */
+    public function test_an_incomplete_entry_is_skipped(): void
+    {
+        config(['msc.bio.admins' => 'Hadi:628111,TanpaKontak,:628222, ,Yosua:628333']);
+
+        $response = $this->get(route('bio'))->assertOk();
+
+        $response->assertSee('https://wa.me/628111', false);
+        $response->assertSee('https://wa.me/628333', false);
+        $response->assertDontSee('TanpaKontak');
+        $response->assertDontSee('https://wa.me/628222', false);
+    }
+
+    public function test_the_section_disappears_when_no_admin_is_configured(): void
+    {
+        config(['msc.bio.admins' => '']);
+
+        $this->get(route('bio'))
+            ->assertOk()
+            ->assertDontSee('Butuh bantuan?');
     }
 
     /**
      * Tautan keluar dibuka di tab baru, supaya halaman ini tidak hilang dari
-     * riwayat orang yang sekadar mampir ke Instagram lalu ingin kembali.
+     * riwayat orang yang sekadar membuka WhatsApp lalu ingin kembali.
      */
     public function test_outbound_links_open_in_a_new_tab_safely(): void
     {
-        config(['msc.bio.instagram' => '@msc.jgu']);
+        config(['msc.bio.admins' => 'Hadi:628111']);
 
         $this->get(route('bio'))
             ->assertOk()

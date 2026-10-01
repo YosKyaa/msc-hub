@@ -20,7 +20,7 @@ class BioController extends Controller
     {
         return view('bio', [
             'kelompok' => $this->kelompok(),
-            'sosial' => $this->sosial(),
+            'admin' => $this->admin(),
         ]);
     }
 
@@ -99,46 +99,44 @@ class BioController extends Controller
     }
 
     /**
-     * Tautan media sosial dan kontak.
+     * Admin yang bisa dihubungi langsung.
      *
-     * Semuanya berasal dari konfigurasi dan disembunyikan bila dikosongkan,
-     * supaya tidak ada akun yang ditebak-tebak lalu tercetak di halaman publik.
+     * Orang yang bingung mengisi formulir lebih cepat tertolong dengan
+     * bertanya kepada orang daripada membaca satu paragraf lagi. Karena itu
+     * ketiganya disebut dengan nama, bukan disembunyikan di balik satu tombol
+     * "kontak" yang tidak jelas menuju siapa.
      *
-     * @return list<array{label: string, url: string, icon: string}>
+     * @return list<array{nama: string, via: string, url: string, inisial: string}>
      */
-    private function sosial(): array
+    private function admin(): array
     {
-        $bio = config('msc.bio');
+        $hasil = [];
 
-        $kandidat = [
-            [
-                'label' => 'Instagram',
-                'url' => filled($bio['instagram'] ?? null)
-                    ? 'https://instagram.com/'.ltrim((string) $bio['instagram'], '@')
-                    : null,
-                'icon' => 'M7 2h10a5 5 0 0 1 5 5v10a5 5 0 0 1-5 5H7a5 5 0 0 1-5-5V7a5 5 0 0 1 5-5Zm5 5.5a4.5 4.5 0 1 0 0 9 4.5 4.5 0 0 0 0-9ZM17.8 6.2h.01',
-            ],
-            [
-                'label' => 'WhatsApp',
-                'url' => filled($bio['whatsapp'] ?? null)
-                    ? 'https://wa.me/'.preg_replace('/\D+/', '', (string) $bio['whatsapp'])
-                    : null,
-                'icon' => 'M3 21l1.65-4.5A8.5 8.5 0 1 1 7.5 19.4L3 21Zm6.2-10.1c.3 1 1.9 2.6 2.9 2.9.4.1.9 0 1.2-.3l.5-.6 1.8.9c0 .9-.7 1.6-1.6 1.6-3 0-6.4-3.4-6.4-6.4 0-.9.7-1.6 1.6-1.6l.9 1.8-.6.5c-.3.3-.4.8-.3 1.2Z',
-            ],
-            [
-                'label' => 'Situs JGU',
-                'url' => $bio['website'] ?? null,
-                'icon' => 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Zm0 0c2.5-2.3 3.8-5.3 3.8-9S14.5 5.3 12 3C9.5 5.3 8.2 8.3 8.2 12s1.3 6.7 3.8 9ZM3.3 9h17.4M3.3 15h17.4',
-            ],
-            [
-                'label' => 'Email',
-                'url' => filled(config('msc.contact_email'))
-                    ? 'mailto:'.config('msc.contact_email')
-                    : null,
-                'icon' => 'M3 8l7.9 5.3a2 2 0 0 0 2.2 0L21 8M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2Z',
-            ],
-        ];
+        foreach (explode(',', (string) config('msc.bio.admins')) as $baris) {
+            [$nama, $kontak] = array_pad(explode(':', trim($baris), 2), 2, '');
 
-        return array_values(array_filter($kandidat, fn (array $t) => filled($t['url'])));
+            $nama = trim($nama);
+            $kontak = trim((string) $kontak);
+
+            if ($nama === '' || $kontak === '') {
+                continue;
+            }
+
+            // Alamat email dikenali dari tanda @; sisanya diperlakukan sebagai
+            // nomor WhatsApp, dan tanda bacanya dibuang karena orang menuliskan
+            // nomor dengan spasi dan strip.
+            $lewatEmail = str_contains($kontak, '@');
+
+            $hasil[] = [
+                'nama' => $nama,
+                'via' => $lewatEmail ? 'Email' : 'WhatsApp',
+                'url' => $lewatEmail
+                    ? 'mailto:'.$kontak
+                    : 'https://wa.me/'.preg_replace('/\D+/', '', $kontak),
+                'inisial' => mb_strtoupper(mb_substr($nama, 0, 1)),
+            ];
+        }
+
+        return $hasil;
     }
 }

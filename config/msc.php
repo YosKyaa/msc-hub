@@ -21,9 +21,21 @@ return [
     */
     'bio' => [
         'tagline' => env('MSC_BIO_TAGLINE', 'Layanan media dan peminjaman fasilitas untuk sivitas Jakarta Global University.'),
-        'instagram' => env('MSC_BIO_INSTAGRAM', ''),
-        'whatsapp' => env('MSC_BIO_WHATSAPP', ''),
         'website' => env('MSC_BIO_WEBSITE', 'https://jgu.ac.id'),
+
+        /*
+        | Admin yang bisa dihubungi langsung dari halaman /bio.
+        |
+        | Format "Nama:kontak", dipisah koma — mengikuti cara
+        | MSC_NOTIFICATION_RECIPIENTS ditulis. Kontaknya boleh nomor WhatsApp
+        | atau alamat email: yang memuat @ diperlakukan sebagai email, sisanya
+        | sebagai nomor WhatsApp.
+        |
+        | Bawaannya memakai alamat email ketiga admin yang memang sudah
+        | tercatat di proyek ini, supaya halamannya tetap berguna sebelum
+        | nomor WhatsApp-nya diisi.
+        */
+        'admins' => env('MSC_BIO_ADMINS', 'Hadi:hadi@jgu.ac.id,Chika:chika@jgu.ac.id,Yosua:yosua@jgu.ac.id'),
     ],
 
     /*
