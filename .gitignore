@@ -1,10 +1,15 @@
 *.log
 .DS_Store
+# Seluruh turunan .env diabaikan, kecuali contohnya.
+#
+# Daftar pola satu per satu selalu tertinggal: .env.old pernah lolos dan
+# terlanjur ikut ter-commit di server, lengkap dengan kredensial produksinya.
+# Menyebut semuanya sekaligus menutup .env.bak, .env.save, .env.lama, dan
+# nama apa pun yang terpikir orang saat buru-buru mencadangkan.
 .env
-.env.backup
-.env.backup-*
-.env.*.backup
-.env.production
+.env.*
+.env~
+!.env.example
 .phpactor.json
 .phpunit.result.cache
 /.fleet
