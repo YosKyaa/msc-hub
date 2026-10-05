@@ -18,10 +18,10 @@ html, body { margin:0; padding:0; width:{{ $template->canvas_width }}px; height:
 @endforeach
 .canvas { position:relative; width:{{ $template->canvas_width }}px; height:{{ $template->canvas_height }}px; }
 .background { position:absolute; left:0; top:0; width:{{ $template->canvas_width }}px; height:{{ $template->canvas_height }}px; }
-{{-- table/table-cell, bukan flexbox: hanya pasangan inilah yang dipahami
-     dompdf dan peramban dengan hasil yang sama. --}}
-.element { position:absolute; display:table; box-sizing:border-box; }
-.element-content { display:table-cell; }
+{{-- Struktur yang sama persis dipakai pratinjau di halaman verifikasi,
+     diambil dari tetapan yang sama supaya keduanya tidak bisa menyimpang. --}}
+.element { {{ \App\Support\CertificateElement::BOX_STRUCTURE }} }
+.element-content { {{ \App\Support\CertificateElement::CELL_STRUCTURE }} }
 </style></head><body>
 <div class="canvas">
 @if ($backgroundDataUri)

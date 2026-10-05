@@ -193,6 +193,64 @@ class CertificateLayoutParityTest extends TestCase
     }
 
     /**
+     * Perataan saja tidak membuktikan apa pun bila elemennya tidak diletakkan.
+     *
+     * Aturan yang meletakkannya pernah tinggal di `@push('styles')` dan diam-
+     * diam hilang: halaman verifikasi menaruh `@stack('styles')` di `<head>`,
+     * sedangkan Blade merender stack di tempat ia ditulis — apa pun yang
+     * didorong komponen sesudahnya dibuang tanpa suara. Nama, nomor, dan QR
+     * tetap ada di dalam HTML, tetapi menumpuk tanpa posisi sehingga
+     * sertifikatnya tampil kosong. PDF-nya sendiri baik-baik saja, karena ia
+     * membawa berkas gayanya sendiri — jadi kerusakannya hanya terlihat oleh
+     * orang yang membuka halaman verifikasi.
+     *
+     * Yang diperiksa karena itu bukan sekadar bahwa elemennya tertulis,
+     * melainkan bahwa aturan yang meletakkannya benar-benar sampai ke halaman.
+     */
+    public function test_the_verification_page_actually_places_its_elements(): void
+    {
+        $certificate = $this->certificate($this->nameElement());
+
+        $response = $this->get(route('certificates.verify', $certificate->verification_token))->assertOk();
+
+        $response->assertSee($certificate->recipient_name, false);
+
+        // Dipasang langsung pada elemennya, bukan lewat berkas gaya yang bisa
+        // hilang di perjalanan.
+        $response->assertSee(CertificateElement::BOX_STRUCTURE, false);
+        $response->assertSee(CertificateElement::CELL_STRUCTURE, false);
+
+        // Satuan cqw pada tipografi mengukur dirinya terhadap wadah ini;
+        // tanpanya ukuran hurufnya tidak berlaku sama sekali.
+        $response->assertSee('container-type: inline-size', false);
+
+        // 300 px pada kanvas 1123 px = 26,7142%.
+        $response->assertSee('left:26.7142%', false);
+    }
+
+    /**
+     * Akar sebabnya, dijaga langsung: komponen pratinjau tidak boleh
+     * menitipkan gaya apa pun lewat `@push`.
+     *
+     * Titipan itu hanya sampai bila halaman yang memakainya kebetulan menaruh
+     * `@stack` sesudah komponennya — dan halaman verifikasi menaruhnya di
+     * `<head>`, jauh sebelum itu. Halaman berikutnya yang memakai komponen ini
+     * akan tersandung hal yang sama tanpa ada yang menyadarinya, karena
+     * halamannya tetap terbuka dengan status 200 dan hanya terlihat kosong.
+     */
+    public function test_the_preview_component_never_defers_its_styling(): void
+    {
+        $komponen = file_get_contents(resource_path('views/components/molecules/certificate-preview.blade.php'));
+
+        // Komentar Blade dibuang lebih dulu: komentarnya memang menyebut
+        // @push, justru untuk menerangkan mengapa ia tidak dipakai.
+        $kode = preg_replace('/\{\{--.*?--\}\}/s', '', $komponen);
+
+        $this->assertDoesNotMatchRegularExpression('/@push\s*\(\s*[\'"]styles[\'"]/', $kode,
+            'Komponen pratinjau menitipkan gaya lewat @push, yang hilang bila @stack sudah dirender lebih dulu.');
+    }
+
+    /**
      * Editor menyimpan perataan tegak, bukan membuangnya saat disimpan.
      */
     public function test_the_editor_keeps_the_vertical_alignment_it_was_given(): void

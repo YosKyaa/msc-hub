@@ -21,17 +21,17 @@
     $containerWidth = fn ($value) => round(((float) $value / $canvasWidth) * 100, 4).'cqw';
 @endphp
 
+{{-- Font khusus milik template. Satu-satunya yang tidak bisa dipasang inline,
+     karena @font-face memang hanya hidup di dalam berkas gaya.
+
+     Dirender di tempatnya berdiri, bukan lewat @push('styles'): halaman yang
+     memakai komponen ini menaruh @stack('styles') di <head>, sedangkan Blade
+     merender stack di tempat ia ditulis — apa pun yang didorong sesudahnya
+     dibuang tanpa suara. --}}
 @once
-    @push('styles')
+    @if (filled($template->fonts ?? []))
         <style>
-            .cert-preview { container-type: inline-size; }
-
-            /* table/table-cell, sama seperti PDF: hanya pasangan inilah yang
-               dipahami dompdf dan peramban dengan hasil yang sama. */
-            .cert-preview-element { position: absolute; display: table; box-sizing: border-box; }
-            .cert-preview-element > div { display: table-cell; }
-
-            @foreach($template->fonts ?? [] as $fontPath)
+            @foreach($template->fonts as $fontPath)
                 @font-face {
                     font-family: "{{ pathinfo($fontPath, PATHINFO_FILENAME) }}";
                     src: url("{{ Storage::disk('public')->url($fontPath) }}") format("truetype");
@@ -39,11 +39,13 @@
                 }
             @endforeach
         </style>
-    @endpush
+    @endif
 @endonce
 
-<div {{ $attributes->class(['cert-preview relative w-full overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200']) }}
-     style="aspect-ratio: {{ $canvasWidth }} / {{ $canvasHeight }};">
+{{-- container-type dipasang di sini juga, karena satuan cqw pada tipografi
+     elemen mengukur dirinya terhadap kotak ini. --}}
+<div {{ $attributes->class(['relative w-full overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200']) }}
+     style="container-type: inline-size; aspect-ratio: {{ $canvasWidth }} / {{ $canvasHeight }};">
 
     <img src="{{ Storage::disk('public')->url($template->background_path) }}"
          alt="Desain sertifikat"
@@ -51,8 +53,8 @@
          loading="lazy">
 
     @foreach(CertificateElement::collect($template->elements) as $element)
-        <div class="cert-preview-element {{ $muted ? 'opacity-40' : '' }}"
-             style="{{ $element->boxCss(
+        <div class="{{ $muted ? 'opacity-40' : '' }}"
+             style="{{ CertificateElement::BOX_STRUCTURE }}{{ $element->boxCss(
                  $percentX($element->x()),
                  $percentY($element->y()),
                  $percentX($element->width()),
@@ -60,7 +62,7 @@
              ) }}">
             {{-- Tinggi selnya relatif terhadap kotaknya, bukan kanvas: kotak
                  luarnyalah yang sudah diukur terhadap kanvas. --}}
-            <div style="{{ $element->contentCss($containerWidth($element->fontSize()), '100%') }}">
+            <div style="{{ CertificateElement::CELL_STRUCTURE }}{{ $element->contentCss($containerWidth($element->fontSize()), '100%') }}">
                 @if($element->isQr())
                     @if($qrDataUri)
                         <img src="{{ $qrDataUri }}" alt="QR verifikasi" style="width:100%;height:100%;">

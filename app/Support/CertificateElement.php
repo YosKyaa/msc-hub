@@ -51,6 +51,24 @@ final class CertificateElement
 
     public const DEFAULT_HEIGHT = 60;
 
+    /**
+     * Struktur kotaknya, dipakai PDF maupun pratinjau.
+     *
+     * `display:table` berpasangan dengan `display:table-cell` di dalamnya —
+     * bukan flexbox — karena hanya pasangan inilah yang dipahami dompdf dan
+     * peramban dengan hasil yang sama.
+     *
+     * Ditulis sebagai tetapan, bukan sebagai kelas di dalam berkas gaya,
+     * supaya pratinjau bisa memasangnya langsung pada elemennya. Aturan ini
+     * pernah tinggal di `@push('styles')` dan diam-diam hilang: `@stack`
+     * dirender di `<head>` sebelum komponennya sempat mendorong apa pun,
+     * sehingga seluruh elemen kehilangan posisinya dan sertifikat di halaman
+     * verifikasi tampil kosong — padahal PDF-nya baik-baik saja.
+     */
+    public const BOX_STRUCTURE = 'position:absolute;display:table;box-sizing:border-box;';
+
+    public const CELL_STRUCTURE = 'display:table-cell;';
+
     private function __construct(private readonly array $raw) {}
 
     public static function from(array $raw): self
