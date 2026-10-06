@@ -294,22 +294,74 @@
                 @endunless
             </div>
 
-            {{-- Angka nyata, bukan hiasan. Dihitung dari basis data lewat
-                 App\Support\LayananStatistik. --}}
+            {{-- Tampilan dasbornya, bukan angka.
+                 Portal ini baru, jadi menghitung pengajuan hanya memajang
+                 angka kecil yang membuat MSC terlihat sepi. Yang sebenarnya
+                 ingin diketahui orang sebelum mengajukan adalah bagaimana ia
+                 nanti memantau pengajuannya, dan itu paling cepat dijawab
+                 dengan memperlihatkannya.
+
+                 Disebut "contoh tampilan" apa adanya: ini gambaran antarmuka,
+                 bukan data sungguhan milik siapa pun. --}}
             <div class="reveal lg:col-span-5">
-                <div class="kaca-terang rounded-3xl p-6 sm:p-7">
-                    <p class="text-xs font-semibold uppercase tracking-wider text-sun-ink">MSC dalam angka</p>
-                    <div class="mt-5 grid grid-cols-2 gap-5">
-                        @foreach ($statistik as $angka)
-                            <div class="border-l-[3px] border-sun pl-4">
-                                <div class="text-3xl font-bold leading-none sm:text-4xl">{{ $angka['angka'] }}</div>
-                                <div class="mt-2 text-sm font-medium text-ink/80">{{ $angka['label'] }}</div>
-                                <div class="mt-0.5 text-xs leading-snug text-ink/60">{{ $angka['catatan'] }}</div>
+                <div class="kaca-terang rounded-3xl p-5 sm:p-6">
+                    <div class="flex items-center justify-between">
+                        <p class="text-xs font-semibold uppercase tracking-wider text-sun-ink">Contoh tampilan dasbor</p>
+                        <span class="flex items-center gap-1.5 rounded-full bg-sun/30 px-2.5 py-1 text-[11px] font-semibold text-sun-ink">
+                            3 aktif
+                        </span>
+                    </div>
+
+                    <p class="mt-1 text-sm font-semibold text-ink">Pengajuan Saya</p>
+
+                    <div class="mt-4 space-y-2.5">
+                        @foreach ([
+                            [
+                                'kode' => 'CR-2026-0184',
+                                'judul' => 'Desain poster seminar',
+                                'status' => 'Sedang dikerjakan',
+                                'titik' => 'bg-sun-deep',
+                                'teks' => 'text-sun-ink',
+                                'bidang' => 'bg-sun/15',
+                            ],
+                            [
+                                'kode' => 'RB-2026-0291',
+                                'judul' => 'Studio multimedia, 3 jam',
+                                'status' => 'Disetujui',
+                                'titik' => 'bg-emerald-600',
+                                'teks' => 'text-emerald-800',
+                                'bidang' => 'bg-emerald-500/12',
+                            ],
+                            [
+                                'kode' => 'IB-2026-0077',
+                                'judul' => 'Kamera dan lighting kit',
+                                'status' => 'Menunggu tinjauan',
+                                'titik' => 'bg-ink/40',
+                                'teks' => 'text-ink/70',
+                                'bidang' => 'bg-ink/[.06]',
+                            ],
+                        ] as $baris)
+                            <div class="rounded-2xl border border-ink/[.07] bg-white/70 p-3.5">
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="min-w-0">
+                                        <p class="truncate text-sm font-medium text-ink">{{ $baris['judul'] }}</p>
+                                        <p class="mt-0.5 font-mono text-[11px] text-ink/60">{{ $baris['kode'] }}</p>
+                                    </div>
+                                    <span class="flex shrink-0 items-center gap-1.5 rounded-full {{ $baris['bidang'] }} px-2.5 py-1 text-[11px] font-semibold {{ $baris['teks'] }}">
+                                        <span class="size-1.5 rounded-full {{ $baris['titik'] }}"></span>
+                                        {{ $baris['status'] }}
+                                    </span>
+                                </div>
                             </div>
                         @endforeach
                     </div>
-                    <p class="mt-6 border-t border-ink/[.08] pt-4 text-xs text-ink/60">
-                        Dihitung langsung dari data layanan, diperbarui tiap 30 menit.
+
+                    <p class="mt-5 flex items-start gap-2 border-t border-ink/[.08] pt-4 text-xs leading-relaxed text-ink/65">
+                        <svg class="mt-0.5 size-3.5 shrink-0 text-sun-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                            <path d="M3 8l7.9 5.3a2 2 0 0 0 2.2 0L21 8M5 19h14a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2Z" />
+                        </svg>
+                        Tiap kali statusnya berubah, email Anda ikut masuk.
                     </p>
                 </div>
             </div>
