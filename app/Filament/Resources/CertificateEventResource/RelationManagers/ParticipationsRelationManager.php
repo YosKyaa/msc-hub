@@ -13,10 +13,13 @@ use App\Services\Certificates\CertificateBatchException;
 use App\Services\Certificates\CertificateBatchIssuer;
 use App\Services\Certificates\CertificateBatchMailer;
 use App\Services\Certificates\ParticipantRegistry;
+use App\Services\Certificates\RecipientCorrection;
+use App\Services\Certificates\RecipientCorrectionOutcome;
 use App\Support\CertificatePermission;
 use App\Support\CertificateStage;
 use App\Support\MailHealth;
 use App\Support\QueueHealth;
+use Closure;
 use Filament\Actions;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
@@ -25,6 +28,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -50,32 +54,57 @@ class ParticipationsRelationManager extends RelationManager
     public function form(Schema $schema): Schema
     {
         return $schema->components([
-            Select::make('role')
-                ->label('Peran')
-                ->options(ParticipantRole::options())
-                ->default(ParticipantRole::PARTICIPANT->value)
-                ->required(),
-            TextInput::make('role_label')
-                ->label('Label khusus')
-                ->helperText('Contoh: Ketua Pelaksana, Koordinator Acara.'),
-            Select::make('attendance_status')
-                ->label('Kehadiran')
-                ->options([
-                    'registered' => 'Terdaftar', 'approved' => 'Disetujui', 'attended' => 'Hadir',
-                    'absent' => 'Tidak hadir', 'cancelled' => 'Dibatalkan',
-                ])
-                ->default('registered')
-                ->required(),
-            DateTimePicker::make('eligible_at')
-                ->label('Berhak mendapat sertifikat')
-                ->seconds(false)
-                ->native(false)
-                ->helperText('Isi ketika orang ini berhak menerima sertifikat.'),
-            TextInput::make('certificate_number')
-                ->label('Nomor sertifikat khusus')
-                ->helperText('Kosongkan agar nomor dibuat otomatis saat penerbitan.'),
-            KeyValue::make('variables')->label('Variabel tambahan')->columnSpanFull(),
-        ])->columns(2);
+            // Nama dan email tinggal di tabel peserta, bukan di baris
+            // keikutsertaan ini, jadi keduanya diisi dan disimpan tersendiri —
+            // lihat saveParticipation(). Tetapi dari sudut pandang admin
+            // keduanya bagian dari orang yang sedang dibuka, dan menyuruhnya
+            // mencari layar lain hanya untuk membetulkan satu huruf pada
+            // alamat email adalah jalan memutar tanpa alasan.
+            Section::make('Data penerima')
+                ->description('Berlaku bagi orang ini di seluruh kegiatan, termasuk pada sertifikat yang sudah terbit.')
+                ->columns(2)
+                ->schema([
+                    TextInput::make('participant_name')
+                        ->label('Nama yang dicetak')
+                        ->required()
+                        ->maxLength(255)
+                        ->helperText('Persis seperti yang akan tercetak di sertifikat.'),
+                    $this->emailPenerima('participant_email')
+                        ->helperText('Tujuan pengiriman sertifikat. Bila diubah, sertifikat yang sudah terbit '
+                            .'ditandai belum terkirim agar bisa dikirim ke alamat yang baru.'),
+                ]),
+
+            Section::make('Keikutsertaan')
+                ->description('Peran dan kehadiran orang ini pada kegiatan yang sedang dibuka.')
+                ->columns(2)
+                ->schema([
+                    Select::make('role')
+                        ->label('Peran')
+                        ->options(ParticipantRole::options())
+                        ->default(ParticipantRole::PARTICIPANT->value)
+                        ->required(),
+                    TextInput::make('role_label')
+                        ->label('Label khusus')
+                        ->helperText('Contoh: Ketua Pelaksana, Koordinator Acara.'),
+                    Select::make('attendance_status')
+                        ->label('Kehadiran')
+                        ->options([
+                            'registered' => 'Terdaftar', 'approved' => 'Disetujui', 'attended' => 'Hadir',
+                            'absent' => 'Tidak hadir', 'cancelled' => 'Dibatalkan',
+                        ])
+                        ->default('registered')
+                        ->required(),
+                    DateTimePicker::make('eligible_at')
+                        ->label('Berhak mendapat sertifikat')
+                        ->seconds(false)
+                        ->native(false)
+                        ->helperText('Isi ketika orang ini berhak menerima sertifikat.'),
+                    TextInput::make('certificate_number')
+                        ->label('Nomor sertifikat khusus')
+                        ->helperText('Kosongkan agar nomor dibuat otomatis saat penerbitan.'),
+                    KeyValue::make('variables')->label('Variabel tambahan')->columnSpanFull(),
+                ]),
+        ])->columns(1);
     }
 
     public function table(Table $table): Table
@@ -204,22 +233,32 @@ class ParticipationsRelationManager extends RelationManager
                             : ['eligible_at' => now(), 'attendance_status' => 'attended'],
                     )),
 
-                Actions\Action::make('correctName')
+                Actions\Action::make('correctRecipient')
                     ->iconButton()
-                    ->tooltip('Koreksi nama yang dicetak')
+                    ->tooltip('Koreksi nama & email penerima')
                     ->icon('heroicon-o-pencil-square')
                     ->color('warning')
-                    ->modalHeading('Koreksi Nama Peserta')
+                    ->modalHeading('Koreksi Data Penerima')
+                    ->modalDescription('Nama yang salah ketik tetap tercetak pada sertifikat yang sudah terbit, '
+                        .'dan alamat yang salah membuat kirimannya tidak pernah sampai. Keduanya dibetulkan di sini.')
+                    ->modalSubmitActionLabel('Simpan Koreksi')
                     ->visible(fn () => CertificatePermission::allows('edit'))
                     ->fillForm(fn (CertificateEventParticipant $record) => [
                         'name' => $record->participant?->name,
+                        'email' => $record->participant?->email,
                         'google_display_name' => $record->participant?->google_display_name,
                     ])
                     ->schema([
-                        TextInput::make('name')->label('Nama yang dicetak di sertifikat')->required(),
+                        TextInput::make('name')->label('Nama yang dicetak di sertifikat')->required()->maxLength(255),
+                        $this->emailPenerima('email')
+                            ->helperText('Kosongkan bila orang ini memang tidak punya alamat email.'),
                         TextInput::make('google_display_name')->label('Nama dari akun Google')->disabled()->dehydrated(false),
                     ])
-                    ->action(fn (CertificateEventParticipant $record, array $data) => $record->participant?->update(['name' => $data['name']])),
+                    ->action(fn (CertificateEventParticipant $record, array $data) => $this->announceCorrection(
+                        $record,
+                        $data['name'] ?? null,
+                        $data['email'] ?? null,
+                    )),
 
                 Actions\Action::make('verify')
                     ->iconButton()
@@ -283,7 +322,15 @@ class ParticipationsRelationManager extends RelationManager
                         'revocation_reason' => null,
                     ])),
 
-                Actions\EditAction::make()->iconButton()->tooltip('Ubah keikutsertaan'),
+                Actions\EditAction::make()
+                    ->iconButton()
+                    ->tooltip('Ubah keikutsertaan')
+                    ->mutateRecordDataUsing(fn (array $data, CertificateEventParticipant $record): array => [
+                        ...$data,
+                        'participant_name' => $record->participant?->name,
+                        'participant_email' => $record->participant?->email,
+                    ])
+                    ->using(fn (CertificateEventParticipant $record, array $data) => $this->saveParticipation($record, $data)),
 
                 // Menghapus keikutsertaan hanya melepaskan sertifikatnya dari
                 // pemiliknya (kunci asingnya nullOnDelete), sehingga dokumen
@@ -350,6 +397,114 @@ class ParticipationsRelationManager extends RelationManager
 
                 Actions\DeleteBulkAction::make(),
             ]);
+    }
+
+    /**
+     * Simpan baris keikutsertaan sekaligus koreksi data penerimanya.
+     *
+     * Dua isian teratas di formulir bukan milik baris ini melainkan milik
+     * pesertanya, jadi keduanya dikeluarkan lebih dulu sebelum sisanya
+     * disimpan — bila ikut terbawa, update() menolaknya sebagai kolom yang
+     * tidak dikenal.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    private function saveParticipation(CertificateEventParticipant $record, array $data): CertificateEventParticipant
+    {
+        $nama = $data['participant_name'] ?? null;
+        $email = $data['participant_email'] ?? null;
+
+        unset($data['participant_name'], $data['participant_email']);
+
+        $record->update($data);
+
+        $hasil = $this->correctRecipient($record, $nama, $email);
+
+        // Filament sudah mengabarkan "tersimpan" sendiri, jadi yang perlu
+        // ditambahkan hanya hal yang tidak terlihat di tabel: bahwa koreksinya
+        // ikut merambat ke dokumen yang sudah terbit.
+        if ($hasil !== null && $hasil->certificatesSynced > 0) {
+            Notification::make()->title($hasil->title())->body($hasil->body())->success()->send();
+        }
+
+        return $record;
+    }
+
+    /**
+     * Koreksi lewat tombol tersendiri, yang karena itu harus mengabarkan
+     * hasilnya sendiri pula.
+     */
+    private function announceCorrection(CertificateEventParticipant $record, ?string $nama, ?string $email): void
+    {
+        $hasil = $this->correctRecipient($record, $nama, $email);
+
+        if ($hasil === null) {
+            Notification::make()
+                ->title('Data penerima tidak ditemukan')
+                ->body('Baris ini tidak lagi terhubung ke peserta mana pun.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        Notification::make()
+            ->title($hasil->title())
+            ->body($hasil->body())
+            ->status($hasil->changed() ? 'success' : 'info')
+            ->send();
+    }
+
+    private function correctRecipient(CertificateEventParticipant $record, ?string $nama, ?string $email): ?RecipientCorrectionOutcome
+    {
+        $peserta = $record->participant;
+
+        return $peserta === null
+            ? null
+            : app(RecipientCorrection::class)->apply($peserta, $nama, $email);
+    }
+
+    /**
+     * Satu bentuk isian email penerima, dipakai formulir ubah maupun tombol
+     * koreksi.
+     *
+     * Alamat yang disalin dari daftar hadir kerap terbawa spasi dan huruf
+     * besar. Bentuknya diseragamkan lebih dulu, sebelum divalidasi: tanpa itu
+     * aturan `email` menolak alamat yang sebenarnya benar hanya karena ada
+     * spasi di ujungnya, dan alamat yang sama ditulis dua gaya terbaca sebagai
+     * dua orang berbeda.
+     */
+    private function emailPenerima(string $name): TextInput
+    {
+        return TextInput::make($name)
+            ->label('Email penerima')
+            ->email()
+            ->maxLength(255)
+            ->mutateStateForValidationUsing(fn (?string $state): ?string => ParticipantRegistry::normaliseEmail($state) ?: null)
+            ->dehydrateStateUsing(fn (?string $state): ?string => ParticipantRegistry::normaliseEmail($state) ?: null)
+            ->rule($this->emailBelumDipakaiOrangLain());
+    }
+
+    /**
+     * Email adalah kunci dedup peserta, jadi dua orang beralamat sama membuat
+     * pencarian berdasarkan email tidak lagi menentukan siapa yang dimaksud.
+     * Ditolak di formulir, bukan diserahkan ke basis data: batas uniknya di
+     * sana gabungan email dan NIM, sehingga bentrokan yang justru berbahaya
+     * ini lolos begitu saja.
+     */
+    private function emailBelumDipakaiOrangLain(): Closure
+    {
+        return static fn (?CertificateEventParticipant $record): Closure => static function (string $attribute, mixed $value, Closure $fail) use ($record): void {
+            $peserta = $record?->participant;
+
+            if ($peserta === null) {
+                return;
+            }
+
+            if (app(RecipientCorrection::class)->emailTaken($peserta, $value)) {
+                $fail('Email ini sudah dipakai peserta lain. Pakai alamat lain, atau rapikan dulu data gandanya.');
+            }
+        };
     }
 
     /**

@@ -87,10 +87,10 @@ class CertificateRelationManagerRendersTest extends TestCase
         $this->table($this->event())
             ->assertSuccessful()
             ->assertTableActionExists('toggleEligible')
-            ->assertTableActionExists('correctName')
+            ->assertTableActionExists('correctRecipient')
             ->assertTableActionExists('edit')
             ->assertTableActionExists('delete')
-            ->assertTableActionHasIcon('correctName', 'heroicon-o-pencil-square');
+            ->assertTableActionHasIcon('correctRecipient', 'heroicon-o-pencil-square');
     }
 
     /**
@@ -217,7 +217,7 @@ class CertificateRelationManagerRendersTest extends TestCase
         $event = $this->event();
         $participation = $event->participations()->sole();
 
-        $this->table($event)->callTableAction('correctName', $participation, ['name' => 'Budi Santoso, S.Kom.']);
+        $this->table($event)->callTableAction('correctRecipient', $participation, ['name' => 'Budi Santoso, S.Kom.']);
 
         $this->assertSame('Budi Santoso, S.Kom.', $participation->participant->fresh()->name);
     }

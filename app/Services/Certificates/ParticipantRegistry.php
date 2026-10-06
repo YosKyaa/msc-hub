@@ -74,6 +74,28 @@ class ParticipantRegistry
     }
 
     /**
+     * Apakah alamat ini sudah dipakai peserta lain?
+     *
+     * Email adalah kunci dedup peserta, jadi dua baris beralamat sama membuat
+     * findOrCreateByEmail tidak lagi menentukan orang mana yang dimaksud: yang
+     * terambil adalah mana pun yang kebetulan lebih dulu. Karena itu koreksi
+     * email diperiksa lewat sini sebelum disimpan.
+     */
+    public function emailTakenByAnother(Participant $participant, ?string $email): bool
+    {
+        $email = static::normaliseEmail($email);
+
+        if ($email === '') {
+            return false;
+        }
+
+        return Participant::query()
+            ->where('email', $email)
+            ->whereKeyNot($participant->getKey())
+            ->exists();
+    }
+
+    /**
      * @param  array<string, mixed>  $values
      */
     private function backfill(Participant $participant, array $values): void

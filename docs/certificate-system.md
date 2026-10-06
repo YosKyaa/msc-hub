@@ -86,9 +86,44 @@ check-in, lengkap dengan gelar bila ada. Nama itu yang dicetak di sertifikat.
 - Peserta yang masih tercatat di kegiatan lain tetap terkunci namanya.
 - Nama dari profil Google tetap disimpan terpisah di `google_display_name`
   sebagai bahan pembanding saat admin mengoreksi.
-- Koreksi dilakukan admin lewat aksi "Koreksi Nama" pada tabel peserta.
+- Koreksi dilakukan admin lewat aksi "Koreksi Data Penerima" pada tabel
+  peserta, atau lewat bagian **Data penerima** di formulir Ubah pada baris yang
+  sama. Keduanya menjalankan `App\Services\Certificates\RecipientCorrection`.
 - Validasi: 3–150 karakter, hanya huruf, spasi, titik, koma, apostrof, dan
   tanda hubung — angka dan simbol lain ditolak.
+
+### Mengoreksi nama dan email sesudah sertifikat terbit
+
+`certificates.recipient_name` dan `recipient_email` adalah **salinan** nilai
+peserta pada saat penerbitan, bukan rujukan hidup ke tabel peserta. Karena itu
+membetulkan data di tabel peserta saja tidak mengubah apa pun yang sudah
+terbit: nama yang salah ketik tetap tercetak di PDF dan di halaman verifikasi,
+dan email yang sudah dibetulkan tetap dikirim ke alamat lama. Keduanya gagal
+tanpa suara — tidak ada galat, dan panel tetap menyatakan semuanya beres.
+
+Koreksi karena itu dikerjakan di satu tempat, lalu disalin ulang ke seluruh
+sertifikat milik orang tersebut:
+
+| Yang diubah | Akibatnya |
+|---|---|
+| Nama | `recipient_name` pada semua sertifikat orang itu ikut diperbarui |
+| Email | `recipient_email` ikut diperbarui, dan `emailed_at`, `email_failed_at`, serta `email_error` dikosongkan |
+
+Penanda pengiriman dikosongkan karena catatan "sudah terkirim" itu menyangkut
+alamat lama. Bila dibiarkan, tombol **Kirim Email** melewati sertifikat ini dan
+orangnya tidak pernah menerima apa pun. Sertifikat yang sudah dicabut
+dikecualikan: alamatnya ikut dibetulkan, tetapi penandanya tidak dibuka
+kembali karena sertifikat itu memang tidak untuk dikirim.
+
+Satu orang satu baris peserta, dipakai bersama oleh semua kegiatan yang pernah
+diikutinya, jadi koreksi yang dilakukan dari kegiatan mana pun berlaku untuk
+semua sertifikatnya.
+
+Email tetap menjadi kunci dedup peserta, jadi alamat yang sudah dipakai peserta
+lain ditolak di formulir. Batas unik di basis data tidak menolong di sini —
+yang unik di sana gabungan email dan NIM, sehingga bentrokan yang justru
+berbahaya ini lolos. Alamat yang terbawa spasi atau huruf besar diseragamkan
+lebih dulu, sebelum divalidasi.
 
 ### Aturan kelayakan
 
