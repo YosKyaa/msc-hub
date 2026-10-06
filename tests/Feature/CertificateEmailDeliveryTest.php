@@ -255,6 +255,9 @@ class CertificateEmailDeliveryTest extends TestCase
      */
     public function test_a_test_email_proves_the_delivery_path_without_touching_participants(): void
     {
+        // Pengantar di lingkungan tes adalah `array`, yang memang tidak
+        // mengirim ke mana pun; yang sedang diuji di sini jalur kirimnya.
+        config(['mail.default' => 'smtp']);
         Notification::fake();
 
         $event = CertificateEvent::factory()->published()->create();
@@ -270,6 +273,8 @@ class CertificateEmailDeliveryTest extends TestCase
 
     public function test_a_test_email_reports_what_the_mail_server_said(): void
     {
+        config(['mail.default' => 'smtp']);
+
         $event = CertificateEvent::factory()->published()->create();
 
         Notification::partialMock()
@@ -287,8 +292,30 @@ class CertificateEmailDeliveryTest extends TestCase
      * Bila kegiatannya sudah punya sertifikat, yang dipakai adalah yang
      * sungguhan — sehingga tautan unduh dan verifikasinya ikut terbukti.
      */
+    /**
+     * Pengantar yang membuang surat tidak pernah melempar galat, sehingga
+     * percobaan ini akan berkata "berhasil" atas surat yang tidak pernah
+     * dikirim ke mana pun. Padahal justru itulah yang sedang ingin
+     * dibuktikan orang yang menekannya.
+     */
+    public function test_a_test_email_refuses_when_the_mailer_throws_everything_away(): void
+    {
+        config(['mail.default' => 'log']);
+        Notification::fake();
+
+        $event = CertificateEvent::factory()->published()->create();
+
+        Log::shouldReceive('warning')->once();
+
+        $galat = app(CertificateMailProbe::class)->send($event, 'admin@jgu.ac.id');
+
+        $this->assertStringContainsString('MAIL_MAILER', (string) $galat);
+        Notification::assertNothingSent();
+    }
+
     public function test_a_test_email_uses_a_real_certificate_when_there_is_one(): void
     {
+        config(['mail.default' => 'smtp']);
         Mail::fake();
         Notification::fake();
 

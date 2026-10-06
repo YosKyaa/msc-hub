@@ -152,6 +152,18 @@ class CertificateProgress
     }
 
     /**
+     * Hal yang membuat pengiriman email gagal diam-diam.
+     *
+     * Dua-duanya tidak menghasilkan galat apa pun: pengantar yang membuang
+     * surat tetap dicatat berhasil, dan antrean tanpa pekerja tidak pernah
+     * mengeluh. Keduanya hanya terlihat dari panel bila disebutkan.
+     */
+    public function deliveryWarning(): ?string
+    {
+        return MailHealth::warning() ?? QueueHealth::warning();
+    }
+
+    /**
      * Sertifikat baru sah setelah kegiatannya dipublikasikan. Ini paling
      * sering terlewat karena statusnya diatur di tab lain.
      */

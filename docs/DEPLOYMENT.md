@@ -269,9 +269,49 @@ sudo supervisorctl status
 > bukan setelah menunggu. Pekerja meninggalkan denyut tiap kali menengok
 > antrean, dan panel membacanya sebelum menjanjikan email akan terkirim.
 
-Bila Supervisor belum tersedia, alternatif sementara: setel
-`QUEUE_CONNECTION=sync`. Email dikirim langsung dalam permintaan — menekan
-tombol terasa lebih lambat, tetapi tidak ada yang menumpuk.
+Bila Supervisor belum tersedia, pakai cron. Penjadwal aplikasi sudah memuat
+tugas yang mengosongkan antrean tiap menit, jadi yang perlu dipasang di server
+hanya satu baris:
+
+```cron
+* * * * * cd /var/www/msc-hub && php artisan schedule:run >> /dev/null 2>&1
+```
+
+> Cron saja tidak cukup bila penjadwalnya kosong. Sebelum ini tidak ada satu
+> pun tugas terjadwal, sehingga `schedule:run` berjalan tiap menit tanpa
+> menemukan apa pun untuk dikerjakan: antreannya tidak pernah tersentuh, tidak
+> ada galat, dan tidak ada email. Periksa dengan `php artisan schedule:list`,
+> dan pastikan `queue:work` ada di sana.
+
+Alternatif terakhir: setel `QUEUE_CONNECTION=sync`. Email dikirim langsung
+dalam permintaan, menekan tombol terasa lebih lambat, tetapi tidak ada yang
+menumpuk.
+
+### Pastikan emailnya benar-benar terkirim, bukan dibuang
+
+Laravel menganggap pengiriman berhasil selama pengantarnya tidak melempar
+galat, dan pengantar `log` maupun `array` tidak pernah melempar apa pun:
+keduanya menerima surat lalu membuangnya. Sistem mencatat "terkirim", panel
+menampilkan "Email terkirim", dan penerimanya tidak menerima apa-apa.
+
+```bash
+php artisan tinker --execute="print_r(App\\Support\\MailHealth::summary());"
+```
+
+`mengirim` harus bernilai 1. Bila 0, setel di `.env` server:
+
+```dotenv
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.penyedia-anda.com
+MAIL_PORT=587
+MAIL_USERNAME=...
+MAIL_PASSWORD=...
+MAIL_FROM_ADDRESS=msc@jgu.ac.id
+```
+
+lalu `php artisan config:cache`. Panel ikut memperingatkan sendiri: alur empat
+langkah di tiap kegiatan menyebutkannya, dan tombol Kirim Email Uji menolak
+berpura-pura berhasil.
 
 ### Laju kirim email
 

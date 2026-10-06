@@ -15,6 +15,7 @@ use App\Services\Certificates\CertificateBatchMailer;
 use App\Services\Certificates\ParticipantRegistry;
 use App\Support\CertificatePermission;
 use App\Support\CertificateStage;
+use App\Support\MailHealth;
 use App\Support\QueueHealth;
 use Filament\Actions;
 use Filament\Forms\Components\DateTimePicker;
@@ -179,6 +180,8 @@ class ParticipationsRelationManager extends RelationManager
                     ->requiresConfirmation()
                     ->modalHeading('Kirim Email Sertifikat')
                     ->modalDescription(fn () => $this->pendingEmailSummary())
+                    ->modalIcon(fn () => MailHealth::warning() === null ? null : 'heroicon-o-exclamation-triangle')
+                    ->modalIconColor('warning')
                     ->modalSubmitActionLabel('Ya, Kirim')
                     ->visible(fn () => CertificatePermission::allowsIssuing())
                     ->action(fn () => $this->dispatchEmails()),
@@ -448,9 +451,16 @@ class ParticipationsRelationManager extends RelationManager
     {
         $menunggu = app(CertificateBatchMailer::class)->pendingCountFor($this->getOwnerRecord());
 
-        return $menunggu === 0
+        $ringkas = $menunggu === 0
             ? 'Semua sertifikat yang punya alamat email sudah pernah dikirim.'
             : "{$menunggu} sertifikat belum pernah dikirimi email. Penerima yang sudah menerima tidak dikirimi ulang.";
+
+        // Pengantar yang tidak benar-benar mengirim tetap dicatat sebagai
+        // berhasil, jadi keadaannya harus terbaca sebelum tombolnya ditekan —
+        // bukan sesudah seluruh peserta mengira sudah menerima.
+        $peringatan = MailHealth::warning();
+
+        return $peringatan === null ? $ringkas : $ringkas.' '.$peringatan;
     }
 
     /**

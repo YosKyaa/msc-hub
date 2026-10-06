@@ -5,6 +5,7 @@ namespace App\Services\Certificates;
 use App\Models\Certificate;
 use App\Models\CertificateEvent;
 use App\Notifications\CertificateIssued;
+use App\Support\MailHealth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Notification;
 use Illuminate\Support\Str;
@@ -29,6 +30,18 @@ class CertificateMailProbe
      */
     public function send(CertificateEvent $event, string $email): ?string
     {
+        // Pengantar yang membuang surat tidak pernah melempar galat, sehingga
+        // percobaan ini akan berkata "berhasil" atas surat yang tidak pernah
+        // dikirim ke mana pun. Ditolak di muka, karena justru itulah yang
+        // sedang ingin dibuktikan orang yang menekannya.
+        if (! MailHealth::delivers()) {
+            Log::warning('Email percobaan tidak dikirim: pengantarnya tidak mengirim ke luar.', [
+                'mailer' => MailHealth::mailer(),
+            ]);
+
+            return MailHealth::warning();
+        }
+
         try {
             Notification::route('mail', $email)
                 ->notify(new CertificateIssued($this->sample($event, $email)));

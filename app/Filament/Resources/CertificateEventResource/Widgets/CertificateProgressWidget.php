@@ -44,6 +44,7 @@ class CertificateProgressWidget extends Widget
             'steps' => $progress->steps(),
             'nextStep' => $progress->nextStep(),
             'warning' => $progress->publicationWarning(),
+            'deliveryWarning' => $progress->deliveryWarning(),
             'done' => $progress->isDone(),
         ];
     }
