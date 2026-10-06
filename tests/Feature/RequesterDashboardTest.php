@@ -174,6 +174,34 @@ class RequesterDashboardTest extends TestCase
     }
 
     /**
+     * Satu ajakan saja di beranda.
+     *
+     * Dulu ada tiga tombol berdampingan — Ajukan Konten, Booking Ruang, Cek
+     * Status — dan ketiganya menuju alamat yang sama persis, karena semuanya
+     * memang menuntut login lebih dulu. Pengunjung dibuat memilih antara tiga
+     * pintu yang ternyata satu, lalu bingung ketika ketiganya berakhir di
+     * halaman yang sama. Pilihan layanannya ada setelah masuk, di dasbor,
+     * ketika sistem sudah tahu siapa yang memilih.
+     *
+     * Yang dihitung adalah seluruh tautan ke portal di halaman ini: satu di
+     * menu atas, satu di menu ponsel, dan satu ajakan di hero. Tombol keempat
+     * berarti ada yang kembali berdampingan.
+     */
+    public function test_the_landing_offers_one_way_in_not_three(): void
+    {
+        $html = $this->get(route('landing'))->assertOk()->getContent();
+
+        $this->assertSame(3, substr_count($html, 'href="'.route('login.portal').'"'),
+            'Jumlah tautan ke portal berubah. Beranda seharusnya menawarkan satu ajakan saja, '
+            .'di samping menu atas dan menu ponsel.');
+
+        // Ajakannya menyebut apa yang terjadi, bukan menamai salah satu layanan
+        // seolah dua lainnya menuju tempat berbeda.
+        $this->assertStringContainsString('Masuk untuk Mengajukan', $html);
+        $this->assertStringContainsString('Masuk dengan akun JGU Anda', $html);
+    }
+
+    /**
      * Masuk tanpa tujuan khusus berakhir di dasbor, bukan di salah satu
      * formulir.
      */
