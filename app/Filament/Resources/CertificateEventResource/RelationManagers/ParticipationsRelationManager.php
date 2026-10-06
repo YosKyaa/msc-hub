@@ -324,8 +324,65 @@ class ParticipationsRelationManager extends RelationManager
                         $records->map(fn (CertificateEventParticipant $record) => $record->certificate)->filter()->values(),
                     )),
 
+                // Kirim ulang, termasuk yang sudah tertandai terkirim.
+                //
+                // Aksi di atas sengaja melewati yang pernah dikirim, supaya
+                // tidak ada penerima yang dikirimi dua kali tanpa diminta.
+                // Tetapi ketika pengantarnya ternyata salah setel, seluruh
+                // sertifikat tertandai terkirim padahal tidak pernah sampai —
+                // dan satu-satunya jalan keluar adalah mengulanginya satu per
+                // satu. Pada satu kegiatan berisi ratusan peserta itu bukan
+                // jalan keluar.
+                Actions\BulkAction::make('resendEmails')
+                    ->label('Kirim Ulang Email')
+                    ->icon('heroicon-o-envelope')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Kirim Ulang Email Sertifikat')
+                    ->modalDescription('Penanda pengiriman direset lalu emailnya diantrekan ulang, '
+                        .'termasuk untuk penerima yang sudah pernah menerimanya. '
+                        .'Pakai ini bila email sebelumnya ternyata tidak pernah sampai.')
+                    ->modalSubmitActionLabel('Ya, Kirim Ulang')
+                    ->visible(fn () => CertificatePermission::allowsIssuing())
+                    ->action(fn (Collection $records) => $this->resendEmailsFor(
+                        $records->map(fn (CertificateEventParticipant $record) => $record->certificate)->filter()->values(),
+                    )),
+
                 Actions\DeleteBulkAction::make(),
             ]);
+    }
+
+    /**
+     * Antrekan ulang sejumlah sertifikat sekaligus.
+     *
+     * Penanda pengirimannya dibersihkan lebih dulu, karena tanpa itu job akan
+     * melihat `emailed_at` sudah terisi lalu berhenti tanpa berbuat apa-apa.
+     *
+     * @param  Collection<int, Certificate>  $certificates
+     */
+    private function resendEmailsFor(Collection $certificates): void
+    {
+        $siap = $certificates->filter(fn (Certificate $certificate) => $certificate->isValid());
+
+        if ($siap->isEmpty()) {
+            Notification::make()
+                ->title('Tidak ada yang dikirim ulang')
+                ->body('Sertifikat yang dipilih belum valid atau sudah dicabut.')
+                ->warning()
+                ->send();
+
+            return;
+        }
+
+        $siap->each(function (Certificate $certificate): void {
+            $certificate->forceFill([
+                'emailed_at' => null,
+                'email_failed_at' => null,
+                'email_error' => null,
+            ])->save();
+        });
+
+        $this->dispatchEmails($siap->values());
     }
 
     /**
