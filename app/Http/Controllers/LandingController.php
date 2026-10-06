@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Achievement;
 use App\Models\Announcement;
 use App\Models\FeaturedWork;
 use App\Support\LayananStatistik;
@@ -27,6 +28,8 @@ class LandingController extends Controller
             ->limit(6)
             ->get();
 
+        $prestasi = Achievement::active()->ordered()->limit(6)->get();
+
         $requester = session('requester');
 
         // Dihitung dari basis data, bukan dikarang: pembacanya mahasiswa dan
@@ -37,6 +40,7 @@ class LandingController extends Controller
             'announcementsPinned',
             'announcementsLatest',
             'featuredWorks',
+            'prestasi',
             'requester',
             'statistik'
         ));

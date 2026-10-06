@@ -95,6 +95,12 @@ class RoleSeeder extends Seeder
             'featured_works.edit',
             'featured_works.delete',
 
+            // Prestasi MSC
+            'achievements.view',
+            'achievements.create',
+            'achievements.edit',
+            'achievements.delete',
+
             // Tags Management
             'tags.view',
             'tags.create',
@@ -133,6 +139,7 @@ class RoleSeeder extends Seeder
                 'room_bookings.view', 'room_bookings.edit', 'room_bookings.approve',
                 'announcements.view', 'announcements.create', 'announcements.edit', 'announcements.delete',
                 'featured_works.view', 'featured_works.create', 'featured_works.edit', 'featured_works.delete',
+                'achievements.view', 'achievements.create', 'achievements.edit', 'achievements.delete',
                 'tags.view', 'tags.create', 'tags.edit',
                 'certificates.view', 'certificates.create', 'certificates.edit', 'certificates.delete', 'certificates.publish',
             ],
@@ -148,6 +155,7 @@ class RoleSeeder extends Seeder
                 'room_bookings.view', 'room_bookings.edit',
                 'announcements.view', 'announcements.create', 'announcements.edit',
                 'featured_works.view', 'featured_works.create', 'featured_works.edit',
+                'achievements.view', 'achievements.create', 'achievements.edit',
                 'tags.view', 'tags.create',
                 'certificates.view', 'certificates.create', 'certificates.edit', 'certificates.publish',
             ],
