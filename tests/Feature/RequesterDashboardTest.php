@@ -183,22 +183,46 @@ class RequesterDashboardTest extends TestCase
      * halaman yang sama. Pilihan layanannya ada setelah masuk, di dasbor,
      * ketika sistem sudah tahu siapa yang memilih.
      *
-     * Yang dihitung adalah seluruh tautan ke portal di halaman ini: satu di
-     * menu atas, satu di menu ponsel, dan satu ajakan di hero. Tombol keempat
-     * berarti ada yang kembali berdampingan.
+     * Yang dijaga bukan jumlahnya, melainkan sebutannya. Mengulang ajakan
+     * yang sama di akhir halaman panjang justru membantu; yang membingungkan
+     * adalah beberapa tombol bersebelahan dengan nama berbeda yang ternyata
+     * menuju satu tempat.
      */
-    public function test_the_landing_offers_one_way_in_not_three(): void
+    public function test_every_way_in_on_the_landing_is_called_the_same_thing(): void
     {
         $html = $this->get(route('landing'))->assertOk()->getContent();
 
-        $this->assertSame(3, substr_count($html, 'href="'.route('login.portal').'"'),
-            'Jumlah tautan ke portal berubah. Beranda seharusnya menawarkan satu ajakan saja, '
-            .'di samping menu atas dan menu ponsel.');
+        $portal = preg_quote(route('login.portal'), '/');
 
-        // Ajakannya menyebut apa yang terjadi, bukan menamai salah satu layanan
-        // seolah dua lainnya menuju tempat berbeda.
-        $this->assertStringContainsString('Masuk untuk Mengajukan', $html);
-        $this->assertStringContainsString('Masuk dengan akun JGU Anda', $html);
+        preg_match_all('/<a[^>]+href="'.$portal.'"[^>]*>(.*?)<\/a>/s', $html, $cocok);
+
+        $this->assertGreaterThanOrEqual(2, count($cocok[1]),
+            'Tidak ada ajakan masuk yang ditemukan di beranda.');
+
+        $sebutan = array_unique(array_map(
+            // Ikon di dalam tombolnya dibuang; yang dibandingkan kalimatnya.
+            fn (string $isi) => trim(preg_replace('/\s+/', ' ', strip_tags($isi))),
+            $cocok[1],
+        ));
+
+        $this->assertCount(1, $sebutan,
+            "Ajakan masuk di beranda memakai lebih dari satu sebutan:\n"
+            .implode("\n", $sebutan)
+            ."\nSebutan yang berbeda membuat pengunjung mengira keduanya menuju tempat berbeda.");
+
+        $this->assertSame('Masuk untuk Mengajukan', reset($sebutan));
+    }
+
+    /**
+     * Yang sudah masuk tidak perlu disuruh masuk lagi.
+     */
+    public function test_someone_already_signed_in_is_pointed_at_their_dashboard(): void
+    {
+        $html = $this->signIn()->get(route('landing'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('Buka Dasbor Saya', $html);
+        $this->assertStringNotContainsString('Masuk untuk Mengajukan', $html);
+        $this->assertStringContainsString('href="'.route('requester.dashboard').'"', $html);
     }
 
     /**

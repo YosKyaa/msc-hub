@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Announcement;
-use App\Models\Asset;
 use App\Models\FeaturedWork;
+use App\Support\LayananStatistik;
 
 class LandingController extends Controller
 {
@@ -29,11 +29,16 @@ class LandingController extends Controller
 
         $requester = session('requester');
 
+        // Dihitung dari basis data, bukan dikarang: pembacanya mahasiswa dan
+        // dosen yang tahu persis seberapa besar MSC.
+        $statistik = LayananStatistik::untukBeranda();
+
         return view('landing.msc-hub', compact(
             'announcementsPinned',
             'announcementsLatest',
             'featuredWorks',
-            'requester'
+            'requester',
+            'statistik'
         ));
     }
 }
