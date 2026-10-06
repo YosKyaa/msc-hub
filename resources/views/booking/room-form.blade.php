@@ -43,11 +43,11 @@
                     </label>
                     <input type="text" name="requester_name" id="requester_name" 
                         value="{{ old('requester_name', $requester['name']) }}"
-                        class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep"
+                        class="isian"
                         required>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-ink/75 mb-1">Email</label>
+                    <label class="label-isian">Email</label>
                     <input type="email" value="{{ $requester['email'] }}" 
                         class="w-full px-4 py-2 border border-ink/10 rounded-lg bg-paper-2 text-ink/65" 
                         readonly>
@@ -60,7 +60,7 @@
                         Unit / Fakultas <span class="text-red-500">*</span>
                     </label>
                     <select name="unit" id="unit" required
-                        class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">
+                        class="isian">
                         <option value="">Pilih Unit/Fakultas</option>
                         <option value="HIMATIF" {{ old('unit') == 'HIMATIF' ? 'selected' : '' }}>HIMATIF</option>
                         <option value="HME" {{ old('unit') == 'HME' ? 'selected' : '' }}>HME</option>
@@ -82,7 +82,7 @@
                         <input type="tel" name="requester_phone" id="requester_phone" maxlength="30"
                             value="{{ old('requester_phone') }}"
                             placeholder="08xxxxxxxxxx"
-                            class="w-full rounded-lg border-ink/15 px-3 py-2 text-sm focus:border-sun-deep focus:ring-sun-deep/50">
+                            class="isian">
                         <p class="mt-1 text-xs text-ink/60">Dicantumkan pada formulir resmi peminjaman.</p>
                         @error('requester_phone')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                     </div>
@@ -93,7 +93,7 @@
                         <input type="text" name="supervisor_name" id="supervisor_name" maxlength="255"
                             value="{{ old('supervisor_name') }}"
                             placeholder="Nama dosen penanggung jawab"
-                            class="w-full rounded-lg border-ink/15 px-3 py-2 text-sm focus:border-sun-deep focus:ring-sun-deep/50">
+                            class="isian">
                         <p class="mt-1 text-xs text-ink/60">Dicantumkan pada formulir resmi peminjaman.</p>
                         @error('supervisor_name')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                     </div>
@@ -108,7 +108,7 @@
                         min="1"
                         max="7"
                         placeholder="Maksimal 7 orang"
-                        class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep"
+                        class="isian"
                         required>
                     <p class="text-xs text-ink/60 mt-1">Maksimal 7 orang</p>
                 </div>
@@ -118,7 +118,7 @@
                 <label for="purpose" class="block text-sm font-medium text-ink/75 mb-1">Keperluan</label>
                 <textarea name="purpose" id="purpose" rows="2"
                     placeholder="Jelaskan keperluan booking ruangan..."
-                    class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">{{ old('purpose') }}</textarea>
+                    class="isian">{{ old('purpose') }}</textarea>
             </div>
 
             {{-- Inventory Items --}}
@@ -126,7 +126,7 @@
             <div x-data="{ showInventory: {{ old('inventory_items') ? 'true' : 'false' }} }">
                 <div class="flex items-center gap-2 mb-3">
                     <input type="checkbox" id="need_inventory" x-model="showInventory"
-                        class="w-4 h-4 text-sun-ink border-ink/15 rounded focus:ring-sun-deep/50">
+                        class="kotak-centang">
                     <label for="need_inventory" class="text-sm font-medium text-ink/75">
                         Saya juga ingin meminjam peralatan multimedia
                     </label>
@@ -140,7 +140,7 @@
                         <label class="flex items-start gap-3 p-3 bg-white border rounded-lg cursor-pointer hover:border-sun-deep/50 transition">
                             <input type="checkbox" name="inventory_items[]" value="{{ $item->id }}"
                                 {{ in_array($item->id, old('inventory_items', [])) ? 'checked' : '' }}
-                                class="mt-1 w-4 h-4 text-sun-ink border-ink/15 rounded focus:ring-sun-deep/50">
+                                class="kotak-centang mt-1">
                             <div class="flex-1 min-w-0">
                                 <p class="text-sm font-medium text-ink">{{ $item->name }}</p>
                                 <p class="text-xs text-ink/60">{{ $item->code }} &bull; {{ $item->category?->getLabel() ?? 'Lainnya' }}</p>
@@ -161,7 +161,7 @@
                     <input type="text" name="start_at" id="start_at" 
                         value="{{ old('start_at') }}"
                         placeholder="Pilih tanggal dan waktu"
-                        class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep"
+                        class="isian"
                         required
                         readonly>
                 </div>
@@ -172,7 +172,7 @@
                     <input type="text" name="end_at" id="end_at" 
                         value="{{ old('end_at') }}"
                         placeholder="Pilih tanggal dan waktu"
-                        class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep"
+                        class="isian"
                         required
                         readonly>
                 </div>

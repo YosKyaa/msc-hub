@@ -42,6 +42,39 @@ class SourceHygieneTest extends TestCase
         return $berkas;
     }
 
+    /**
+     * Karakter kendali di dalam pola regex.
+     *
+     * `` yang termakan alat penyunting berubah menjadi karakter backspace
+     * sungguhan. Polanya tetap PHP yang sah dan tetap berjalan tanpa keluhan,
+     * hanya saja ia tidak pernah lagi mencocokkan apa pun. Penjaga yang
+     * memuatnya karena itu lulus terus sambil tidak memeriksa apa-apa, dan
+     * itulah yang terjadi pada penjaga isian formulir.
+     */
+    public function test_no_regex_pattern_contains_a_control_character(): void
+    {
+        $rusak = [];
+
+        foreach ($this->phpFiles() as $berkas) {
+            foreach (file($berkas) as $nomor => $baris) {
+                if (! str_contains($baris, "'/") && ! str_contains($baris, '"/')) {
+                    continue;
+                }
+
+                // Tab dan baris baru sah di dalam kode; yang tidak masuk akal
+                // adalah karakter kendali lain seperti backspace dan escape.
+                if (preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', $baris)) {
+                    $rusak[] = str_replace(base_path().DIRECTORY_SEPARATOR, '', $berkas)
+                        .':'.($nomor + 1);
+                }
+            }
+        }
+
+        $this->assertSame([], $rusak,
+            'Pola regex memuat karakter kendali, kemungkinan escape yang termakan: '
+            .implode(', ', $rusak));
+    }
+
     public function test_no_regex_pattern_contains_a_real_line_break(): void
     {
         $rusak = [];

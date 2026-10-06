@@ -39,10 +39,10 @@
                 @csrf
                 
                 <div>
-                    <label class="block text-sm font-medium text-ink/75 mb-1">Kode Request</label>
+                    <label class="label-isian">Kode Request</label>
                     <input type="text" name="request_code" value="{{ old('request_code') }}" 
                            placeholder="CR-2025-0001" required
-                           class="w-full px-4 py-3 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep text-center text-lg font-mono uppercase">
+                           class="isian text-center text-lg font-mono uppercase">
                     @error('request_code')
                         <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                     @enderror

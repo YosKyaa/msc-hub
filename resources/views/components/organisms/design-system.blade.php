@@ -87,6 +87,76 @@
         box-shadow: 0 8px 32px -12px rgba(21, 21, 26, .12);
     }
 
+    /* Isian formulir.
+       Satu definisi, bukan deretan kelas yang harus ditempel ke tiap isian:
+       satu formulir pengajuan memuat belasan isian, dan yang terlewat akan
+       terlihat berbeda sendiri. */
+    .isian {
+        width: 100%;
+        border-radius: .75rem;
+        border: 1px solid rgba(21, 21, 26, .12);
+        background: #fff;
+        padding: .625rem .875rem;
+        font-size: .875rem;
+        line-height: 1.5;
+        color: #15151A;
+        transition: border-color .15s ease, box-shadow .15s ease;
+    }
+    .isian::placeholder { color: rgba(21, 21, 26, .38); }
+    .isian:hover { border-color: rgba(21, 21, 26, .22); }
+    .isian:focus {
+        outline: none;
+        border-color: #E8BE1F;
+        /* Cincin, bukan garis tebal: lebarnya tidak ikut menggeser tata
+           letak saat isiannya disentuh. */
+        box-shadow: 0 0 0 3px rgba(255, 216, 77, .4);
+    }
+    .isian:disabled,
+    .isian[readonly] {
+        background: #F5F3ED;
+        color: rgba(21, 21, 26, .55);
+        cursor: not-allowed;
+    }
+    textarea.isian { min-height: 6rem; resize: vertical; }
+
+    /* Panah select digambar sendiri: bawaan peramban berbeda-beda bentuknya
+       dan tidak satu pun mengikuti warna di sini. */
+    select.isian {
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2315151A' stroke-opacity='.5' stroke-width='2'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: right .75rem center;
+        background-size: 1.15rem;
+        padding-right: 2.5rem;
+    }
+
+    /* Kotak centang dan tombol pilihan. Bukan isian teks, jadi lebarnya
+       tidak diikutkan. */
+    .kotak-centang {
+        width: 1rem;
+        height: 1rem;
+        border-radius: .25rem;
+        border: 1px solid rgba(21, 21, 26, .25);
+        accent-color: #E8BE1F;
+    }
+    .kotak-centang:focus-visible {
+        outline: none;
+        box-shadow: 0 0 0 3px rgba(255, 216, 77, .45);
+    }
+
+    .label-isian {
+        display: block;
+        margin-bottom: .375rem;
+        font-size: .875rem;
+        font-weight: 500;
+        color: rgba(21, 21, 26, .8);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .isian { transition: none; }
+    }
+
     .kartu-angkat { transition: transform .25s ease, border-color .25s ease, box-shadow .25s ease; }
     .kartu-angkat:hover { transform: translateY(-3px); }
 

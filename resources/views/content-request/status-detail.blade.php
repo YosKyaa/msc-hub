@@ -212,7 +212,7 @@
                 </div>
                 <div class="flex-1">
                     <textarea name="message" rows="2" required placeholder="Tulis komentar atau pertanyaan..."
-                              class="w-full px-3 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep text-sm"></textarea>
+                              class="isian"></textarea>
                     <button type="submit" class="mt-2 px-4 py-2 bg-sun text-ink text-sm font-medium rounded-lg hover:bg-sun-deep transition">
                         Kirim
                     </button>

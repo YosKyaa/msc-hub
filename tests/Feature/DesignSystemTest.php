@@ -100,6 +100,59 @@ class DesignSystemTest extends TestCase
     }
 
     /**
+     * Isian formulir memakai satu kelas bersama, bukan deretan kelas yang
+     * ditempel satu per satu.
+     *
+     * Satu formulir pengajuan memuat belasan isian. Yang terlewat akan
+     * terlihat berbeda sendiri, dan tidak ada tempat untuk mengubah semuanya
+     * sekaligus — persis keadaan yang baru saja dibereskan.
+     */
+    public function test_form_fields_use_the_shared_control_class(): void
+    {
+        $lepas = [];
+
+        foreach (File::allFiles(resource_path('views')) as $berkas) {
+            $rel = str_replace(resource_path('views').DIRECTORY_SEPARATOR, '', $berkas->getPathname());
+            $rel = str_replace(DIRECTORY_SEPARATOR, '/', $rel);
+
+            // Panel Filament, email, dan PDF punya gayanya sendiri.
+            if (str_starts_with($rel, 'filament/') || str_starts_with($rel, 'emails/')
+                || str_starts_with($rel, 'pdf/') || str_contains($rel, 'welcome.blade.php')) {
+                continue;
+            }
+
+            foreach (file($berkas->getPathname()) as $nomor => $baris) {
+                // Isian yang masih merakit tampilannya sendiri: dikenali dari
+                // garis tepi dan cincin fokus yang ditulis utuh.
+                if (preg_match('/class="[^"]*border-ink\/15[^"]*focus:(ring|border)-/', $baris)) {
+                    $lepas[] = $rel.':'.($nomor + 1);
+                }
+            }
+        }
+
+        $this->assertSame([], $lepas,
+            'Isian ini merakit tampilannya sendiri, bukan memakai kelas .isian: '
+            .implode(', ', $lepas));
+    }
+
+    /**
+     * Kelasnya harus benar-benar sampai ke halaman, bukan sekadar terpasang
+     * di markupnya.
+     */
+    public function test_the_control_styles_reach_the_form_pages(): void
+    {
+        $this->withSession([\App\Support\RequesterSession::KEY => [
+            'google_id' => '1', 'name' => 'Budi', 'email' => 'budi@student.jgu.ac.id', 'type' => 'student',
+        ]]);
+
+        $html = $this->get(route('request.content'))->assertOk()->getContent();
+
+        $this->assertStringContainsString('class="isian"', $html);
+        $this->assertStringContainsString('.isian:focus', $html);
+        $this->assertStringContainsString('class="label-isian"', $html);
+    }
+
+    /**
      * Warna biru masih sah sebagai penanda status, tetapi tidak lagi sebagai
      * warna merek. Yang dijaga: tombol utama tidak boleh kembali menjadi biru.
      */

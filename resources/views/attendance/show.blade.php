@@ -131,7 +131,7 @@
                                        maxlength="150"
                                        value="{{ old('full_name', $requester['name'] ?? '') }}"
                                        placeholder="Contoh: Budi Santoso, S.Kom."
-                                       class="w-full rounded-xl border-ink/15 px-4 py-3 text-base focus:border-{{ $accent }}-500 focus:ring-{{ $accent }}-500 @error('full_name') border-red-500 @enderror">
+                                       class="isian @error('full_name') border-red-500 @enderror">
                                 @error('full_name')
                                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                                 @enderror

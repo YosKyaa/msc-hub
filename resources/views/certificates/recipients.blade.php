@@ -26,7 +26,7 @@
         <div class="flex gap-2">
             <input id="cari" type="search" name="cari" value="{{ $cari }}"
                    placeholder="Cari nama atau nomor sertifikat"
-                   class="w-full rounded-lg border border-ink/15 px-4 py-2.5 text-sm focus:border-sun-deep focus:outline-none focus:ring-1 focus:ring-sun-deep/50">
+                   class="isian">
             <button type="submit" class="shrink-0 rounded-lg bg-sun px-5 py-2.5 text-sm font-semibold text-ink transition hover:bg-sun-deep">
                 Cari
             </button>

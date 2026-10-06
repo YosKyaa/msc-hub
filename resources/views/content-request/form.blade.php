@@ -47,24 +47,24 @@
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-ink/75 mb-1">Nama Lengkap *</label>
+                        <label class="label-isian">Nama Lengkap *</label>
                         <input type="text" name="requester_name" value="{{ old('requester_name', $requester['name']) }}" required
-                               class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">
+                               class="isian">
                         @error('requester_name')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-ink/75 mb-1">Email</label>
+                        <label class="label-isian">Email</label>
                         <input type="email" value="{{ $requester['email'] }}" readonly
                                class="w-full px-4 py-2 border border-ink/10 rounded-lg bg-paper-2 text-ink/60">
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-ink/75 mb-1">Tipe Pemohon *</label>
+                        <label class="label-isian">Tipe Pemohon *</label>
                         <select name="requester_type" required
-                                class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">
+                                class="isian">
                             @foreach($requesterTypes as $type)
                                 <option value="{{ $type->value }}" {{ old('requester_type', $requester['type']) === $type->value ? 'selected' : '' }}>
                                     {{ $type->getLabel() }}
@@ -74,15 +74,15 @@
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-ink/75 mb-1">Unit/Fakultas/Prodi</label>
+                        <label class="label-isian">Unit/Fakultas/Prodi</label>
                         <input type="text" name="unit" value="{{ old('unit') }}" placeholder="Contoh: Fakultas Teknik"
-                               class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">
+                               class="isian">
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-ink/75 mb-1">No. Telepon/WA</label>
+                        <label class="label-isian">No. Telepon/WA</label>
                         <input type="text" name="phone" value="{{ old('phone') }}" placeholder="08xxxxxxxxxx"
-                               class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">
+                               class="isian">
                     </div>
                 </div>
             </div>
@@ -93,9 +93,9 @@
                 
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-ink/75 mb-1">Jenis Konten *</label>
+                        <label class="label-isian">Jenis Konten *</label>
                         <select name="content_type" required
-                                class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">
+                                class="isian">
                             <option value="">-- Pilih Jenis Konten --</option>
                             @foreach($contentTypes as $type)
                                 <option value="{{ $type->value }}" {{ old('content_type') === $type->value ? 'selected' : '' }}>
@@ -109,51 +109,51 @@
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-ink/75 mb-1">Platform Target</label>
+                        <label class="label-isian">Platform Target</label>
                         <input type="text" name="platform_target" value="{{ old('platform_target') }}" 
                                placeholder="Instagram, YouTube, Website, dll"
-                               class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">
+                               class="isian">
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-ink/75 mb-1">Tanggal Event</label>
+                        <label class="label-isian">Tanggal Event</label>
                         <input type="date" name="event_date" value="{{ old('event_date') }}"
-                               class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">
+                               class="isian">
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-ink/75 mb-1">Lokasi</label>
+                        <label class="label-isian">Lokasi</label>
                         <input type="text" name="location" value="{{ old('location') }}" placeholder="Lokasi event"
-                               class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">
+                               class="isian">
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-ink/75 mb-1">Deadline *</label>
+                        <label class="label-isian">Deadline *</label>
                         <input type="date" name="deadline" value="{{ old('deadline') }}" required min="{{ date('Y-m-d') }}"
-                               class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">
+                               class="isian">
                         @error('deadline')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                         @enderror
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-medium text-ink/75 mb-1">Target Audience</label>
+                        <label class="label-isian">Target Audience</label>
                         <input type="text" name="audience" value="{{ old('audience') }}" 
                                placeholder="Mahasiswa, Dosen, Umum, dll"
-                               class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">
+                               class="isian">
                     </div>
                     
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-ink/75 mb-1">Tujuan Konten</label>
+                        <label class="label-isian">Tujuan Konten</label>
                         <textarea name="purpose" rows="2" placeholder="Jelaskan tujuan pembuatan konten ini"
-                                  class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">{{ old('purpose') }}</textarea>
+                                  class="isian">{{ old('purpose') }}</textarea>
                     </div>
                     
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-ink/75 mb-1">Link Materi Pendukung</label>
+                        <label class="label-isian">Link Materi Pendukung</label>
                         <input type="url" name="materials_link" value="{{ old('materials_link') }}" 
                                placeholder="https://drive.google.com/..."
-                               class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">
+                               class="isian">
                         <p class="text-xs text-ink/45 mt-1">Upload materi ke Google Drive dan share linknya di sini</p>
                         @error('materials_link')
                             <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
@@ -161,9 +161,9 @@
                     </div>
                     
                     <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-ink/75 mb-1">Catatan Tambahan</label>
+                        <label class="label-isian">Catatan Tambahan</label>
                         <textarea name="notes" rows="3" placeholder="Informasi tambahan yang perlu diketahui tim MSC"
-                                  class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">{{ old('notes') }}</textarea>
+                                  class="isian">{{ old('notes') }}</textarea>
                     </div>
                 </div>
             </div>
