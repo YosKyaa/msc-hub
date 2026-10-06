@@ -58,6 +58,16 @@
         </p>
     @endif
 
+    {{-- Pengiriman yang gagal diam-diam: pengantar yang membuang surat, atau
+         antrean tanpa pekerja. Keduanya tidak menghasilkan galat apa pun, jadi
+         hanya terlihat bila disebutkan di sini. --}}
+    @if($deliveryWarning)
+        <p class="sert-pesan sert-awas">
+            <span class="sert-pesan-ikon">!</span>
+            <span>{{ $deliveryWarning }}</span>
+        </p>
+    @endif
+
     <p class="sert-pesan {{ $done ? 'sert-tuntas' : 'sert-lanjut' }}">
         <span class="sert-pesan-ikon">{{ $done ? '✓' : '→' }}</span>
         <span>{{ $nextStep }}</span>
