@@ -219,12 +219,23 @@ ls -l public/storage
 ```bash
 php artisan optimize:clear
 php artisan optimize
+php artisan queue:restart
 php artisan up
 ```
 
 `optimize` menyimpan config, rute, view, dan event ke cache. Setelah ini,
-**setiap perubahan `.env` menuntut `php artisan config:cache` diulang** —
-kalau tidak, nilainya tidak akan terbaca.
+**setiap perubahan `.env` menuntut `php artisan config:cache` diulang**, kalau
+tidak nilainya tidak akan terbaca.
+
+> `queue:restart` jangan dilewati. Pekerja antrean memuat kode aplikasi sekali
+> saat dijalankan lalu menyimpannya di memori: pekerja yang sudah hidup sebelum
+> rilis akan terus menjalankan kode lama sampai dimulai ulang. Perbaikan yang
+> baru saja Anda naikkan tidak berlaku baginya, dan tidak ada tanda apa pun
+> bahwa itu sedang terjadi.
+>
+> Perintah ini tidak mematikan pekerjanya, hanya memberi tanda agar ia
+> berhenti setelah menyelesaikan pekerjaan yang sedang dipegangnya. Supervisor
+> menyalakannya kembali dengan kode baru.
 
 ---
 

@@ -128,6 +128,24 @@ class DocumentationAccuracyTest extends TestCase
     }
 
     /**
+     * Langkah rilis yang paling mudah terlewat, dan paling sunyi akibatnya.
+     *
+     * Pekerja antrean memuat kode aplikasi sekali saat dijalankan lalu
+     * menyimpannya di memori. Pekerja yang sudah hidup sebelum rilis akan
+     * terus menjalankan kode lama sampai dimulai ulang: perbaikan yang baru
+     * saja dinaikkan tidak berlaku baginya, dan tidak ada tanda apa pun
+     * bahwa itu sedang terjadi.
+     */
+    public function test_the_runbook_tells_you_to_restart_the_queue_workers(): void
+    {
+        $runbook = file_get_contents(base_path('docs/DEPLOYMENT.md'));
+
+        $this->assertStringContainsString('queue:restart', $runbook,
+            'Runbook tidak menyuruh memulai ulang pekerja antrean, sehingga tiap rilis '
+            .'meninggalkan pekerja yang menjalankan kode lama.');
+    }
+
+    /**
      * Setelan yang dibaca aplikasi tetapi tidak pernah disebut .env.example
      * akan terlewat saat rilis, dan bawaannya belum tentu cocok untuk server.
      */
