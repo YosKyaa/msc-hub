@@ -6,26 +6,20 @@
     // dimengerti orang yang baru pertama membuka portal ini.
     'description' => null,
     'icon' => null,
-    'tone' => 'indigo',
+    // Dipertahankan demi pemanggil lama; warnanya kini satu untuk seluruh
+    // portal, mengikuti sistem desain beranda.
+    'tone' => null,
 ])
 
 @php
     $aktif = request()->routeIs($pattern);
-
-    // Ditulis utuh, bukan dirangkai dari $tone: kelas yang dibentuk saat
-    // berjalan hanya selamat selama halaman memakai Tailwind Play CDN.
-    $sorot = $tone === 'blue'
-        ? 'bg-blue-50 text-blue-700'
-        : 'bg-indigo-50 text-indigo-700';
-
-    $ikonAktif = $tone === 'blue' ? 'text-blue-600' : 'text-indigo-600';
 @endphp
 
 <a href="{{ route($route) }}"
    @if ($aktif) aria-current="page" @endif
-   class="flex items-start gap-3 rounded-xl px-3 py-2.5 transition {{ $aktif ? $sorot : 'text-gray-700 hover:bg-gray-50' }}">
+   class="flex items-start gap-3 rounded-xl px-3 py-2.5 transition {{ $aktif ? 'bg-sun-soft text-sun-ink ring-1 ring-sun-deep/30' : 'text-ink/75 hover:bg-paper-2' }}">
     @if ($icon)
-        <svg class="mt-0.5 size-5 shrink-0 {{ $aktif ? $ikonAktif : 'text-gray-400' }}"
+        <svg class="mt-0.5 size-5 shrink-0 {{ $aktif ? 'text-sun-ink' : 'text-ink/40' }}"
              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="{{ $icon }}"/>
         </svg>
@@ -34,7 +28,7 @@
     <span class="min-w-0">
         <span class="block text-sm font-medium">{{ $label }}</span>
         @if ($description)
-            <span class="mt-0.5 block text-xs leading-snug {{ $aktif ? 'text-gray-600' : 'text-gray-500' }}">
+            <span class="mt-0.5 block text-xs leading-snug {{ $aktif ? 'text-sun-ink/80' : 'text-ink/55' }}">
                 {{ $description }}
             </span>
         @endif

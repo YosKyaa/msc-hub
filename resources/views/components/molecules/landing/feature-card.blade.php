@@ -30,7 +30,7 @@
         {{-- Hover overlay --}}
         <div class="work-overlay absolute inset-0 bg-gradient-to-t from-black/80 via-black/40 to-transparent flex items-end p-4">
             @if($asset->primary_link)
-                <a href="{{ $asset->primary_link }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 bg-white text-gray-900 rounded-lg font-medium text-sm hover:bg-gray-100 transition">
+                <a href="{{ $asset->primary_link }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-2 px-4 py-2 bg-white text-ink rounded-lg font-medium text-sm hover:bg-paper-3 transition">
                     <span>Lihat Karya</span>
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
                 </a>
@@ -39,7 +39,7 @@
     </div>
     
     <div class="p-5">
-        <h3 class="font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-blue-600 transition">{{ $asset->title }}</h3>
+        <h3 class="font-bold text-ink mb-3 line-clamp-2 group-hover:text-sun-ink transition">{{ $asset->title }}</h3>
         
         <div class="flex items-center gap-2">
             <span class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-lg
@@ -49,12 +49,12 @@
                     @case('design') bg-amber-100 text-amber-700 @break
                     @case('banner') bg-blue-100 text-blue-700 @break
                     @case('post') bg-indigo-100 text-indigo-700 @break
-                    @default bg-gray-100 text-gray-700 @break
+                    @default bg-paper-3 text-ink/75 @break
                 @endswitch
             ">
                 {{ $asset->asset_type->getLabel() }}
             </span>
-            <span class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-lg bg-gray-100 text-gray-600">
+            <span class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-lg bg-paper-3 text-ink/65">
                 {{ $asset->platform->getLabel() }}
             </span>
         </div>

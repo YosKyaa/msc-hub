@@ -6,11 +6,11 @@
             <div class="flex items-center gap-3">
                 <img src="{{ asset('img/jgu.png') }}" alt="Jakarta Global University" class="h-8 w-auto">
                 <div class="text-sm">
-                    <div class="font-semibold text-gray-900">Jakarta Global University</div>
-                    <div class="text-xs text-gray-500">Media &amp; Strategic Communications</div>
+                    <div class="font-semibold text-ink">Jakarta Global University</div>
+                    <div class="text-xs text-ink/60">Media &amp; Strategic Communications</div>
                 </div>
             </div>
-            <div class="text-center text-sm text-gray-500 sm:text-right">
+            <div class="text-center text-sm text-ink/60 sm:text-right">
                 <p>&copy; {{ date('Y') }} Jakarta Global University</p>
                 <p class="mt-1 text-xs">Jl. Boulevard Grand Depok City, Depok 16412</p>
             </div>

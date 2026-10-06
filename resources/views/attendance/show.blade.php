@@ -42,17 +42,17 @@
             @endif
 
             @if($opensAt || $closesAt)
-                <dl class="text-sm text-gray-600 bg-gray-50 rounded-xl px-4 py-3 space-y-1">
+                <dl class="text-sm text-ink/65 bg-paper-2 rounded-xl px-4 py-3 space-y-1">
                     @if($opensAt)
                         <div class="flex justify-between gap-4">
                             <dt>{{ $action->getLabel() }} dibuka</dt>
-                            <dd class="font-medium text-gray-900 text-right">{{ $opensAt->translatedFormat('d M Y H:i') }} WIB</dd>
+                            <dd class="font-medium text-ink text-right">{{ $opensAt->translatedFormat('d M Y H:i') }} WIB</dd>
                         </div>
                     @endif
                     @if($closesAt)
                         <div class="flex justify-between gap-4">
                             <dt>{{ $action->getLabel() }} ditutup</dt>
-                            <dd class="font-medium text-gray-900 text-right">{{ $closesAt->translatedFormat('d M Y H:i') }} WIB</dd>
+                            <dd class="font-medium text-ink text-right">{{ $closesAt->translatedFormat('d M Y H:i') }} WIB</dd>
                         </div>
                     @endif
                 </dl>
@@ -60,23 +60,23 @@
 
             @if($requester === null)
                 <div class="text-center space-y-4">
-                    <p class="text-sm text-gray-600">
+                    <p class="text-sm text-ink/65">
                         Masuk dengan akun Google JGU Anda untuk mencatat {{ strtolower($action->getLabel()) }}.
                     </p>
                     <a href="{{ $loginUrl }}"
                        class="w-full inline-flex items-center justify-center gap-2 bg-{{ $accent }}-600 hover:bg-{{ $accent }}-700 text-white font-semibold rounded-xl px-6 py-4 text-base">
                         Masuk dengan Google
                     </a>
-                    <p class="text-xs text-gray-500">
+                    <p class="text-xs text-ink/60">
                         Gunakan email @jgu.ac.id atau @student.jgu.ac.id.
                     </p>
                 </div>
             @else
-                <div class="rounded-xl border bg-gray-50 px-4 py-3 flex items-center justify-between gap-3">
+                <div class="rounded-xl border bg-paper-2 px-4 py-3 flex items-center justify-between gap-3">
                     <div class="min-w-0">
-                        <p class="text-xs text-gray-500">Anda login sebagai</p>
-                        <p class="text-sm font-medium text-gray-900 truncate">{{ $requester['name'] ?? $requester['email'] }}</p>
-                        <p class="text-xs text-gray-500 truncate">{{ $requester['email'] }}</p>
+                        <p class="text-xs text-ink/60">Anda login sebagai</p>
+                        <p class="text-sm font-medium text-ink truncate">{{ $requester['name'] ?? $requester['email'] }}</p>
+                        <p class="text-xs text-ink/60 truncate">{{ $requester['email'] }}</p>
                     </div>
                     <form action="{{ route('auth.google.logout') }}" method="POST" class="shrink-0">
                         @csrf
@@ -90,12 +90,12 @@
                 @if($checkedIn || $checkedOut)
                     <dl class="text-sm rounded-xl border px-4 py-3 space-y-1">
                         <div class="flex justify-between gap-4">
-                            <dt class="text-gray-600">Check-in</dt>
-                            <dd class="font-medium text-gray-900">{{ $checkedIn ? $checkedIn->translatedFormat('d M Y H:i').' WIB' : '—' }}</dd>
+                            <dt class="text-ink/65">Check-in</dt>
+                            <dd class="font-medium text-ink">{{ $checkedIn ? $checkedIn->translatedFormat('d M Y H:i').' WIB' : '—' }}</dd>
                         </div>
                         <div class="flex justify-between gap-4">
-                            <dt class="text-gray-600">Check-out</dt>
-                            <dd class="font-medium text-gray-900">{{ $checkedOut ? $checkedOut->translatedFormat('d M Y H:i').' WIB' : '—' }}</dd>
+                            <dt class="text-ink/65">Check-out</dt>
+                            <dd class="font-medium text-ink">{{ $checkedOut ? $checkedOut->translatedFormat('d M Y H:i').' WIB' : '—' }}</dd>
                         </div>
                     </dl>
                 @endif
@@ -120,10 +120,10 @@
                             {{-- Nama hanya ditanyakan sekali. Setelah tersimpan, koreksi
                                  menjadi wewenang panitia agar tidak bisa diubah sepihak. --}}
                             <div>
-                                <label for="full_name" class="block text-sm font-medium text-gray-900">
+                                <label for="full_name" class="block text-sm font-medium text-ink">
                                     Nama lengkap
                                 </label>
-                                <p class="text-xs text-gray-500 mt-1 mb-2">
+                                <p class="text-xs text-ink/60 mt-1 mb-2">
                                     Tulis sesuai yang ingin dicetak di sertifikat, termasuk gelar bila ada.
                                     Nama ini hanya dapat diisi sekali.
                                 </p>
@@ -131,16 +131,16 @@
                                        maxlength="150"
                                        value="{{ old('full_name', $requester['name'] ?? '') }}"
                                        placeholder="Contoh: Budi Santoso, S.Kom."
-                                       class="w-full rounded-xl border-gray-300 px-4 py-3 text-base focus:border-{{ $accent }}-500 focus:ring-{{ $accent }}-500 @error('full_name') border-red-500 @enderror">
+                                       class="w-full rounded-xl border-ink/15 px-4 py-3 text-base focus:border-{{ $accent }}-500 focus:ring-{{ $accent }}-500 @error('full_name') border-red-500 @enderror">
                                 @error('full_name')
                                     <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
                         @elseif($isCheckIn && $participant)
-                            <div class="rounded-xl border bg-gray-50 px-4 py-3">
-                                <p class="text-xs text-gray-500">Nama yang akan dicetak di sertifikat</p>
-                                <p class="text-sm font-medium text-gray-900">{{ $participant->name }}</p>
-                                <p class="text-xs text-gray-500 mt-1">Nama salah? Hubungi panitia untuk mengoreksinya.</p>
+                            <div class="rounded-xl border bg-paper-2 px-4 py-3">
+                                <p class="text-xs text-ink/60">Nama yang akan dicetak di sertifikat</p>
+                                <p class="text-sm font-medium text-ink">{{ $participant->name }}</p>
+                                <p class="text-xs text-ink/60 mt-1">Nama salah? Hubungi panitia untuk mengoreksinya.</p>
                             </div>
                         @endif
 
@@ -149,13 +149,13 @@
                             {{ $action->getLabel() }} Sekarang
                         </button>
                     </form>
-                    <p class="text-xs text-gray-500 text-center">{{ $action->getInstruction() }}</p>
+                    <p class="text-xs text-ink/60 text-center">{{ $action->getInstruction() }}</p>
                 @endif
             @endif
         </div>
     </div>
 
-    <p class="text-center text-xs text-gray-500 mt-4">
+    <p class="text-center text-xs text-ink/60 mt-4">
         Kehadiran Anda menjadi dasar penerbitan sertifikat kegiatan ini.
     </p>
 </div>

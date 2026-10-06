@@ -6,19 +6,19 @@
 <div class="max-w-2xl mx-auto">
     <div class="bg-white rounded-xl shadow-sm border p-6">
         <div class="mb-6">
-            <h1 class="text-2xl font-bold text-gray-900">Pinjam Alat Multimedia</h1>
-            <p class="text-gray-600 mt-1">Isi form di bawah untuk mengajukan peminjaman alat.</p>
+            <h1 class="text-2xl font-bold text-ink">Pinjam Alat Multimedia</h1>
+            <p class="text-ink/65 mt-1">Isi form di bawah untuk mengajukan peminjaman alat.</p>
         </div>
 
         {{-- Info Box --}}
-        <div class="bg-indigo-50 border border-indigo-100 rounded-lg p-4 mb-6">
+        <div class="bg-sun-soft border border-sun-deep/30 rounded-lg p-4 mb-6">
             <div class="flex items-start gap-3">
-                <svg class="w-5 h-5 text-indigo-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg class="w-5 h-5 text-sun-ink mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                 </svg>
-                <div class="text-sm text-indigo-800">
-                    <p class="font-medium">Jam Operasional: 08:00 - 16:00</p>
-                    <p class="mt-1">Peminjaman hanya dapat dilakukan dalam jam operasional. Proses approval memerlukan persetujuan Staff dan Head MSC.</p>
+                <div class="text-sm text-sun-ink">
+                    <p class="font-medium">Jam Operasional: {{ \App\Support\JamOperasional::rentang() }}</p>
+                    <p class="mt-1">{{ \App\Support\JamOperasional::catatan() }}</p>
                 </div>
             </div>
         </div>
@@ -29,28 +29,28 @@
             {{-- Requester Info --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label for="requester_name" class="block text-sm font-medium text-gray-700 mb-1">
+                    <label for="requester_name" class="block text-sm font-medium text-ink/75 mb-1">
                         Nama Lengkap <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="requester_name" id="requester_name" 
                         value="{{ old('requester_name', $requester['name']) }}"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep"
                         required>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                    <label class="block text-sm font-medium text-ink/75 mb-1">Email</label>
                     <input type="email" value="{{ $requester['email'] }}" 
-                        class="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50 text-gray-600" 
+                        class="w-full px-4 py-2 border border-ink/10 rounded-lg bg-paper-2 text-ink/65" 
                         readonly>
                 </div>
             </div>
 
             <div>
-                <label for="unit" class="block text-sm font-medium text-gray-700 mb-1">
+                <label for="unit" class="block text-sm font-medium text-ink/75 mb-1">
                     Unit / Fakultas <span class="text-red-500">*</span>
                 </label>
                 <select name="unit" id="unit" required
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">
+                    class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">
                     <option value="">Pilih Unit/Fakultas</option>
                     <option value="HIMATIF" {{ old('unit') == 'HIMATIF' ? 'selected' : '' }}>HIMATIF</option>
                     <option value="HME" {{ old('unit') == 'HME' ? 'selected' : '' }}>HME</option>
@@ -66,58 +66,58 @@
             </div>
                 <div class="grid gap-4 sm:grid-cols-2">
                     <div>
-                        <label for="requester_phone" class="block text-sm font-medium text-gray-700 mb-1">
+                        <label for="requester_phone" class="block text-sm font-medium text-ink/75 mb-1">
                             No. HP Peminjam
                         </label>
                         <input type="tel" name="requester_phone" id="requester_phone" maxlength="30"
                             value="{{ old('requester_phone') }}"
                             placeholder="08xxxxxxxxxx"
-                            class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <p class="mt-1 text-xs text-gray-500">Dicantumkan pada formulir resmi peminjaman.</p>
+                            class="w-full rounded-lg border-ink/15 px-3 py-2 text-sm focus:border-sun-deep focus:ring-sun-deep/50">
+                        <p class="mt-1 text-xs text-ink/60">Dicantumkan pada formulir resmi peminjaman.</p>
                         @error('requester_phone')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                     </div>
                     <div>
-                        <label for="supervisor_name" class="block text-sm font-medium text-gray-700 mb-1">
+                        <label for="supervisor_name" class="block text-sm font-medium text-ink/75 mb-1">
                             Penanggung Jawab (Dosen)
                         </label>
                         <input type="text" name="supervisor_name" id="supervisor_name" maxlength="255"
                             value="{{ old('supervisor_name') }}"
                             placeholder="Nama dosen penanggung jawab"
-                            class="w-full rounded-lg border-gray-300 px-3 py-2 text-sm focus:border-blue-500 focus:ring-blue-500">
-                        <p class="mt-1 text-xs text-gray-500">Dicantumkan pada formulir resmi peminjaman.</p>
+                            class="w-full rounded-lg border-ink/15 px-3 py-2 text-sm focus:border-sun-deep focus:ring-sun-deep/50">
+                        <p class="mt-1 text-xs text-ink/60">Dicantumkan pada formulir resmi peminjaman.</p>
                         @error('supervisor_name')<p class="mt-1 text-xs text-red-600">{{ $message }}</p>@enderror
                     </div>
                 </div>
 
 
             <div>
-                <label for="purpose" class="block text-sm font-medium text-gray-700 mb-1">Keperluan</label>
+                <label for="purpose" class="block text-sm font-medium text-ink/75 mb-1">Keperluan</label>
                 <textarea name="purpose" id="purpose" rows="2"
                     placeholder="Jelaskan keperluan peminjaman..."
-                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500">{{ old('purpose') }}</textarea>
+                    class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep">{{ old('purpose') }}</textarea>
             </div>
 
             {{-- Date/Time --}}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                    <label for="start_at" class="block text-sm font-medium text-gray-700 mb-1">
+                    <label for="start_at" class="block text-sm font-medium text-ink/75 mb-1">
                         Waktu Mulai <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="start_at" id="start_at" 
                         value="{{ old('start_at') }}"
                         placeholder="Pilih tanggal dan waktu"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep"
                         required
                         readonly>
                 </div>
                 <div>
-                    <label for="end_at" class="block text-sm font-medium text-gray-700 mb-1">
+                    <label for="end_at" class="block text-sm font-medium text-ink/75 mb-1">
                         Waktu Selesai <span class="text-red-500">*</span>
                     </label>
                     <input type="text" name="end_at" id="end_at" 
                         value="{{ old('end_at') }}"
                         placeholder="Pilih tanggal dan waktu"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                        class="w-full px-4 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep"
                         required
                         readonly>
                 </div>
@@ -125,27 +125,27 @@
 
             {{-- Items Selection --}}
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-2">
+                <label class="block text-sm font-medium text-ink/75 mb-2">
                     Pilih Alat <span class="text-red-500">*</span>
                 </label>
-                <div class="border border-gray-200 rounded-lg max-h-64 overflow-y-auto">
+                <div class="border border-ink/10 rounded-lg max-h-64 overflow-y-auto">
                     @php
                         $groupedItems = $items->groupBy(fn($item) => $item->category?->getLabel() ?? 'Lainnya');
                     @endphp
                     
                     @foreach($groupedItems as $category => $categoryItems)
-                        <div class="border-b border-gray-100 last:border-b-0">
-                            <div class="bg-gray-50 px-4 py-2 font-medium text-sm text-gray-700">
+                        <div class="border-b border-ink/[.07] last:border-b-0">
+                            <div class="bg-paper-2 px-4 py-2 font-medium text-sm text-ink/75">
                                 {{ $category }}
                             </div>
                             @foreach($categoryItems as $item)
-                                <label class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-50 last:border-b-0">
+                                <label class="flex items-center gap-3 px-4 py-3 hover:bg-paper-2 cursor-pointer border-b border-gray-50 last:border-b-0">
                                     <input type="checkbox" name="items[]" value="{{ $item->id }}"
                                         {{ in_array($item->id, old('items', [])) ? 'checked' : '' }}
-                                        class="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500">
+                                        class="w-4 h-4 text-sun-ink border-ink/15 rounded focus:ring-sun-deep/50">
                                     <div class="flex-1">
-                                        <div class="text-sm font-medium text-gray-900">{{ $item->name }}</div>
-                                        <div class="text-xs text-gray-500">{{ $item->code }}</div>
+                                        <div class="text-sm font-medium text-ink">{{ $item->name }}</div>
+                                        <div class="text-xs text-ink/60">{{ $item->code }}</div>
                                     </div>
                                     <span class="text-xs px-2 py-1 rounded-full 
                                         {{ $item->condition_status->value === 'good' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
@@ -156,12 +156,12 @@
                         </div>
                     @endforeach
                 </div>
-                <p class="text-xs text-gray-500 mt-1">Centang alat yang ingin dipinjam</p>
+                <p class="text-xs text-ink/60 mt-1">Centang alat yang ingin dipinjam</p>
             </div>
 
             <div class="flex justify-end gap-3 pt-4 border-t">
                 <a href="{{ route('my.bookings') }}" 
-                    class="px-6 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">
+                    class="px-6 py-2 border border-ink/15 rounded-lg text-ink/75 hover:bg-paper-2">
                     Batal
                 </a>
                 <x-molecules.confirm-submit

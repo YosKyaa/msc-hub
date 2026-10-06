@@ -128,6 +128,28 @@ class BioPageTest extends TestCase
         $response->assertSee('Hadi');
         $response->assertSee('Chika');
         $response->assertSee('Yosua');
+
+        // Bawaannya nomor WhatsApp ketiganya, jadi halaman ini berguna tanpa
+        // perlu menyetel apa pun di server.
+        $response->assertSee('https://wa.me/', false);
+        $response->assertSee('WhatsApp');
+    }
+
+    /**
+     * Nomor pribadi ketiga admin sengaja hanya ada di sini.
+     *
+     * Beranda dibagikan jauh lebih luas dan terindeks mesin pencari;
+     * memasang nomor di sana berarti menyebarkannya ke tempat yang tidak
+     * diminta siapa pun.
+     */
+    public function test_the_admin_numbers_never_reach_the_landing_page(): void
+    {
+        $beranda = $this->get(route('landing'))->assertOk()->getContent();
+
+        foreach (['wa.me', '6282278775003', '6287771412625', '6282112187810'] as $jejak) {
+            $this->assertStringNotContainsString($jejak, $beranda,
+                "Nomor admin bocor ke beranda lewat: {$jejak}");
+        }
     }
 
     public function test_a_phone_number_becomes_a_whatsapp_link(): void

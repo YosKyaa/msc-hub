@@ -18,20 +18,15 @@
         title="Semua Layanan MSC"
         description="Ajukan konten, pinjam ruangan dan alat multimedia, atau cek status pengajuan Anda di Media & Strategic Communications Jakarta Global University." />
 
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <x-organisms.design-system />
 
     <style>
-        body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
-
         /* Latar lembut yang tidak ikut menggulung bersama isinya. */
         .bio-latar {
             background:
-                radial-gradient(60rem 40rem at 50% -10%, rgb(219 234 254) 0%, transparent 60%),
-                radial-gradient(40rem 30rem at 90% 10%, rgb(254 243 199) 0%, transparent 55%),
-                rgb(249 250 251);
+                radial-gradient(60rem 40rem at 50% -10%, rgb(255 239 181) 0%, transparent 60%),
+                radial-gradient(40rem 30rem at 90% 10%, rgb(255 247 220) 0%, transparent 55%),
+                rgb(251 250 247);
             background-attachment: fixed;
         }
 
@@ -47,7 +42,7 @@
     </style>
 </head>
 
-<body class="bio-latar min-h-screen antialiased">
+<body class="bio-latar min-h-screen text-ink antialiased">
     {{-- max-w-md: selebar ponsel. Di layar lebar ia tetap satu kolom di
          tengah, karena menyebarnya tombol justru membuat halaman ini terbaca
          seperti menu biasa. --}}
@@ -59,9 +54,9 @@
                  alt="Jakarta Global University"
                  class="mx-auto h-16 w-auto">
 
-            <h1 class="mt-5 text-2xl font-bold tracking-tight text-gray-900">MSC Hub</h1>
-            <p class="mt-1 text-sm font-medium text-blue-700">Media &amp; Strategic Communications</p>
-            <p class="mt-3 text-sm leading-relaxed text-gray-600">
+            <h1 class="mt-5 text-2xl font-bold tracking-tight text-ink">MSC Hub</h1>
+            <p class="mt-1 text-sm font-semibold text-sun-ink">Media &amp; Strategic Communications</p>
+            <p class="mt-3 text-sm leading-relaxed text-ink/65">
                 {{ config('msc.bio.tagline') }}
             </p>
         </header>
@@ -70,12 +65,12 @@
         <main class="mt-9 flex-1 space-y-7">
             @foreach ($kelompok as $grup)
                 <section>
-                    <h2 class="px-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                    <h2 class="px-1 text-xs font-semibold uppercase tracking-wider text-ink/60">
                         {{ $grup['judul'] }}
                     </h2>
 
                     @if ($grup['catatan'])
-                        <p class="mt-1 px-1 text-xs text-gray-500">{{ $grup['catatan'] }}</p>
+                        <p class="mt-1 px-1 text-xs text-ink/60">{{ $grup['catatan'] }}</p>
                     @endif
 
                     <div class="mt-3 space-y-3">
@@ -83,13 +78,13 @@
                             <a href="{{ $tautan['url'] }}"
                                @class([
                                    'bio-tombol group flex items-center gap-4 rounded-2xl border px-4 py-4 shadow-sm',
-                                   'border-blue-600 bg-blue-600 text-white hover:bg-blue-700 hover:shadow-lg' => $tautan['utama'],
-                                   'border-gray-200 bg-white text-gray-900 hover:border-blue-300 hover:shadow-md' => ! $tautan['utama'],
+                                   'border-sun-deep bg-sun text-ink hover:bg-sun-deep hover:shadow-lg hover:shadow-sun/30' => $tautan['utama'],
+                                   'border-ink/10 bg-white text-ink hover:border-sun-deep/50 hover:shadow-md' => ! $tautan['utama'],
                                ])>
                                 <span @class([
                                     'flex size-11 shrink-0 items-center justify-center rounded-xl',
-                                    'bg-white/15' => $tautan['utama'],
-                                    'bg-blue-50 text-blue-700' => ! $tautan['utama'],
+                                    'bg-ink/10 text-ink' => $tautan['utama'],
+                                    'bg-sun-tint text-sun-ink' => ! $tautan['utama'],
                                 ])>
                                     <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                          stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -101,15 +96,15 @@
                                     <span class="block text-base font-semibold leading-tight">{{ $tautan['label'] }}</span>
                                     <span @class([
                                         'mt-0.5 block text-xs leading-snug',
-                                        'text-blue-100' => $tautan['utama'],
-                                        'text-gray-500' => ! $tautan['utama'],
+                                        'text-ink/70' => $tautan['utama'],
+                                        'text-ink/60' => ! $tautan['utama'],
                                     ])>{{ $tautan['keterangan'] }}</span>
                                 </span>
 
                                 <svg @class([
                                         'size-5 shrink-0',
-                                        'text-blue-200' => $tautan['utama'],
-                                        'text-gray-300 group-hover:text-blue-500' => ! $tautan['utama'],
+                                        'text-ink/50' => $tautan['utama'],
+                                        'text-ink/25 group-hover:text-sun-ink' => ! $tautan['utama'],
                                      ])
                                      fill="none" viewBox="0 0 24 24" stroke="currentColor"
                                      stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
@@ -127,22 +122,22 @@
                  lagi, jadi ketiganya disebut dengan nama. --}}
             @if (! empty($admin))
                 <section>
-                    <h2 class="px-1 text-xs font-semibold uppercase tracking-wider text-gray-500">
+                    <h2 class="px-1 text-xs font-semibold uppercase tracking-wider text-ink/60">
                         Butuh bantuan?
                     </h2>
-                    <p class="mt-1 px-1 text-xs text-gray-500">Tanya langsung ke admin MSC.</p>
+                    <p class="mt-1 px-1 text-xs text-ink/60">Tanya langsung ke admin MSC.</p>
 
                     <div class="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
                         @foreach ($admin as $orang)
                             <a href="{{ $orang['url'] }}"
                                @if (! str_starts_with($orang['url'], 'mailto:')) target="_blank" rel="noopener noreferrer" @endif
-                               class="bio-tombol flex items-center gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3 shadow-sm hover:border-blue-300 hover:shadow-md sm:flex-col sm:gap-2 sm:py-4 sm:text-center">
-                                <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-sm font-bold text-blue-700">
+                               class="bio-tombol flex items-center gap-3 rounded-2xl border border-ink/10 bg-white px-4 py-3 shadow-sm hover:border-sun-deep/50 hover:shadow-md sm:flex-col sm:gap-2 sm:py-4 sm:text-center">
+                                <span class="flex size-10 shrink-0 items-center justify-center rounded-full bg-sun-soft text-sm font-bold text-sun-ink">
                                     {{ $orang['inisial'] }}
                                 </span>
                                 <span class="min-w-0">
-                                    <span class="block text-sm font-semibold leading-tight text-gray-900">{{ $orang['nama'] }}</span>
-                                    <span class="mt-0.5 block text-xs text-gray-500">{{ $orang['via'] }}</span>
+                                    <span class="block text-sm font-semibold leading-tight text-ink">{{ $orang['nama'] }}</span>
+                                    <span class="mt-0.5 block text-xs text-ink/60">{{ $orang['via'] }}</span>
                                 </span>
                             </a>
                         @endforeach
@@ -155,16 +150,16 @@
         <footer class="mt-10 text-center">
             @if (filled(config('msc.bio.website')))
                 <a href="{{ config('msc.bio.website') }}" target="_blank" rel="noopener noreferrer"
-                   class="text-xs font-medium text-gray-600 hover:text-blue-700 hover:underline">
+                   class="text-xs font-medium text-ink/65 hover:text-sun-ink hover:underline">
                     jgu.ac.id
                 </a>
                 <span class="px-1.5 text-xs text-gray-300">·</span>
             @endif
-            <a href="{{ route('landing') }}" class="text-xs font-medium text-blue-700 hover:underline">
+            <a href="{{ route('landing') }}" class="text-xs font-medium text-sun-ink hover:underline">
                 Situs lengkap MSC Hub
             </a>
 
-            <p class="mt-4 text-xs text-gray-500">
+            <p class="mt-4 text-xs text-ink/60">
                 &copy; {{ date('Y') }} Jakarta Global University
             </p>
         </footer>

@@ -22,23 +22,23 @@
 
 <div class="relative" x-data="{ accountMenuOpen: false }" @keydown.escape.window="accountMenuOpen = false">
     <button type="button" @click="accountMenuOpen = ! accountMenuOpen" :aria-expanded="accountMenuOpen"
-        class="flex w-full max-w-full items-center gap-2 rounded-lg p-1.5 text-left transition hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300"
+        class="flex w-full max-w-full items-center gap-2 rounded-lg p-1.5 text-left transition hover:bg-paper-2 focus:outline-none focus:ring-2 focus:ring-sun-deep/40"
         aria-haspopup="menu" aria-label="Buka menu akun">
         <x-atoms.avatar :name="$requester['name']" size="sm" :tone="$tone" />
         <span class="min-w-0 flex-1">
-            <span class="block truncate text-sm font-medium text-gray-800">{{ $requester['name'] }}</span>
-            <span class="block text-xs text-gray-500">Akun saya</span>
+            <span class="block truncate text-sm font-medium text-ink">{{ $requester['name'] }}</span>
+            <span class="block text-xs text-ink/60">Akun saya</span>
         </span>
-        <svg class="size-4 shrink-0 text-gray-400 transition" :class="accountMenuOpen && 'rotate-180'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+        <svg class="size-4 shrink-0 text-ink/45 transition" :class="accountMenuOpen && 'rotate-180'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
     </button>
 
     <div x-show="accountMenuOpen" x-cloak x-transition @click.outside="accountMenuOpen = false"
-        class="absolute z-40 overflow-hidden rounded-xl border border-gray-200 bg-white shadow-lg {{ $posisi }} {{ $asal }}" role="menu">
-        <div class="flex items-center gap-3 border-b border-gray-100 p-4">
+        class="absolute z-40 overflow-hidden rounded-xl border border-ink/10 bg-white shadow-lg {{ $posisi }} {{ $asal }}" role="menu">
+        <div class="flex items-center gap-3 border-b border-ink/[.07] p-4">
             <x-atoms.avatar :name="$requester['name']" :tone="$tone" />
             <div class="min-w-0">
-                <p class="truncate text-sm font-semibold text-gray-900">{{ $requester['name'] }}</p>
-                <p class="truncate text-xs text-gray-500">{{ $requester['email'] }}</p>
+                <p class="truncate text-sm font-semibold text-ink">{{ $requester['name'] }}</p>
+                <p class="truncate text-xs text-ink/60">{{ $requester['email'] }}</p>
             </div>
         </div>
 

@@ -28,11 +28,11 @@
     <p class="text-2xl sm:text-4xl font-bold tracking-[0.2em] text-{{ $accent }}-600 uppercase">
         {{ $action->getLabel() }}
     </p>
-    <h1 class="text-2xl sm:text-4xl font-bold text-gray-900 mt-3 max-w-3xl leading-tight">{{ $event->name }}</h1>
-    <p class="text-lg text-gray-600 mt-2">{{ $event->event_date->translatedFormat('l, d F Y') }}</p>
+    <h1 class="text-2xl sm:text-4xl font-bold text-ink mt-3 max-w-3xl leading-tight">{{ $event->name }}</h1>
+    <p class="text-lg text-ink/65 mt-2">{{ $event->event_date->translatedFormat('l, d F Y') }}</p>
 
     @if($opensAt || $closesAt)
-        <p class="text-base sm:text-lg text-gray-500 mt-2">
+        <p class="text-base sm:text-lg text-ink/60 mt-2">
             {{ $opensAt ? 'Dibuka '.$opensAt->translatedFormat('H:i') : 'Tanpa batas awal' }}
             &ndash;
             {{ $closesAt ? 'ditutup '.$closesAt->translatedFormat('H:i').' WIB' : 'tanpa batas akhir' }}
@@ -42,8 +42,8 @@
     <img src="{{ $qrDataUri }}" alt="QR {{ $action->getLabel() }}"
          class="w-64 h-64 sm:w-96 sm:h-96 my-8 border-8 border-{{ $accent }}-600 rounded-2xl">
 
-    <p class="text-base sm:text-lg text-gray-700">Pindai QR di atas, lalu masuk dengan akun Google JGU Anda.</p>
-    <p class="mt-2 text-sm sm:text-base font-mono text-gray-500 break-all max-w-2xl">{{ $attendanceUrl }}</p>
+    <p class="text-base sm:text-lg text-ink/75">Pindai QR di atas, lalu masuk dengan akun Google JGU Anda.</p>
+    <p class="mt-2 text-sm sm:text-base font-mono text-ink/60 break-all max-w-2xl">{{ $attendanceUrl }}</p>
 
     <a href="{{ request()->fullUrlWithQuery(['unduh' => 1]) }}"
        class="no-print mt-8 inline-flex items-center gap-2 rounded-lg bg-{{ $accent }}-600 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-{{ $accent }}-700">
@@ -52,8 +52,8 @@
         </svg>
         Unduh PDF
     </a>
-    <p class="no-print mt-2 text-xs text-gray-400">Lembar A4 siap cetak untuk ditempel di lokasi acara.</p>
+    <p class="no-print mt-2 text-xs text-ink/45">Lembar A4 siap cetak untuk ditempel di lokasi acara.</p>
 
-    <p class="mt-10 text-xs text-gray-400">Media &amp; Strategic Communications — Jakarta Global University</p>
+    <p class="mt-10 text-xs text-ink/45">Media &amp; Strategic Communications — Jakarta Global University</p>
 </body>
 </html>

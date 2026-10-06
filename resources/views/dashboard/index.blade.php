@@ -7,22 +7,22 @@
     {{-- Sapaan --}}
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
-            <h1 class="text-xl font-bold text-gray-900 sm:text-2xl">
+            <h1 class="text-xl font-bold text-ink sm:text-2xl">
                 Halo, {{ \Illuminate\Support\Str::before($requester['name'], ' ') }}
             </h1>
-            <p class="mt-1 text-sm text-gray-600">
+            <p class="mt-1 text-sm text-ink/65">
                 Halaman ini merangkum semua pengajuan Anda ke tim Media &amp; Strategic Communications.
             </p>
-            <p class="mt-0.5 break-words text-xs text-gray-400">{{ $requester['email'] }}</p>
+            <p class="mt-0.5 break-words text-xs text-ink/45">{{ $requester['email'] }}</p>
         </div>
-        <span class="self-start rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+        <span class="self-start rounded-full bg-sun-tint px-3 py-1 text-xs font-semibold text-sun-ink">
             {{ \App\Support\RequesterSession::accountLabel($requester) }}
         </span>
     </div>
 
     {{-- Pilihan layanan: inilah alasan utama halaman ini ada. --}}
     <section>
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-gray-400">Mau mengajukan apa?</h2>
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-ink/45">Mau mengajukan apa?</h2>
 
         @php
             $layanan = [
@@ -52,29 +52,29 @@
             // Ditulis utuh, bukan dirangkai dari $tone: kelas yang dibentuk
             // saat berjalan hanya selamat selama halaman memakai Play CDN.
             $tepi = [
-                'blue' => 'hover:border-blue-300 focus:ring-blue-400',
-                'indigo' => 'hover:border-indigo-300 focus:ring-indigo-400',
-                'emerald' => 'hover:border-emerald-300 focus:ring-emerald-400',
+                'blue' => 'hover:border-sun-deep/50 focus:ring-sun-deep/40',
+                'indigo' => 'hover:border-sun-deep/50 focus:ring-sun-deep/40',
+                'emerald' => 'hover:border-sun-deep/50 focus:ring-sun-deep/40',
             ];
 
             $ikon = [
-                'blue' => 'bg-blue-50 text-blue-600',
-                'indigo' => 'bg-indigo-50 text-indigo-600',
-                'emerald' => 'bg-emerald-50 text-emerald-600',
+                'blue' => 'bg-sun-tint text-sun-ink',
+                'indigo' => 'bg-sun-tint text-sun-ink',
+                'emerald' => 'bg-sun-tint text-sun-ink',
             ];
         @endphp
 
         <div class="mt-3 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($layanan as $item)
                 <a href="{{ route($item['route']) }}"
-                   class="flex flex-col rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 {{ $tepi[$item['tone']] }}">
+                   class="flex flex-col rounded-2xl border border-ink/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md focus:outline-none focus:ring-2 {{ $tepi[$item['tone']] }}">
                     <span class="flex size-11 items-center justify-center rounded-xl {{ $ikon[$item['tone']] }}">
                         <svg class="size-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" d="{{ $item['icon'] }}"/>
                         </svg>
                     </span>
-                    <span class="mt-4 block font-semibold text-gray-900">{{ $item['label'] }}</span>
-                    <span class="mt-1 block text-sm text-gray-500">{{ $item['desc'] }}</span>
+                    <span class="mt-4 block font-semibold text-ink">{{ $item['label'] }}</span>
+                    <span class="mt-1 block text-sm text-ink/60">{{ $item['desc'] }}</span>
                 </a>
             @endforeach
         </div>
@@ -82,8 +82,8 @@
 
     {{-- Orang yang baru pertama mengajukan tidak tahu apa yang terjadi
          sesudah tombol kirim ditekan. Tiga langkah ini menjawabnya. --}}
-    <section class="rounded-2xl border border-gray-200 bg-white p-5">
-        <h2 class="font-semibold text-gray-900">Bagaimana prosesnya?</h2>
+    <section class="rounded-2xl border border-ink/10 bg-white p-5">
+        <h2 class="font-semibold text-ink">Bagaimana prosesnya?</h2>
 
         <ol class="mt-4 grid gap-4 sm:grid-cols-3">
             @foreach ([
@@ -92,12 +92,12 @@
                 ['3', 'Selesai', 'Statusnya berubah di halaman ini dan pengajuan siap dijalankan.'],
             ] as [$nomor, $judul, $isi])
                 <li class="flex gap-3">
-                    <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-gray-100 text-sm font-semibold text-gray-600">
+                    <span class="flex size-7 shrink-0 items-center justify-center rounded-full bg-paper-3 text-sm font-semibold text-ink/65">
                         {{ $nomor }}
                     </span>
                     <span class="min-w-0">
-                        <span class="block text-sm font-medium text-gray-900">{{ $judul }}</span>
-                        <span class="mt-0.5 block text-xs leading-relaxed text-gray-500">{{ $isi }}</span>
+                        <span class="block text-sm font-medium text-ink">{{ $judul }}</span>
+                        <span class="mt-0.5 block text-xs leading-relaxed text-ink/60">{{ $isi }}</span>
                     </span>
                 </li>
             @endforeach
@@ -106,10 +106,10 @@
 
     {{-- Pengajuan sendiri --}}
     <section class="grid gap-6 lg:grid-cols-2">
-        <div class="rounded-2xl border border-gray-200 bg-white p-5">
+        <div class="rounded-2xl border border-ink/10 bg-white p-5">
             <div class="flex items-center justify-between gap-3">
-                <h2 class="font-semibold text-gray-900">Pengajuan Konten</h2>
-                <a href="{{ route('request.status') }}" class="shrink-0 text-sm font-medium text-blue-600 hover:underline">
+                <h2 class="font-semibold text-ink">Pengajuan Konten</h2>
+                <a href="{{ route('request.status') }}" class="shrink-0 text-sm font-semibold text-sun-ink hover:underline">
                     Lihat semua ({{ $totals['konten'] }})
                 </a>
             </div>
@@ -117,28 +117,28 @@
             <div class="mt-4 space-y-2">
                 @forelse ($contentRequests as $item)
                     <a href="{{ route('request.status.detail', $item->request_code) }}"
-                       class="flex items-start justify-between gap-3 rounded-xl border border-gray-100 p-3 transition hover:border-blue-200 hover:bg-blue-50/40">
+                       class="flex items-start justify-between gap-3 rounded-xl border border-ink/[.07] p-3 transition hover:border-sun-deep/40 hover:bg-sun-soft">
                         <span class="min-w-0">
-                            <span class="block break-all font-mono text-sm font-semibold text-blue-700">{{ $item->request_code }}</span>
-                            <span class="mt-0.5 block truncate text-sm text-gray-600">{{ $item->content_type->getLabel() }}</span>
+                            <span class="block break-all font-mono text-sm font-semibold text-sun-ink">{{ $item->request_code }}</span>
+                            <span class="mt-0.5 block truncate text-sm text-ink/65">{{ $item->content_type->getLabel() }}</span>
                         </span>
-                        <span class="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                        <span class="shrink-0 rounded-full bg-paper-3 px-2 py-0.5 text-xs font-medium text-ink/75">
                             {{ $item->status->getLabel() }}
                         </span>
                     </a>
                 @empty
-                    <p class="rounded-xl bg-gray-50 p-4 text-sm text-gray-500">
+                    <p class="rounded-xl bg-paper-2 p-4 text-sm text-ink/60">
                         Belum ada pengajuan konten.
-                        <a href="{{ route('request.content') }}" class="font-medium text-blue-600 hover:underline">Ajukan sekarang</a>.
+                        <a href="{{ route('request.content') }}" class="font-semibold text-sun-ink hover:underline">Ajukan sekarang</a>.
                     </p>
                 @endforelse
             </div>
         </div>
 
-        <div class="rounded-2xl border border-gray-200 bg-white p-5">
+        <div class="rounded-2xl border border-ink/10 bg-white p-5">
             <div class="flex items-center justify-between gap-3">
-                <h2 class="font-semibold text-gray-900">Peminjaman</h2>
-                <a href="{{ route('my.bookings') }}" class="shrink-0 text-sm font-medium text-indigo-600 hover:underline">
+                <h2 class="font-semibold text-ink">Peminjaman</h2>
+                <a href="{{ route('my.bookings') }}" class="shrink-0 text-sm font-semibold text-sun-ink hover:underline">
                     Lihat semua ({{ $totals['ruangan'] + $totals['alat'] }})
                 </a>
             </div>
@@ -146,14 +146,14 @@
             <div class="mt-4 space-y-2">
                 @forelse ($roomBookings as $item)
                     <a href="{{ route('my.bookings.detail', ['type' => 'room', 'code' => $item->booking_code]) }}"
-                       class="flex items-start justify-between gap-3 rounded-xl border border-gray-100 p-3 transition hover:border-indigo-200 hover:bg-indigo-50/40">
+                       class="flex items-start justify-between gap-3 rounded-xl border border-ink/[.07] p-3 transition hover:border-sun-deep/40 hover:bg-sun-soft">
                         <span class="min-w-0">
-                            <span class="block break-all font-mono text-sm font-semibold text-indigo-700">{{ $item->booking_code }}</span>
-                            <span class="mt-0.5 block truncate text-sm text-gray-600">
+                            <span class="block break-all font-mono text-sm font-semibold text-sun-ink">{{ $item->booking_code }}</span>
+                            <span class="mt-0.5 block truncate text-sm text-ink/65">
                                 {{ $item->room?->name ?? 'Ruangan' }} &middot; {{ $item->start_at->format('d M Y, H:i') }}
                             </span>
                         </span>
-                        <span class="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                        <span class="shrink-0 rounded-full bg-paper-3 px-2 py-0.5 text-xs font-medium text-ink/75">
                             {{ $item->status->getLabel() }}
                         </span>
                     </a>
@@ -162,14 +162,14 @@
 
                 @forelse ($inventoryBookings as $item)
                     <a href="{{ route('my.bookings.detail', ['type' => 'inventory', 'code' => $item->booking_code]) }}"
-                       class="flex items-start justify-between gap-3 rounded-xl border border-gray-100 p-3 transition hover:border-indigo-200 hover:bg-indigo-50/40">
+                       class="flex items-start justify-between gap-3 rounded-xl border border-ink/[.07] p-3 transition hover:border-sun-deep/40 hover:bg-sun-soft">
                         <span class="min-w-0">
-                            <span class="block break-all font-mono text-sm font-semibold text-indigo-700">{{ $item->booking_code }}</span>
-                            <span class="mt-0.5 block truncate text-sm text-gray-600">
+                            <span class="block break-all font-mono text-sm font-semibold text-sun-ink">{{ $item->booking_code }}</span>
+                            <span class="mt-0.5 block truncate text-sm text-ink/65">
                                 {{ $item->items->count() }} alat &middot; {{ $item->start_at->format('d M Y, H:i') }}
                             </span>
                         </span>
-                        <span class="shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">
+                        <span class="shrink-0 rounded-full bg-paper-3 px-2 py-0.5 text-xs font-medium text-ink/75">
                             {{ $item->status->getLabel() }}
                         </span>
                     </a>
@@ -177,11 +177,11 @@
                 @endforelse
 
                 @if ($roomBookings->isEmpty() && $inventoryBookings->isEmpty())
-                    <p class="rounded-xl bg-gray-50 p-4 text-sm text-gray-500">
+                    <p class="rounded-xl bg-paper-2 p-4 text-sm text-ink/60">
                         Belum ada peminjaman.
-                        <a href="{{ route('booking.room') }}" class="font-medium text-indigo-600 hover:underline">Booking ruangan</a>
+                        <a href="{{ route('booking.room') }}" class="font-semibold text-sun-ink hover:underline">Booking ruangan</a>
                         atau
-                        <a href="{{ route('booking.inventory') }}" class="font-medium text-indigo-600 hover:underline">pinjam alat</a>.
+                        <a href="{{ route('booking.inventory') }}" class="font-semibold text-sun-ink hover:underline">pinjam alat</a>.
                     </p>
                 @endif
             </div>

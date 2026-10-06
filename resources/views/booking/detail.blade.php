@@ -5,7 +5,7 @@
 @section('content')
 <div class="max-w-2xl mx-auto">
     {{-- Back Link --}}
-    <a href="{{ route('my.bookings') }}" class="inline-flex items-center gap-2 text-gray-600 hover:text-gray-900 mb-4">
+    <a href="{{ route('my.bookings') }}" class="inline-flex items-center gap-2 text-ink/65 hover:text-ink mb-4">
         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
         </svg>
@@ -14,10 +14,10 @@
 
     <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
         {{-- Header --}}
-        <div class="bg-gradient-to-r from-indigo-600 to-indigo-700 text-white p-6">
+        <div class="bg-ink text-white p-6">
             <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div class="min-w-0">
-                    <p class="text-indigo-200 text-sm mb-1">Kode Booking</p>
+                    <p class="text-white/60 text-sm mb-1">Kode Booking</p>
                     <h1 class="break-all font-mono text-xl font-bold sm:text-2xl">{{ $booking->booking_code }}</h1>
                 </div>
                 @php
@@ -27,12 +27,12 @@
                         'approved_head' => 'bg-green-400 text-green-900',
                         'rejected' => 'bg-red-400 text-red-900',
                         'checked_out' => 'bg-purple-400 text-purple-900',
-                        'returned' => 'bg-gray-400 text-gray-900',
-                        'completed' => 'bg-gray-400 text-gray-900',
-                        'cancelled' => 'bg-gray-400 text-gray-900',
+                        'returned' => 'bg-gray-400 text-ink',
+                        'completed' => 'bg-gray-400 text-ink',
+                        'cancelled' => 'bg-gray-400 text-ink',
                     ];
                 @endphp
-                <span class="self-start whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium {{ $statusColors[$booking->status->value] ?? 'bg-gray-400 text-gray-900' }}">
+                <span class="self-start whitespace-nowrap rounded-full px-3 py-1 text-sm font-medium {{ $statusColors[$booking->status->value] ?? 'bg-gray-400 text-ink' }}">
                     {{ $booking->status->getLabel() }}
                 </span>
             </div>
@@ -42,12 +42,12 @@
             {{-- Type & Time --}}
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                    <p class="text-sm text-gray-500">Jenis Booking</p>
+                    <p class="text-sm text-ink/60">Jenis Booking</p>
                     <p class="font-medium">{{ $type === 'inventory' ? 'Peminjaman Alat' : 'Booking Ruangan' }}</p>
                 </div>
                 @if($type === 'room' && $booking->room)
                     <div>
-                        <p class="text-sm text-gray-500">Ruangan</p>
+                        <p class="text-sm text-ink/60">Ruangan</p>
                         <p class="font-medium">{{ $booking->room->name }}</p>
                     </div>
                 @endif
@@ -55,43 +55,43 @@
 
             <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                    <p class="text-sm text-gray-500">Waktu Mulai</p>
+                    <p class="text-sm text-ink/60">Waktu Mulai</p>
                     <p class="font-medium">{{ $booking->start_at->format('d M Y H:i') }}</p>
                 </div>
                 <div>
-                    <p class="text-sm text-gray-500">Waktu Selesai</p>
+                    <p class="text-sm text-ink/60">Waktu Selesai</p>
                     <p class="font-medium">{{ $booking->end_at->format('d M Y H:i') }}</p>
                 </div>
             </div>
 
             {{-- Requester Info --}}
             <div class="border-t pt-4">
-                <h3 class="font-semibold text-gray-900 mb-3">Informasi Pemohon</h3>
+                <h3 class="font-semibold text-ink mb-3">Informasi Pemohon</h3>
                 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
                     <div>
-                        <p class="text-sm text-gray-500">Nama</p>
+                        <p class="text-sm text-ink/60">Nama</p>
                         <p class="font-medium">{{ $booking->requester_name }}</p>
                     </div>
                     <div>
-                        <p class="text-sm text-gray-500">Email</p>
+                        <p class="text-sm text-ink/60">Email</p>
                         <p class="break-words font-medium">{{ $booking->requester_email }}</p>
                     </div>
                     @if($booking->unit)
                         <div>
-                            <p class="text-sm text-gray-500">Unit</p>
+                            <p class="text-sm text-ink/60">Unit</p>
                             <p class="font-medium">{{ $booking->unit }}</p>
                         </div>
                     @endif
                     @if($type === 'room' && $booking->attendees)
                         <div>
-                            <p class="text-sm text-gray-500">Jumlah Peserta</p>
+                            <p class="text-sm text-ink/60">Jumlah Peserta</p>
                             <p class="font-medium">{{ $booking->attendees }} orang</p>
                         </div>
                     @endif
                 </div>
                 @if($booking->purpose)
                     <div class="mt-3">
-                        <p class="text-sm text-gray-500">Keperluan</p>
+                        <p class="text-sm text-ink/60">Keperluan</p>
                         <p class="font-medium">{{ $booking->purpose }}</p>
                     </div>
                 @endif
@@ -100,13 +100,13 @@
             {{-- Items (Inventory only) --}}
             @if($type === 'inventory' && $booking->items->count() > 0)
                 <div class="border-t pt-4">
-                    <h3 class="font-semibold text-gray-900 mb-3">Daftar Alat ({{ $booking->items->count() }} item)</h3>
+                    <h3 class="font-semibold text-ink mb-3">Daftar Alat ({{ $booking->items->count() }} item)</h3>
                     <div class="space-y-2">
                         @foreach($booking->items as $item)
-                            <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                            <div class="flex items-center justify-between p-3 bg-paper-2 rounded-lg">
                                 <div>
                                     <p class="font-medium">{{ $item->name }}</p>
-                                    <p class="text-sm text-gray-500">{{ $item->code }}</p>
+                                    <p class="text-sm text-ink/60">{{ $item->code }}</p>
                                 </div>
                                 <span class="text-xs px-2 py-1 rounded-full 
                                     {{ $item->condition_status->value === 'good' ? 'bg-green-100 text-green-700' : 'bg-yellow-100 text-yellow-700' }}">
@@ -120,7 +120,7 @@
 
             {{-- Approval Timeline --}}
             <div class="border-t pt-4">
-                <h3 class="font-semibold text-gray-900 mb-3">Status Approval</h3>
+                <h3 class="font-semibold text-ink mb-3">Status Approval</h3>
                 <div class="space-y-3">
                     {{-- Submitted --}}
                     <div class="flex items-start gap-3">
@@ -130,8 +130,8 @@
                             </svg>
                         </div>
                         <div>
-                            <p class="font-medium text-gray-900">Diajukan</p>
-                            <p class="text-sm text-gray-500">{{ $booking->created_at->format('d M Y H:i') }}</p>
+                            <p class="font-medium text-ink">Diajukan</p>
+                            <p class="text-sm text-ink/60">{{ $booking->created_at->format('d M Y H:i') }}</p>
                         </div>
                     </div>
 
@@ -144,8 +144,8 @@
                                 </svg>
                             </div>
                             <div>
-                                <p class="font-medium text-gray-900">Disetujui Staff MSC</p>
-                                <p class="text-sm text-gray-500">{{ $booking->staff_approved_at->format('d M Y H:i') }}</p>
+                                <p class="font-medium text-ink">Disetujui Staff MSC</p>
+                                <p class="text-sm text-ink/60">{{ $booking->staff_approved_at->format('d M Y H:i') }}</p>
                             </div>
                         @elseif($booking->status->value === 'rejected')
                             <div class="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -156,17 +156,17 @@
                             <div>
                                 <p class="font-medium text-red-600">Ditolak</p>
                                 @if($booking->reject_reason)
-                                    <p class="text-sm text-gray-500">Alasan: {{ $booking->reject_reason }}</p>
+                                    <p class="text-sm text-ink/60">Alasan: {{ $booking->reject_reason }}</p>
                                 @endif
                             </div>
                         @elseif($booking->status->value === 'cancelled')
-                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
-                                <svg class="w-4 h-4 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
+                            <div class="w-8 h-8 bg-paper-3 rounded-full flex items-center justify-center flex-shrink-0">
+                                <svg class="w-4 h-4 text-ink/45" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"></path>
                                 </svg>
                             </div>
                             <div>
-                                <p class="font-medium text-gray-500">Dibatalkan</p>
+                                <p class="font-medium text-ink/60">Dibatalkan</p>
                             </div>
                         @else
                             <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -190,8 +190,8 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="font-medium text-gray-900">Disetujui Head MSC</p>
-                                    <p class="text-sm text-gray-500">{{ $booking->head_approved_at->format('d M Y H:i') }}</p>
+                                    <p class="font-medium text-ink">Disetujui Head MSC</p>
+                                    <p class="text-sm text-ink/60">{{ $booking->head_approved_at->format('d M Y H:i') }}</p>
                                 </div>
                             @else
                                 <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
@@ -216,8 +216,8 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="font-medium text-gray-900">Sudah Diambil</p>
-                                    <p class="text-sm text-gray-500">{{ $booking->checked_out_at->format('d M Y H:i') }}</p>
+                                    <p class="font-medium text-ink">Sudah Diambil</p>
+                                    <p class="text-sm text-ink/60">{{ $booking->checked_out_at->format('d M Y H:i') }}</p>
                                 </div>
                             </div>
                         @endif
@@ -230,8 +230,8 @@
                                     </svg>
                                 </div>
                                 <div>
-                                    <p class="font-medium text-gray-900">Sudah Dikembalikan</p>
-                                    <p class="text-sm text-gray-500">{{ $booking->returned_at->format('d M Y H:i') }}</p>
+                                    <p class="font-medium text-ink">Sudah Dikembalikan</p>
+                                    <p class="text-sm text-ink/60">{{ $booking->returned_at->format('d M Y H:i') }}</p>
                                 </div>
                             </div>
                         @endif
@@ -246,8 +246,8 @@
                                 </svg>
                             </div>
                             <div>
-                                <p class="font-medium text-gray-900">Selesai</p>
-                                <p class="text-sm text-gray-500">{{ $booking->completed_at->format('d M Y H:i') }}</p>
+                                <p class="font-medium text-ink">Selesai</p>
+                                <p class="text-sm text-ink/60">{{ $booking->completed_at->format('d M Y H:i') }}</p>
                             </div>
                         </div>
                     @endif
@@ -257,16 +257,16 @@
             {{-- Notes --}}
             @if($booking->checkout_note || $booking->return_note)
                 <div class="border-t pt-4">
-                    <h3 class="font-semibold text-gray-900 mb-3">Catatan</h3>
+                    <h3 class="font-semibold text-ink mb-3">Catatan</h3>
                     @if($booking->checkout_note)
-                        <div class="bg-gray-50 rounded-lg p-3 mb-2">
-                            <p class="text-sm text-gray-500">Catatan Check-out:</p>
+                        <div class="bg-paper-2 rounded-lg p-3 mb-2">
+                            <p class="text-sm text-ink/60">Catatan Check-out:</p>
                             <p>{{ $booking->checkout_note }}</p>
                         </div>
                     @endif
                     @if($booking->return_note)
-                        <div class="bg-gray-50 rounded-lg p-3">
-                            <p class="text-sm text-gray-500">Catatan Pengembalian:</p>
+                        <div class="bg-paper-2 rounded-lg p-3">
+                            <p class="text-sm text-ink/60">Catatan Pengembalian:</p>
                             <p>{{ $booking->return_note }}</p>
                         </div>
                     @endif

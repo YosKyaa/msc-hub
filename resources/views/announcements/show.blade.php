@@ -6,12 +6,12 @@
 <div class="mx-auto max-w-3xl">
     {{-- Breadcrumb --}}
     <nav class="mb-6">
-        <ol class="flex items-center gap-2 text-sm text-gray-500">
-            <li><a href="{{ route('landing') }}" class="hover:text-blue-600">Beranda</a></li>
+        <ol class="flex items-center gap-2 text-sm text-ink/60">
+            <li><a href="{{ route('landing') }}" class="hover:text-sun-ink">Beranda</a></li>
             <li><span class="text-gray-300">/</span></li>
-            <li><a href="{{ route('announcements.index') }}" class="hover:text-blue-600">Pengumuman</a></li>
+            <li><a href="{{ route('announcements.index') }}" class="hover:text-sun-ink">Pengumuman</a></li>
             <li><span class="text-gray-300">/</span></li>
-            <li class="text-gray-900 font-medium truncate max-w-[200px]">{{ $announcement->title }}</li>
+            <li class="text-ink font-medium truncate max-w-[200px]">{{ $announcement->title }}</li>
         </ol>
     </nav>
 
@@ -37,8 +37,8 @@
                     {{ $announcement->category->getLabel() }}
                 </span>
             </div>
-            <h1 class="text-2xl md:text-3xl font-bold text-gray-900 mb-4">{{ $announcement->title }}</h1>
-            <div class="flex items-center gap-4 text-sm text-gray-500">
+            <h1 class="text-2xl md:text-3xl font-bold text-ink mb-4">{{ $announcement->title }}</h1>
+            <div class="flex items-center gap-4 text-sm text-ink/60">
                 <span class="flex items-center gap-1">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                     {{ $announcement->published_at->format('d F Y') }}
@@ -53,13 +53,13 @@
         </header>
 
         {{-- Summary --}}
-        <div class="bg-gray-50 rounded-lg p-4 mb-6">
-            <p class="text-gray-700 font-medium">{{ $announcement->summary }}</p>
+        <div class="bg-paper-2 rounded-lg p-4 mb-6">
+            <p class="text-ink/75 font-medium">{{ $announcement->summary }}</p>
         </div>
 
         {{-- Content --}}
         @if($announcement->content)
-            <div class="prose text-gray-700">
+            <div class="prose text-ink/75">
                 {!! $announcement->content !!}
             </div>
         @endif
@@ -68,7 +68,7 @@
     {{-- Related Announcements --}}
     @if($relatedAnnouncements->isNotEmpty())
         <div class="mt-8">
-            <h2 class="text-lg font-semibold text-gray-900 mb-4">Pengumuman Terkait</h2>
+            <h2 class="text-lg font-semibold text-ink mb-4">Pengumuman Terkait</h2>
             <div class="grid sm:grid-cols-3 gap-4">
                 @foreach($relatedAnnouncements as $related)
                     <article class="bg-white rounded-xl p-4 border hover:shadow-md transition">
@@ -84,12 +84,12 @@
                                 {{ $related->category->getLabel() }}
                             </span>
                         </div>
-                        <h3 class="font-medium text-gray-900 text-sm mb-1 line-clamp-2">
-                            <a href="{{ route('announcements.show', $related->slug) }}" class="hover:text-blue-600">
+                        <h3 class="font-medium text-ink text-sm mb-1 line-clamp-2">
+                            <a href="{{ route('announcements.show', $related->slug) }}" class="hover:text-sun-ink">
                                 {{ $related->title }}
                             </a>
                         </h3>
-                        <span class="text-xs text-gray-400">{{ $related->published_at->format('d M Y') }}</span>
+                        <span class="text-xs text-ink/45">{{ $related->published_at->format('d M Y') }}</span>
                     </article>
                 @endforeach
             </div>
@@ -98,7 +98,7 @@
 
     {{-- Back Link --}}
     <div class="mt-8">
-        <a href="{{ route('announcements.index') }}" class="inline-flex items-center gap-2 text-blue-600 hover:text-blue-700 font-medium">
+        <a href="{{ route('announcements.index') }}" class="inline-flex items-center gap-2 text-sun-ink hover:text-sun-ink font-medium">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             Kembali ke Daftar Pengumuman
         </a>

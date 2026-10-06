@@ -6,13 +6,10 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="icon" type="image/png" href="{{ asset('img/jgusolo.png') }}">
     <title>@yield('title', 'Peminjaman') - MSC JGU</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <x-organisms.design-system />
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <style>
-        [x-cloak] { display: none !important; }
-    </style>
 </head>
-<body class="min-h-screen bg-gray-50">
+<body class="min-h-screen bg-paper text-ink antialiased">
     {{-- Navigasi menetap di sisi kiri; di ponsel ia menjadi laci yang
          dibuka dari bilah atas. --}}
     <div class="lg:flex" x-data="{ menuOpen: false }" @keydown.escape.window="menuOpen = false">

@@ -7,8 +7,8 @@
     {{-- Header --}}
     <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div class="min-w-0">
-            <a href="{{ route('request.status') }}" class="text-sm text-blue-600 hover:underline">&larr; Kembali</a>
-            <h1 class="mt-1 break-all text-xl font-bold text-gray-900 sm:text-2xl">{{ $contentRequest->request_code }}</h1>
+            <a href="{{ route('request.status') }}" class="text-sm text-sun-ink hover:underline">&larr; Kembali</a>
+            <h1 class="mt-1 break-all text-xl font-bold text-ink sm:text-2xl">{{ $contentRequest->request_code }}</h1>
         </div>
         <div class="self-start rounded-full px-4 py-2 text-sm font-medium
             @switch($contentRequest->status->value)
@@ -21,7 +21,7 @@
                 @case('rejected') bg-red-100 text-red-700 @break
                 @case('published') bg-green-100 text-green-700 @break
                 @case('archived') bg-gray-100 text-gray-700 @break
-                @default bg-gray-100 text-gray-700
+                @default bg-paper-3 text-ink/75
             @endswitch">
             {{ $contentRequest->status->getLabel() }}
         </div>
@@ -29,44 +29,44 @@
 
     {{-- Request Details --}}
     <div class="bg-white rounded-xl shadow-sm border p-6">
-        <h2 class="font-semibold text-gray-900 mb-4">Detail Request</h2>
+        <h2 class="font-semibold text-ink mb-4">Detail Request</h2>
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div>
-                <div class="text-gray-500">Jenis Konten</div>
+                <div class="text-ink/60">Jenis Konten</div>
                 <div class="font-medium">{{ $contentRequest->content_type->getLabel() }}</div>
             </div>
             <div>
-                <div class="text-gray-500">Platform Target</div>
+                <div class="text-ink/60">Platform Target</div>
                 <div class="font-medium">{{ $contentRequest->platform_target ?? '-' }}</div>
             </div>
             <div>
-                <div class="text-gray-500">Tanggal Event</div>
+                <div class="text-ink/60">Tanggal Event</div>
                 <div class="font-medium">{{ $contentRequest->event_date?->format('d M Y') ?? '-' }}</div>
             </div>
             <div>
-                <div class="text-gray-500">Deadline</div>
+                <div class="text-ink/60">Deadline</div>
                 <div class="font-medium {{ $contentRequest->deadline && $contentRequest->deadline->isPast() ? 'text-red-600' : '' }}">
                     {{ $contentRequest->deadline?->format('d M Y') ?? '-' }}
                 </div>
             </div>
             <div>
-                <div class="text-gray-500">Lokasi</div>
+                <div class="text-ink/60">Lokasi</div>
                 <div class="font-medium">{{ $contentRequest->location ?? '-' }}</div>
             </div>
             <div>
-                <div class="text-gray-500">PIC</div>
+                <div class="text-ink/60">PIC</div>
                 <div class="font-medium">{{ $contentRequest->assignedTo?->name ?? 'Belum ditentukan' }}</div>
             </div>
             @if($contentRequest->purpose)
             <div class="md:col-span-2">
-                <div class="text-gray-500">Tujuan</div>
+                <div class="text-ink/60">Tujuan</div>
                 <div class="font-medium">{{ $contentRequest->purpose }}</div>
             </div>
             @endif
             @if($contentRequest->notes)
             <div class="md:col-span-2">
-                <div class="text-gray-500">Catatan</div>
+                <div class="text-ink/60">Catatan</div>
                 <div class="font-medium">{{ $contentRequest->notes }}</div>
             </div>
             @endif
@@ -75,18 +75,18 @@
 
     {{-- Timeline --}}
     <div class="bg-white rounded-xl shadow-sm border p-6">
-        <h2 class="font-semibold text-gray-900 mb-4">Timeline</h2>
+        <h2 class="font-semibold text-ink mb-4">Timeline</h2>
         
         <div class="space-y-4">
             <div class="flex items-start gap-3">
-                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <div class="w-8 h-8 bg-sun-tint rounded-full flex items-center justify-center flex-shrink-0">
+                    <svg class="w-4 h-4 text-sun-ink" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                     </svg>
                 </div>
                 <div>
-                    <div class="font-medium text-gray-900">Request Dibuat</div>
-                    <div class="text-sm text-gray-500">{{ $contentRequest->created_at->format('d M Y H:i') }}</div>
+                    <div class="font-medium text-ink">Request Dibuat</div>
+                    <div class="text-sm text-ink/60">{{ $contentRequest->created_at->format('d M Y H:i') }}</div>
                 </div>
             </div>
             
@@ -98,7 +98,7 @@
                     </svg>
                 </div>
                 <div>
-                    <div class="font-medium text-gray-900">Ditugaskan ke {{ $contentRequest->assignedTo->name }}</div>
+                    <div class="font-medium text-ink">Ditugaskan ke {{ $contentRequest->assignedTo->name }}</div>
                 </div>
             </div>
             @endif
@@ -111,8 +111,8 @@
                     </svg>
                 </div>
                 <div>
-                    <div class="font-medium text-gray-900">Disetujui Staff MSC</div>
-                    <div class="text-sm text-gray-500">{{ $contentRequest->staff_approved_at->format('d M Y H:i') }}</div>
+                    <div class="font-medium text-ink">Disetujui Staff MSC</div>
+                    <div class="text-sm text-ink/60">{{ $contentRequest->staff_approved_at->format('d M Y H:i') }}</div>
                 </div>
             </div>
             @endif
@@ -125,8 +125,8 @@
                     </svg>
                 </div>
                 <div>
-                    <div class="font-medium text-gray-900">Disetujui Head MSC</div>
-                    <div class="text-sm text-gray-500">{{ $contentRequest->head_approved_at->format('d M Y H:i') }}</div>
+                    <div class="font-medium text-ink">Disetujui Head MSC</div>
+                    <div class="text-sm text-ink/60">{{ $contentRequest->head_approved_at->format('d M Y H:i') }}</div>
                 </div>
             </div>
             @endif
@@ -139,8 +139,8 @@
                     </svg>
                 </div>
                 <div>
-                    <div class="font-medium text-gray-900">Ditolak</div>
-                    <div class="text-sm text-gray-500">{{ $contentRequest->rejected_at->format('d M Y H:i') }}</div>
+                    <div class="font-medium text-ink">Ditolak</div>
+                    <div class="text-sm text-ink/60">{{ $contentRequest->rejected_at->format('d M Y H:i') }}</div>
                     @if($contentRequest->reject_reason)
                     <div class="text-sm text-red-600 mt-1">Alasan: {{ $contentRequest->reject_reason }}</div>
                     @endif
@@ -156,10 +156,10 @@
                     </svg>
                 </div>
                 <div>
-                    <div class="font-medium text-gray-900">Dipublikasi</div>
-                    <div class="text-sm text-gray-500">{{ $contentRequest->published_at->format('d M Y H:i') }}</div>
+                    <div class="font-medium text-ink">Dipublikasi</div>
+                    <div class="text-sm text-ink/60">{{ $contentRequest->published_at->format('d M Y H:i') }}</div>
                     @if($contentRequest->published_link)
-                    <a href="{{ $contentRequest->published_link }}" target="_blank" class="text-sm text-blue-600 hover:underline">
+                    <a href="{{ $contentRequest->published_link }}" target="_blank" class="text-sm text-sun-ink hover:underline">
                         Lihat Hasil →
                     </a>
                     @endif
@@ -171,7 +171,7 @@
 
     {{-- Comments --}}
     <div class="bg-white rounded-xl shadow-sm border p-6">
-        <h2 class="font-semibold text-gray-900 mb-4">Komentar</h2>
+        <h2 class="font-semibold text-ink mb-4">Komentar</h2>
         
         @if($contentRequest->comments->count() > 0)
         <div class="space-y-4 mb-6">
@@ -191,15 +191,15 @@
                             {{ $comment->author_type->value === 'requester' ? 'bg-blue-100 text-blue-600' : ($comment->author_type->value === 'head' ? 'bg-green-100 text-green-600' : 'bg-purple-100 text-purple-600') }}">
                             {{ $comment->author_type->getLabel() }}
                         </span>
-                        <span class="text-xs text-gray-400">{{ $comment->created_at->diffForHumans() }}</span>
+                        <span class="text-xs text-ink/45">{{ $comment->created_at->diffForHumans() }}</span>
                     </div>
-                    <p class="text-sm text-gray-600 mt-1">{{ $comment->message }}</p>
+                    <p class="text-sm text-ink/65 mt-1">{{ $comment->message }}</p>
                 </div>
             </div>
             @endforeach
         </div>
         @else
-        <p class="text-gray-500 text-sm mb-4">Belum ada komentar.</p>
+        <p class="text-ink/60 text-sm mb-4">Belum ada komentar.</p>
         @endif
         
         {{-- Add Comment Form --}}
@@ -207,13 +207,13 @@
         <form action="{{ route('request.status.comment', $contentRequest) }}" method="POST" class="border-t pt-4">
             @csrf
             <div class="flex gap-3">
-                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
-                    <span class="text-xs font-medium text-blue-600">{{ substr($requester['name'], 0, 1) }}</span>
+                <div class="w-8 h-8 bg-sun-tint rounded-full flex items-center justify-center flex-shrink-0">
+                    <span class="text-xs font-medium text-sun-ink">{{ substr($requester['name'], 0, 1) }}</span>
                 </div>
                 <div class="flex-1">
                     <textarea name="message" rows="2" required placeholder="Tulis komentar atau pertanyaan..."
-                              class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"></textarea>
-                    <button type="submit" class="mt-2 px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition">
+                              class="w-full px-3 py-2 border border-ink/15 rounded-lg focus:ring-2 focus:ring-sun-deep/50 focus:border-sun-deep text-sm"></textarea>
+                    <button type="submit" class="mt-2 px-4 py-2 bg-sun text-ink text-sm font-medium rounded-lg hover:bg-sun-deep transition">
                         Kirim
                     </button>
                 </div>

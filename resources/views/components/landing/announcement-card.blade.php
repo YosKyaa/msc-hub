@@ -20,20 +20,20 @@
         </span>
     </div>
     
-    <h3 class="font-bold text-gray-900 text-lg mb-2 line-clamp-2 group-hover:text-accent transition">
-        <a href="{{ route('announcements.show', $announcement->slug) }}" class="hover:text-blue-600">
+    <h3 class="font-bold text-ink text-lg mb-2 line-clamp-2 group-hover:text-accent transition">
+        <a href="{{ route('announcements.show', $announcement->slug) }}" class="hover:text-sun-ink">
             {{ $announcement->title }}
         </a>
     </h3>
     
-    <p class="text-gray-500 text-sm mb-4 line-clamp-2">{{ $announcement->summary }}</p>
+    <p class="text-ink/60 text-sm mb-4 line-clamp-2">{{ $announcement->summary }}</p>
     
-    <div class="flex items-center justify-between pt-4 border-t border-gray-100">
-        <span class="text-xs text-gray-400 flex items-center gap-1.5">
+    <div class="flex items-center justify-between pt-4 border-t border-ink/[.07]">
+        <span class="text-xs text-ink/45 flex items-center gap-1.5">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             {{ $announcement->published_at->format('d M Y') }}
         </span>
-        <a href="{{ route('announcements.show', $announcement->slug) }}" class="inline-flex items-center gap-1.5 text-sm text-blue-600 font-semibold hover:text-blue-700 hover:gap-2.5 transition-all">
+        <a href="{{ route('announcements.show', $announcement->slug) }}" class="inline-flex items-center gap-1.5 text-sm text-sun-ink font-semibold hover:text-sun-ink hover:gap-2.5 transition-all">
             <span>Baca</span>
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3"/></svg>
         </a>

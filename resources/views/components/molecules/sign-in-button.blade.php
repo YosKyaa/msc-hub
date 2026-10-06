@@ -1,21 +1,16 @@
 @props([
-    'tone' => 'indigo',
+    // Dipertahankan demi pemanggil lama; warnanya kini satu untuk seluruh
+    // portal.
+    'tone' => null,
     // Versi ringkas untuk bilah atas di layar sempit.
     'compact' => false,
 ])
 
 {{-- Mengarah ke portal, bukan langsung ke Google: satu pintu masuk untuk
      seluruh sistem, dan pengunjung yang ternyata admin tidak tersesat. --}}
-@php
-    // Ditulis utuh, bukan dirangkai dari $tone: kelas yang dibentuk saat
-    // berjalan hanya selamat selama halaman memakai Tailwind Play CDN.
-    $cincin = $tone === 'blue' ? 'focus:ring-blue-300' : 'focus:ring-indigo-300';
-@endphp
-
 <a href="{{ route('login.portal', ['redirect' => request()->fullUrl()]) }}"
    {{ $attributes->class([
-       'inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white font-medium text-gray-700 transition hover:bg-gray-50 focus:outline-none focus:ring-2',
-       $cincin,
+       'inline-flex items-center gap-2 rounded-full border border-ink/10 bg-white font-medium text-ink transition hover:border-sun-deep/50 hover:bg-sun-soft focus:outline-none focus:ring-2 focus:ring-sun-deep/40',
        'px-3 py-1.5 text-xs' => $compact,
        'px-4 py-2 text-sm' => ! $compact,
    ]) }}>

@@ -35,7 +35,7 @@ return [
         | tercatat di proyek ini, supaya halamannya tetap berguna sebelum
         | nomor WhatsApp-nya diisi.
         */
-        'admins' => env('MSC_BIO_ADMINS', 'Hadi:hadi@jgu.ac.id,Chika:chika@jgu.ac.id,Yosua:yosua@jgu.ac.id'),
+        'admins' => env('MSC_BIO_ADMINS', 'Hadi:+62 822-7877-5003,Chika:+62 877-7141-2625,Yosua:+62 821-1218-7810'),
     ],
 
     /*

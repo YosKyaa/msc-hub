@@ -64,12 +64,12 @@
      sebagai laci yang bisa ditarik di ponsel. Datanya satu, wadahnya dua —
      memaksakan satu elemen untuk keduanya membuat kelas transform saling
      menimpa dan hasilnya tidak bisa diandalkan. --}}
-<aside class="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-72 lg:shrink-0 lg:flex-col lg:border-r lg:border-gray-200 lg:bg-white">
-    <a href="{{ route('landing') }}" class="flex items-center gap-2.5 border-b border-gray-100 px-5 py-4">
+<aside class="hidden lg:sticky lg:top-0 lg:flex lg:h-screen lg:w-72 lg:shrink-0 lg:flex-col lg:border-r lg:border-ink/10 lg:bg-white">
+    <a href="{{ route('landing') }}" class="flex items-center gap-2.5 border-b border-ink/[.07] px-5 py-4">
         <img src="{{ asset('img/jgu.png') }}" alt="Jakarta Global University" class="h-9 w-auto">
         <span>
-            <span class="block text-sm font-semibold text-gray-900">MSC Hub</span>
-            <span class="block text-xs text-gray-500">Layanan Media &amp; Peminjaman</span>
+            <span class="block text-sm font-semibold text-ink">MSC Hub</span>
+            <span class="block text-xs text-ink/60">Layanan Media &amp; Peminjaman</span>
         </span>
     </a>
 
@@ -77,17 +77,17 @@
         @if ($requester)
             <x-molecules.nav-link :tone="$tone" :route="$ringkasan['route']" :pattern="$ringkasan['pattern']"
                 :label="$ringkasan['label']" :description="$ringkasan['description']" :icon="$ringkasan['icon']" />
-            <div class="my-3 border-t border-gray-100"></div>
+            <div class="my-3 border-t border-ink/[.07]"></div>
         @endif
 
-        <p class="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Buat Pengajuan</p>
+        <p class="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-ink/45">Buat Pengajuan</p>
         @foreach ($ajukan as $item)
             <x-molecules.nav-link :tone="$tone" :route="$item['route']" :pattern="$item['pattern']"
                 :label="$item['label']" :description="$item['description']" :icon="$item['icon']" />
         @endforeach
 
         @if ($requester)
-            <p class="mt-4 px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Pantau Pengajuan</p>
+            <p class="mt-4 px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-ink/45">Pantau Pengajuan</p>
             @foreach ($pantau as $item)
                 <x-molecules.nav-link :tone="$tone" :route="$item['route']" :pattern="$item['pattern']"
                     :label="$item['label']" :description="$item['description']" :icon="$item['icon']" />
@@ -95,11 +95,11 @@
         @endif
     </nav>
 
-    <div class="border-t border-gray-100 p-3">
+    <div class="border-t border-ink/[.07] p-3">
         @if ($requester)
             <x-molecules.account-menu :requester="$requester" :tone="$tone" placement="top" />
         @else
-            <p class="px-2 pb-3 text-xs leading-relaxed text-gray-500">
+            <p class="px-2 pb-3 text-xs leading-relaxed text-ink/60">
                 Masuk dengan akun kampus untuk mengajukan dan memantau permintaan Anda.
             </p>
             <x-molecules.sign-in-button :tone="$tone" class="w-full justify-center" />
@@ -120,49 +120,49 @@
      x-transition:leave-end="-translate-x-full"
      class="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col bg-white shadow-xl lg:hidden"
      role="dialog" aria-modal="true" aria-label="Menu">
-    <div class="flex items-center justify-between gap-2 border-b border-gray-100 px-4 py-3">
+    <div class="flex items-center justify-between gap-2 border-b border-ink/[.07] px-4 py-3">
         <a href="{{ route('landing') }}" class="flex min-w-0 items-center gap-2.5">
             <img src="{{ asset('img/jgu.png') }}" alt="Jakarta Global University" class="h-8 w-auto">
             <span class="min-w-0">
-                <span class="block truncate text-sm font-semibold text-gray-900">MSC Hub</span>
-                <span class="block truncate text-xs text-gray-500">Layanan Media &amp; Peminjaman</span>
+                <span class="block truncate text-sm font-semibold text-ink">MSC Hub</span>
+                <span class="block truncate text-xs text-ink/60">Layanan Media &amp; Peminjaman</span>
             </span>
         </a>
         <button type="button" @click="menuOpen = false" aria-label="Tutup menu"
-            class="rounded-lg p-2 text-gray-500 transition hover:bg-gray-50 hover:text-gray-900">
+            class="rounded-lg p-2 text-ink/60 transition hover:bg-paper-2 hover:text-ink">
             <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 18 18 6M6 6l12 12"/></svg>
         </button>
     </div>
 
     <nav class="flex-1 overflow-y-auto px-3 py-4" aria-label="Navigasi utama">
         @if ($requester)
-            <div class="mb-3 flex items-center gap-3 rounded-xl bg-gray-50 p-3">
+            <div class="mb-3 flex items-center gap-3 rounded-xl bg-paper-2 p-3">
                 <x-atoms.avatar :name="$requester['name']" :tone="$tone" />
                 <div class="min-w-0">
-                    <p class="truncate text-sm font-semibold text-gray-900">{{ $requester['name'] }}</p>
-                    <p class="truncate text-xs text-gray-500">{{ $requester['email'] }}</p>
+                    <p class="truncate text-sm font-semibold text-ink">{{ $requester['name'] }}</p>
+                    <p class="truncate text-xs text-ink/60">{{ $requester['email'] }}</p>
                 </div>
             </div>
 
             <x-molecules.nav-link :tone="$tone" :route="$ringkasan['route']" :pattern="$ringkasan['pattern']"
                 :label="$ringkasan['label']" :description="$ringkasan['description']" :icon="$ringkasan['icon']" />
-            <div class="my-3 border-t border-gray-100"></div>
+            <div class="my-3 border-t border-ink/[.07]"></div>
         @endif
 
-        <p class="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Buat Pengajuan</p>
+        <p class="px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-ink/45">Buat Pengajuan</p>
         @foreach ($ajukan as $item)
             <x-molecules.nav-link :tone="$tone" :route="$item['route']" :pattern="$item['pattern']"
                 :label="$item['label']" :description="$item['description']" :icon="$item['icon']" />
         @endforeach
 
         @if ($requester)
-            <p class="mt-4 px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-gray-400">Pantau Pengajuan</p>
+            <p class="mt-4 px-3 pb-1 text-xs font-semibold uppercase tracking-wide text-ink/45">Pantau Pengajuan</p>
             @foreach ($pantau as $item)
                 <x-molecules.nav-link :tone="$tone" :route="$item['route']" :pattern="$item['pattern']"
                     :label="$item['label']" :description="$item['description']" :icon="$item['icon']" />
             @endforeach
 
-            <form action="{{ route('auth.google.logout') }}" method="POST" class="mt-4 border-t border-gray-100 pt-3">
+            <form action="{{ route('auth.google.logout') }}" method="POST" class="mt-4 border-t border-ink/[.07] pt-3">
                 @csrf
                 <input type="hidden" name="redirect" value="{{ route('landing') }}">
                 <button type="submit" class="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-sm font-medium text-red-600 transition hover:bg-red-50">
@@ -171,8 +171,8 @@
                 </button>
             </form>
         @else
-            <div class="mt-4 border-t border-gray-100 pt-4">
-                <p class="px-2 pb-3 text-xs leading-relaxed text-gray-500">
+            <div class="mt-4 border-t border-ink/[.07] pt-4">
+                <p class="px-2 pb-3 text-xs leading-relaxed text-ink/60">
                     Masuk dengan akun kampus untuk mengajukan dan memantau permintaan Anda.
                 </p>
                 <x-molecules.sign-in-button :tone="$tone" class="w-full justify-center" />

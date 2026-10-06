@@ -83,21 +83,21 @@
              x-transition:enter-start="opacity-0 translate-y-3"
              x-transition:enter-end="opacity-100 translate-y-0"
              class="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
-            <h2 class="text-lg font-semibold text-gray-900">{{ $heading }}</h2>
-            <p class="mt-1 text-sm text-gray-600">{{ $description }}</p>
+            <h2 class="text-lg font-semibold text-ink">{{ $heading }}</h2>
+            <p class="mt-1 text-sm text-ink/65">{{ $description }}</p>
 
             <dl class="mt-4 divide-y rounded-xl border text-sm" x-show="rows.length">
                 <template x-for="row in rows" :key="row.label">
                     <div class="flex gap-3 px-4 py-2.5">
-                        <dt class="w-2/5 shrink-0 text-gray-500" x-text="row.label"></dt>
-                        <dd class="font-medium text-gray-900 break-words" x-text="row.value"></dd>
+                        <dt class="w-2/5 shrink-0 text-ink/60" x-text="row.label"></dt>
+                        <dd class="font-medium text-ink break-words" x-text="row.value"></dd>
                     </div>
                 </template>
             </dl>
 
             <div class="mt-6 flex justify-end gap-3">
                 <button type="button" @click="showing = false" x-bind:disabled="sending"
-                    class="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50">
+                    class="px-4 py-2 rounded-lg border border-ink/15 text-ink/75 hover:bg-paper-2 disabled:opacity-50">
                     Batal
                 </button>
                 <button type="button" @click="send()" x-bind:disabled="sending"
