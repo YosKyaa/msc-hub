@@ -10,6 +10,28 @@ yang menyertainya. Ganti `USER`, `NAMA_DB`, `/path/ke/msc-hub`, dan
 > Seluruh modul sertifikat baru pertama kali dijalankan di server, dan salah
 > satu migrasinya mengubah data — bukan hanya struktur tabel.
 
+## Rilis berikutnya: satu perintah
+
+Setelah server berjalan, setiap rilis cukup dengan:
+
+```bash
+cd /var/www/msc-hub
+bash deploy.sh
+```
+
+Skrip itu mengerjakan langkah di panduan ini dalam urutan yang benar: ambil
+kode, tolak sisa konflik merge, mode perawatan, **cadangkan basis data sebelum
+migrasi**, `composer install`, migrasi, cache, `queue:restart`, lalu hidup
+kembali. Bila satu langkah gagal, ia berhenti dan menghidupkan aplikasi lagi.
+
+Cadangan sebelum migrasi memakai `mysqldump`. Bila skrip berhenti di langkah
+itu, isi `DB_DUMP_PATH` di `.env` (lihat bagian 9) — sengaja tidak dilewati,
+karena migrasi tanpa cadangan tidak bisa dibatalkan.
+
+Setiap push ke `main` juga diuji otomatis di GitHub Actions
+(`.github/workflows/tests.yml`). Naikkan ke server hanya commit yang tandanya
+hijau di GitHub.
+
 ---
 
 ## 0. Yang harus tersedia di server

@@ -1,0 +1,72 @@
+# Test otomatis setiap push dan pull request ke main.
+#
+# Sebelumnya test hanya berjalan bila seseorang ingat menjalankannya, dan
+# server pernah menyajikan galat 500 di semua halaman karena sisa konflik
+# merge ikut ter-commit. Pemeriksaan di bawah menangkap keduanya sebelum
+# kodenya sampai ke server.
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: test-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
+          MYSQL_DATABASE: msc_hub_testing
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Tolak sisa konflik merge
+        run: |
+          if git grep -nE '^(<{7}|>{7})( |$)' -- . ':!*.md'; then
+            echo "::error::Ada sisa konflik merge yang ikut ter-commit."
+            exit 1
+          fi
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: bcmath, exif, fileinfo, gd, intl, mbstring, pdo_mysql, xml, zip
+          coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: ~/.composer/cache/files
+          key: composer-${{ hashFiles('composer.lock') }}
+
+      - name: Pasang dependensi
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Celah keamanan dependensi produksi
+        run: composer audit --no-dev --no-interaction
+
+      - name: Siapkan .env
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Jalankan test
+        run: php artisan test

@@ -96,4 +96,35 @@ class SourceHygieneTest extends TestCase
             "Pola regex memuat baris baru sungguhan, kemungkinan `\\r` atau `\\n` yang termakan:\n"
             .implode("\n", $rusak));
     }
+
+    /**
+     * Sisa konflik merge yang ikut ter-commit.
+     *
+     * Server pernah menyajikan galat 500 di semua halaman karena penanda
+     * konflik tertinggal di berkas PHP. Penanda yang sama juga sempat
+     * bertahan berbulan-bulan di .gitignore tanpa ada yang menyadarinya.
+     */
+    public function test_no_merge_conflict_markers_are_committed(): void
+    {
+        $berkas = [];
+        exec('git ls-files', $berkas);
+
+        $this->assertNotEmpty($berkas, 'Tidak ada berkas terlacak yang ditemukan.');
+
+        $temuan = [];
+
+        foreach ($berkas as $path) {
+            if (str_ends_with($path, '.md') || ! is_file(base_path($path))) {
+                continue;
+            }
+
+            $isi = (string) file_get_contents(base_path($path));
+
+            if (preg_match('/^(<{7}|>{7})( |$)/m', $isi) === 1) {
+                $temuan[] = $path;
+            }
+        }
+
+        $this->assertSame([], $temuan, 'Sisa konflik merge ditemukan di: '.implode(', ', $temuan));
+    }
 }
