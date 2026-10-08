@@ -32,7 +32,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        // Satu pengukur per permintaan: metrik font dompdf cukup dimuat sekali
+        // untuk seluruh elemen di satu sertifikat.
+        $this->app->scoped(\App\Support\CertificateTextMeasurer::class);
     }
 
     /**

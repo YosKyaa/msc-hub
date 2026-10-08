@@ -2,6 +2,8 @@
 
 namespace App\Support;
 
+use App\Models\CertificateTemplate;
+
 /**
  * Satu elemen di atas kanvas sertifikat.
  *
@@ -50,6 +52,19 @@ final class CertificateElement
     public const DEFAULT_WIDTH = 300;
 
     public const DEFAULT_HEIGHT = 60;
+
+    /**
+     * Bagian lebar kotak yang boleh dipakai teks saat ukurannya disesuaikan.
+     * Sisa sedikit ruang supaya huruf terakhir tidak menempel di tepi kotak.
+     */
+    public const FIT_ROOM = 0.96;
+
+    /**
+     * Huruf tidak dikecilkan melewati separuh ukuran rancangannya. Nama yang
+     * masih tidak muat pada ukuran itu dibiarkan turun ke baris kedua: lebih
+     * baik dua baris yang terbaca daripada satu baris yang terlalu kecil.
+     */
+    public const MIN_FIT_RATIO = 0.5;
 
     /**
      * Struktur kotaknya, dipakai PDF maupun pratinjau.
@@ -175,6 +190,52 @@ final class CertificateElement
     public function color(): string
     {
         return (string) ($this->raw['color'] ?? self::DEFAULT_COLOR);
+    }
+
+    /**
+     * Kotak yang hanya muat satu baris pada ukuran rancangannya.
+     *
+     * Kotak nama hampir selalu dirancang begini: setinggi satu baris, selebar
+     * nama yang dibayangkan perancangnya. Kotak yang dirancang tinggi memang
+     * dimaksudkan untuk teks yang membungkus, jadi tidak disentuh.
+     */
+    public function isSingleLine(): bool
+    {
+        return $this->height() < 2 * self::LINE_HEIGHT * $this->fontSize();
+    }
+
+    /**
+     * Ukuran huruf yang benar-benar dipakai.
+     *
+     * Template dirancang dengan nama contoh yang pendek. Nama sungguhan
+     * seperti "Muhammad Rajendra Belva Putra Indrayana" lalu turun ke baris
+     * kedua, keluar dari kotaknya, dan menimpa elemen di bawahnya — karena
+     * kotak satu baris tidak punya tempat untuk baris kedua. Huruf pada kotak
+     * seperti itu dikecilkan seperlunya sampai teksnya muat satu baris.
+     *
+     * Satu-satunya tempat ukuran ini dihitung. PDF dan pratinjau di halaman
+     * verifikasi sama-sama memakainya, jadi keduanya tetap sebangun.
+     */
+    public function fittedFontSize(array $values, ?CertificateTemplate $template = null): float
+    {
+        $size = (float) $this->fontSize();
+        $text = $this->value($values);
+
+        if ($this->isQr() || $text === '' || ! $this->isSingleLine() || $size <= 0) {
+            return $size;
+        }
+
+        $lebar = app(CertificateTextMeasurer::class)->width($text, $this->fontFamily(), $this->fontWeight(), $size, $template);
+        $ruang = $this->width() * self::FIT_ROOM;
+
+        if ($lebar <= $ruang || $lebar <= 0) {
+            return $size;
+        }
+
+        return max(
+            $size * self::MIN_FIT_RATIO,
+            floor($size * ($ruang / $lebar) * 10) / 10,
+        );
     }
 
     // ---------------------------------------------------------------- CSS

@@ -36,7 +36,7 @@ html, body { margin:0; padding:0; width:{{ $template->canvas_width }}px; height:
         $element->width().'px',
         $element->height().'px',
     ) }}">
-        <div class="element-content" style="{{ $element->contentCss($element->fontSize().'px', $element->height().'px') }}">
+        <div class="element-content" style="{{ $element->contentCss($element->fittedFontSize($values, $template).'px', $element->height().'px') }}">
             @if($element->isQr())
                 <img src="{{ $qrDataUri }}" alt="QR verifikasi" style="width:{{ $element->width() }}px;height:{{ $element->height() }}px;">
             @else

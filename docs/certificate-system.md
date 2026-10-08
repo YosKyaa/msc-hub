@@ -226,6 +226,26 @@ Template lama tidak punya kunci `valign`; bawaannya rata tengah, mengikuti apa
 yang selama ini ditampilkan editor, supaya desain yang terlanjur dibuat tidak
 bergeser.
 
+### Nama panjang mengecil sendiri
+
+Template dirancang dengan nama contoh yang pendek, sedangkan daftar peserta
+memuat nama seperti "Muhammad Rajendra Belva Putra Indrayana". Pada kotak yang
+hanya muat satu baris — kotak yang lebih pendek dari dua baris pada ukuran
+rancangannya — teks seperti itu dulu turun ke baris kedua, keluar dari kotak,
+dan menimpa elemen di bawahnya.
+
+`CertificateElement::fittedFontSize()` kini mengecilkan hurufnya seperlunya
+sampai teksnya muat satu baris, dengan sisa 4% lebar sebagai ruang napas.
+Batas bawahnya separuh ukuran rancangan; teks yang masih tidak muat dibiarkan
+turun ke baris kedua, karena dua baris yang terbaca lebih baik daripada satu
+baris yang terlalu kecil. Kotak yang dirancang tinggi tidak disentuh.
+
+Lebarnya diukur dengan metrik font dompdf sendiri
+(`App\Support\CertificateTextMeasurer`), bukan perkiraan, karena hanya dompdf
+yang mengenal semua font yang bisa dipilih — termasuk font bawaan PDF yang
+tidak punya berkas TTF dan font unggahan per template. Ukuran yang sama dipakai
+PDF dan pratinjau di halaman verifikasi.
+
 ## Import peserta
 
 Berkas `.xlsx`, `.xls`, `.ods`, atau `.csv`, maksimal 500 baris data dan 2 MB.

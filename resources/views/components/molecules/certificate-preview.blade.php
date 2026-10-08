@@ -62,7 +62,7 @@
              ) }}">
             {{-- Tinggi selnya relatif terhadap kotaknya, bukan kanvas: kotak
                  luarnyalah yang sudah diukur terhadap kanvas. --}}
-            <div style="{{ CertificateElement::CELL_STRUCTURE }}{{ $element->contentCss($containerWidth($element->fontSize()), '100%') }}">
+            <div style="{{ CertificateElement::CELL_STRUCTURE }}{{ $element->contentCss($containerWidth($element->fittedFontSize($values, $template)), '100%') }}">
                 @if($element->isQr())
                     @if($qrDataUri)
                         <img src="{{ $qrDataUri }}" alt="QR verifikasi" style="width:100%;height:100%;">
