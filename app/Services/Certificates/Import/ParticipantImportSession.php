@@ -3,6 +3,9 @@
 namespace App\Services\Certificates\Import;
 
 use App\Models\CertificateEvent;
+use Closure;
+use Illuminate\Contracts\Filesystem\Filesystem;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 
@@ -10,8 +13,9 @@ use Illuminate\Support\Facades\Storage;
  * Menjembatani alur import dua langkah: pratinjau lalu konfirmasi.
  *
  * Hasil pembacaan disimpan di cache selama 30 menit dengan kunci berbasis
- * berkas unggahan, sehingga konfirmasi tidak membaca ulang file. Berkas
- * sementara dan cache-nya selalu dibuang setelah proses selesai.
+ * berkas unggahan, sehingga pratinjau tidak membaca ulang file setiap kali
+ * modal diperbarui. Berkas sementara dan cache-nya selalu dibuang setelah
+ * proses selesai.
  */
 class ParticipantImportSession
 {
@@ -26,19 +30,31 @@ class ParticipantImportSession
         private readonly ParticipantImporter $importer,
     ) {}
 
+    /**
+     * Pratinjau berkas yang sudah disimpan di disk sementara.
+     */
     public function preview(string $storedPath): ParticipantImportPreview
     {
-        $cached = Cache::get($this->cacheKey($storedPath));
+        return $this->remember(
+            $this->cacheKey($storedPath),
+            fn () => $this->parser->parse($this->disk()->path($storedPath)),
+        );
+    }
 
-        if (is_array($cached)) {
-            return ParticipantImportPreview::fromArray($cached);
-        }
-
-        $preview = $this->parser->parse($this->disk()->path($storedPath));
-
-        Cache::put($this->cacheKey($storedPath), $preview->toArray(), now()->addMinutes(self::CACHE_TTL_MINUTES));
-
-        return $preview;
+    /**
+     * Pratinjau berkas yang baru diunggah dan belum disimpan.
+     *
+     * Tombol Lanjut pada wizard Filament hanya memvalidasi langkahnya, tidak
+     * menyimpan berkasnya. Langkah pratinjau karena itu menerima unggahan
+     * sementara Livewire, bukan path di disk impor. Berkas itu baru
+     * dipindahkan saat konfirmasi, lalu dibaca ulang oleh confirm().
+     */
+    public function previewUpload(UploadedFile $file): ParticipantImportPreview
+    {
+        return $this->remember(
+            $this->cacheKey('unggahan:'.$file->getFilename()),
+            fn () => $this->parser->parse($file->getRealPath() ?: throw ParticipantImportException::unreadable()),
+        );
     }
 
     public function confirm(CertificateEvent $event, string $storedPath): ParticipantImportResult
@@ -63,12 +79,30 @@ class ParticipantImportSession
         return filled($storedPath) && $this->disk()->exists($storedPath);
     }
 
+    /**
+     * @param  Closure(): ParticipantImportPreview  $parse
+     */
+    private function remember(string $key, Closure $parse): ParticipantImportPreview
+    {
+        $cached = Cache::get($key);
+
+        if (is_array($cached)) {
+            return ParticipantImportPreview::fromArray($cached);
+        }
+
+        $preview = $parse();
+
+        Cache::put($key, $preview->toArray(), now()->addMinutes(self::CACHE_TTL_MINUTES));
+
+        return $preview;
+    }
+
     private function cacheKey(string $storedPath): string
     {
         return 'participant-import:'.sha1($storedPath);
     }
 
-    private function disk(): \Illuminate\Contracts\Filesystem\Filesystem
+    private function disk(): Filesystem
     {
         return Storage::disk(self::TEMP_DISK);
     }

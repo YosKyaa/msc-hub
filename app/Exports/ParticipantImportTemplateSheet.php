@@ -10,9 +10,11 @@ use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
 
 /**
  * Lembar isian: nama kolom, contoh, dan pengaman agar peran tidak salah ketik.
@@ -101,6 +103,24 @@ class ParticipantImportTemplateSheet implements FromArray, WithColumnWidths, Wit
                     $validasi->setPromptTitle('Peran');
                     $validasi->setPrompt('Kosongkan berarti Peserta.');
                     $validasi->setFormula1($pilihan);
+                }
+
+                // NIP dosen dan tendik panjangnya 18 digit, sedangkan Excel hanya
+                // menyimpan 15 digit pertama dari sebuah angka: sisanya diganti
+                // nol tanpa peringatan. Begitu pula NIM berawalan nol, yang
+                // kehilangan nolnya. Kolom berformat Teks menyimpan apa yang
+                // diketik apa adanya.
+                $akhir = ParticipantImportParser::MAX_ROWS + 1;
+                $sheet->getStyle('D2:D'.$akhir)->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
+                $sheet->getStyle('F2:F'.$akhir)->getNumberFormat()->setFormatCode(NumberFormat::FORMAT_TEXT);
+
+                // Contohnya sendiri sudah telanjur ditulis sebagai angka oleh
+                // pengisi bawaan, sehingga NIP contoh tampil 1.98001E+17.
+                // Ditulis ulang sebagai teks.
+                foreach (ParticipantImportTemplate::contoh() as $urutan => $contoh) {
+                    $baris = $urutan + 2;
+                    $sheet->setCellValueExplicit('D'.$baris, $contoh[3], DataType::TYPE_STRING);
+                    $sheet->setCellValueExplicit('F'.$baris, $contoh[5], DataType::TYPE_STRING);
                 }
 
                 // Nama kolom tetap terlihat saat menggulir ratusan baris.

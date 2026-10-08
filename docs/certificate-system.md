@@ -7,7 +7,8 @@
 - Dompdf untuk PDF satu halaman dengan elemen posisi absolut dan font TTF.
 - chillerlan/php-qrcode 5.0.5 untuk QR PNG; paket sudah tersedia pada proyek.
 - Alpine.js untuk editor visual drag-and-drop tanpa SPA tambahan.
-- maatwebsite/excel 3.1 untuk import peserta dari .xlsx/.csv.
+- PhpSpreadsheet untuk membaca berkas impor peserta (.xlsx, .xls, .ods, .csv),
+  dan maatwebsite/excel 3.1 untuk membuat template impornya.
 - Laravel queue (driver database) untuk pengiriman email sertifikat, dan untuk
   penerbitan yang pesertanya melebihi batas penerbitan langsung.
 
@@ -227,9 +228,48 @@ bergeser.
 
 ## Import peserta
 
-Berkas `.xlsx` atau `.csv`, header di baris 1, maksimal 500 baris data, maksimal
-2 MB. Kolom dicocokkan berdasarkan **nama** sehingga urutannya bebas; kolom yang
-tidak dikenal diabaikan dengan peringatan.
+Berkas `.xlsx`, `.xls`, `.ods`, atau `.csv`, maksimal 500 baris data dan 2 MB.
+Kolom dicocokkan berdasarkan **nama** sehingga urutannya bebas; kolom yang tidak
+dikenal diabaikan dengan peringatan.
+
+Jarang ada berkas yang persis seperti template, jadi pembacanya
+(`app/Services/Certificates/Import/SpreadsheetReader.php` dan
+`app/Services/Certificates/Import/ParticipantImportParser.php`) menerima
+variasi yang wajar:
+
+- **Judul kolom diseragamkan.** "Nama Sertifikat", "NIM/NIP", dan "Unit / Prodi"
+  terbaca sebagai `nama_sertifikat`, `nim_nip`, dan `unit_prodi`; "E-mail" dan
+  "Email Address" sebagai `email`. "Nama" saja tetap ditolak, karena tidak
+  jelas apakah itu nama yang dicetak.
+- **Baris judul boleh bergeser.** Sepuluh baris berisi teratas diperiksa, jadi
+  judul kegiatan di atas tabel tidak masalah. Nomor baris yang dilaporkan tetap
+  nomor baris di Excel.
+- **Data boleh di lembar mana pun.** Lembar pertama yang memuat judul kolom
+  yang dipakai. Bila itu bukan lembar pertama, atau lembar lain juga tampak
+  berisi daftar peserta, pratinjau menyebutkannya, karena hanya satu lembar
+  yang dibaca.
+- **Rumus dibaca dari nilainya**, yaitu nilai yang disimpan Excel saat berkas
+  terakhir disimpan. Rumus yang gagal (`#N/A`, `#REF!`) ditolak, bukan dicetak.
+- **Spasi tak terlihat dibuang.** Spasi tak putus dan karakter lebar-nol hasil
+  salin dari web atau WhatsApp, serta baris baru (Alt+Enter) dan spasi ganda di
+  tengah nama.
+- **CSV** dengan pemisah koma maupun titik koma (Excel berlokal Indonesia),
+  dengan atau tanpa BOM, UTF-8 maupun ANSI.
+
+Yang ditolak per baris, dengan alasannya di pratinjau:
+
+| Kasus | Alasan |
+|---|---|
+| Baris contoh template yang lupa dihapus | Contoh baru beralamat `contoh.…`; contoh template lama hanya bila seluruh barisnya sama persis, karena alamatnya mungkin memang milik seseorang |
+| Nama lebih dari 150 karakter, atau tanpa huruf sama sekali | Sama dengan batas absensi; nama tanpa huruf biasanya kolom yang tertukar |
+| Email tanpa domain utuh (`budi@gmail`) | Aturan RFC menerimanya, tetapi tidak akan pernah sampai |
+| Nomor sertifikat kembar dalam berkas, sudah terbit, atau sudah disiapkan untuk orang lain | Bila lolos, salah satu sertifikat gagal terbit belakangan |
+| Nomor sertifikat dalam notasi E (`2.0261E+17`) | Excel memotong angka di atas 15 digit |
+
+NIP 18 digit yang diketik di kolom berformat angka juga rusak oleh Excel. Karena
+NIP hanya untuk pencatatan, barisnya tetap diimpor tetapi NIP-nya dikosongkan
+dengan peringatan. Template sudah memformat kolom `nim_nip` dan
+`nomor_sertifikat` sebagai Teks untuk mencegahnya.
 
 | Kolom | Wajib | Dipetakan ke |
 |---|---|---|
@@ -245,12 +285,23 @@ Penyelenggara, Juri, Mentor, Relawan, Lainnya.
 
 Alur dua langkah: unggah menghasilkan **pratinjau** (tidak menulis apa pun,
 hasilnya di-cache 30 menit), lalu konfirmasi menulis dalam satu transaksi dan
-membuang berkas sementara.
+membuang berkas sementara. Galat yang tidak diduga saat menyimpan dicatat di
+log, dan admin diberi tahu bahwa tidak ada satu baris pun yang tersimpan,
+sehingga berkas yang sama aman diunggah ulang.
 
-Aturan dedup: email dinormalkan (lowercase + trim). Email yang sudah ada di
-master dipakai ulang dan **namanya tidak pernah ditimpa** — perbedaannya
-dilaporkan sebagai peringatan. Peserta yang sudah terdaftar di kegiatan yang
-sama dilewati dan dihitung pada laporan hasil.
+> Tombol Lanjut pada wizard Filament hanya memvalidasi langkahnya, tidak
+> menyimpan berkasnya. Langkah pratinjau karena itu menerima unggahan sementara
+> Livewire, bukan path di disk impor, dan dulu selalu menampilkan "Unggah
+> berkas terlebih dahulu". `ParticipantImportSession::previewUpload()` membaca
+> unggahan sementara itu; berkasnya baru disimpan dan dibaca ulang saat
+> konfirmasi.
+
+Aturan dedup: email dinormalkan (`ParticipantRegistry::normaliseEmail()`: huruf
+kecil, tanpa spasi di ujungnya termasuk yang tak terlihat). Email yang sudah ada
+di master dipakai ulang dan **namanya tidak pernah ditimpa**. Perbedaannya
+disebut sejak pratinjau, karena nama master itulah yang akan tercetak, dan bisa
+diubah lewat tombol Koreksi Data Penerima. Peserta yang sudah terdaftar di
+kegiatan yang sama dilewati dan dihitung pada laporan hasil.
 
 Email di luar domain JGU diperbolehkan lewat import dan input manual (tipe
 `guest`); jalur absensi QR tetap ketat domain JGU.

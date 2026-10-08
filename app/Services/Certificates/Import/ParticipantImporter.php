@@ -38,9 +38,9 @@ class ParticipantImporter
                     ],
                 );
 
-                if ($participant->name !== $row->name) {
-                    $warnings[] = "Baris {$row->line}: nama di file diabaikan, memakai nama master \"{$participant->name}\".";
-                }
+                // Nama master yang berbeda dari berkas sudah diperingatkan sejak
+                // pratinjau (ParticipantImportParser), dan peringatan pratinjau
+                // ikut terbawa ke hasil ini.
 
                 if ($event->participations()->where('participant_id', $participant->id)->exists()) {
                     $skipped++;

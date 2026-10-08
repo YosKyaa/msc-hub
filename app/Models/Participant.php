@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Services\Certificates\ParticipantRegistry;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -22,11 +23,12 @@ class Participant extends Model
 
     /**
      * Email selalu disimpan dalam bentuk ternormalisasi karena dipakai
-     * sebagai kunci dedup peserta.
+     * sebagai kunci dedup peserta. Aturannya tinggal di ParticipantRegistry,
+     * supaya jalur mana pun yang menyimpan email sampai pada bentuk yang sama.
      */
     public function setEmailAttribute(?string $value): void
     {
-        $normalised = mb_strtolower(trim((string) $value));
+        $normalised = ParticipantRegistry::normaliseEmail($value);
 
         $this->attributes['email'] = $normalised === '' ? null : $normalised;
     }

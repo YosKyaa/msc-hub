@@ -17,8 +17,9 @@ use Tests\TestCase;
 /**
  * Berkas contoh untuk mengimpor peserta.
  *
- * Nama pada sertifikat dicetak apa adanya dan tidak bisa ditarik kembali
- * setelah terbit, jadi salah ketik mahal harganya. Template hanya berguna
+ * Nama pada sertifikat dicetak apa adanya, dan sertifikat yang telanjur
+ * terkirim dengan nama keliru harus dikoreksi lalu dikirim ulang, jadi salah
+ * ketik mahal harganya. Template hanya berguna
  * bila kolomnya benar-benar sama dengan yang dibaca importer — kalau
  * keduanya menyimpang, template justru menyesatkan.
  */
@@ -158,18 +159,72 @@ class ParticipantImportTemplateTest extends TestCase
      * Bukti yang paling menentukan: berkas ini dibaca oleh importer yang
      * sesungguhnya, bukan sekadar dicocokkan judul kolomnya. Template yang
      * ditolak sistemnya sendiri lebih buruk daripada tidak ada template.
+     *
+     * Baris contohnya memang ditolak — contoh yang lupa dihapus tidak boleh
+     * menjadi peserta sungguhan — tetapi hanya karena ia contoh. Bila ada
+     * alasan lain, berarti contohnya memperagakan format yang salah.
      */
     public function test_the_importer_reads_its_own_template_without_complaint(): void
     {
         $preview = app(ParticipantImportParser::class)->parse($this->file());
 
-        $this->assertSame([], $preview->problems, 'Baris contoh ditolak importer.');
-        $this->assertCount(count(ParticipantImportTemplate::contoh()), $preview->validRows);
+        $this->assertSame([], $preview->validRows, 'Baris contoh ikut diimpor sebagai peserta sungguhan.');
+        $this->assertCount(count(ParticipantImportTemplate::contoh()), $preview->problems);
 
-        $pertama = $preview->validRows[0];
-        $this->assertSame('Budi Santoso', $pertama->name);
-        $this->assertSame('budi@student.jgu.ac.id', $pertama->email);
-        $this->assertSame(ParticipantRole::PARTICIPANT, $pertama->role);
+        foreach ($preview->problems as $masalah) {
+            $this->assertStringContainsString('Baris contoh dari template', $masalah['message'],
+                "Baris contoh {$masalah['line']} ditolak karena alasan lain: {$masalah['message']}");
+        }
+    }
+
+    /**
+     * Isian panitia di bawah baris contoh tetap terbaca seperti biasa.
+     */
+    public function test_rows_typed_into_the_template_are_imported(): void
+    {
+        $buku = IOFactory::load($this->file());
+        $buku->getSheet(0)->fromArray(
+            ['Rina Wulandari', 'rina.w@student.jgu.ac.id', 'Panitia', '20220099', 'Ilmu Komunikasi', ''],
+            null,
+            'A'.(count(ParticipantImportTemplate::contoh()) + 2),
+        );
+        IOFactory::createWriter($buku, 'Xlsx')->save($this->file());
+
+        $preview = app(ParticipantImportParser::class)->parse($this->file());
+
+        $this->assertCount(1, $preview->validRows);
+        $this->assertSame('Rina Wulandari', $preview->validRows[0]->name);
+        $this->assertSame(ParticipantRole::COMMITTEE, $preview->validRows[0]->role);
+        $this->assertSame('20220099', $preview->validRows[0]->institutionalId);
+    }
+
+    /**
+     * NIP dosen 18 digit. Excel hanya menyimpan lima belas digit pertama dari
+     * sebuah angka dan mengganti sisanya dengan nol, jadi kolomnya harus
+     * berformat Teks sejak awal — termasuk contohnya sendiri.
+     */
+    public function test_the_id_and_number_columns_are_text(): void
+    {
+        $lembar = IOFactory::load($this->file())->getSheet(0);
+
+        foreach (['D', 'F'] as $kolom) {
+            $this->assertSame('@', $lembar->getStyle($kolom.'10')->getNumberFormat()->getFormatCode(),
+                "Kolom {$kolom} tidak berformat Teks.");
+        }
+
+        $this->assertSame('198001012005011001', $lembar->getCell('D3')->getValue(),
+            'NIP contoh tersimpan sebagai angka dan kehilangan digitnya.');
+    }
+
+    /**
+     * Alamat contoh tidak boleh mungkin milik orang sungguhan: contoh yang
+     * lupa dihapus akan mengirim sertifikat ke alamat itu.
+     */
+    public function test_the_example_addresses_cannot_belong_to_anyone(): void
+    {
+        foreach (ParticipantImportTemplate::contoh() as [, $email]) {
+            $this->assertStringStartsWith('contoh.', $email);
+        }
     }
 
     /**
@@ -179,9 +234,13 @@ class ParticipantImportTemplateTest extends TestCase
     {
         $preview = app(ParticipantImportParser::class)->parse($this->file());
 
-        foreach ($preview->validRows as $row) {
-            $this->assertStringNotContainsString('PETUNJUK', $row->name);
-        }
+        // Yang terbaca hanya baris contoh di lembar Peserta, baris 2 sampai 4.
+        $baris = array_column($preview->problems, 'line');
+        $this->assertSame(range(2, count(ParticipantImportTemplate::contoh()) + 1), $baris);
+
+        // Dan lembar Petunjuk tidak disangka daftar peserta kedua, yang akan
+        // membuat setiap unggahan template berisi peringatan palsu.
+        $this->assertSame([], $preview->warnings);
     }
 
     // ------------------------------------------------------------ aksesnya

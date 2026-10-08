@@ -17,9 +17,22 @@ class ParticipantRegistry
 
     public const JGU_STAFF_DOMAIN = 'jgu.ac.id';
 
+    /**
+     * Bentuk baku sebuah alamat: huruf kecil, tanpa spasi di ujungnya.
+     *
+     * Spasi yang dibuang termasuk yang tak terlihat. Alamat yang disalin dari
+     * halaman web, Google Sheets, atau WhatsApp kerap membawa spasi tak putus
+     * (NBSP) atau karakter lebar-nol. trim() tidak mengenali keduanya, sehingga
+     * alamat yang tampak benar tersimpan berbeda dari aslinya: dedup gagal
+     * mengenali orang yang sama, dan emailnya bisa tidak terkirim.
+     */
     public static function normaliseEmail(?string $email): string
     {
-        return mb_strtolower(trim((string) $email));
+        $email = (string) $email;
+        $email = preg_replace('/[\x{200B}-\x{200D}\x{2060}\x{FEFF}]/u', '', $email) ?? $email;
+        $email = preg_replace('/^[\s\p{Z}]+|[\s\p{Z}]+$/u', '', $email) ?? $email;
+
+        return mb_strtolower($email);
     }
 
     public static function domainOf(?string $email): string
