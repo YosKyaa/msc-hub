@@ -139,6 +139,8 @@ SESSION_SECURE_COOKIE=true
 
 QUEUE_CONNECTION=database
 LOG_LEVEL=error
+LOG_STACK=daily
+LOG_DAILY_DAYS=14
 ```
 
 - **`APP_DEBUG=false`** — bila true, jejak galat beserta isi konfigurasi,
@@ -151,6 +153,11 @@ LOG_LEVEL=error
   `MSC_REQUESTER_IDLE_TIMEOUT`. Bila lebih pendek, cookie mati lebih dulu dan
   peserta acara sehari penuh terlempar keluar di antara check-in dan check-out.
 - **`SESSION_SECURE_COOKIE=true`** — wajib di HTTPS.
+- **`LOG_STACK=daily`** dengan `LOG_DAILY_DAYS=14` — satu berkas log per hari,
+  yang lebih tua dari dua minggu dihapus sendiri. Dengan `single`, satu berkas
+  `laravel.log` tumbuh tanpa batas sampai disk penuh, dan isinya termasuk alamat
+  email penerima yang gagal dikirimi: data pribadi yang tidak perlu disimpan
+  selamanya.
 
 ### Kunci baru yang belum ada di server
 
