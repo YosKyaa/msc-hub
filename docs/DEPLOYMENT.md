@@ -459,7 +459,62 @@ Lalu telusuri dengan tangan:
 
 ---
 
+## 9. Cadangan otomatis
+
+Setiap malam penjadwal mencadangkan basis data dan berkas unggahan
+(`storage/app/public`: desain dan font sertifikat, tanda tangan, logo penerbit,
+foto prestasi, bingkai twibbon). Kode tidak ikut karena sudah di git.
+
+| Waktu | Perintah | Gunanya |
+|---|---|---|
+| 01.00 | `backup:clean` | buang cadangan lama: semua 7 hari terakhir, lalu satu per hari selama 16 hari, satu per minggu 8 minggu, satu per bulan 4 bulan |
+| 01.30 | `backup:run` | buat cadangan baru |
+| 03.00 | `backup:monitor` | kirim email bila cadangan terbaru lebih tua dari sehari |
+
+Penjadwal ini berjalan lewat cron yang sama dengan pekerja antrean
+(`schedule:run` tiap menit), jadi tidak ada cron tambahan.
+
+```dotenv
+MSC_BACKUP_DISKS=backups
+MSC_BACKUP_NOTIFY=media@jgu.ac.id
+MSC_BACKUP_PASSWORD=isi-dengan-kata-sandi-panjang
+DB_DUMP_PATH=
+```
+
+- **`MSC_BACKUP_PASSWORD`** mengunci arsipnya. Isinya data pribadi peserta,
+  jadi isilah, dan simpan kata sandinya di luar server — tanpa itu arsipnya
+  tidak bisa dibuka saat dibutuhkan.
+- **`DB_DUMP_PATH`** dikosongkan bila `mysqldump` sudah ada di PATH
+  (`which mysqldump`). Bila tidak, isi foldernya.
+- Cadangan tersimpan di `storage/app/backups/msc-hub/`, **di server yang sama**.
+  Itu melindungi dari salah hapus dan rilis yang gagal, tetapi tidak dari
+  server yang rusak. Salin ke tempat lain secara berkala, atau tambahkan disk
+  di luar server (misalnya `s3` atau `sftp` di `config/filesystems.php`) ke
+  `MSC_BACKUP_DISKS`, dipisah koma.
+
+Uji sekali setelah rilis:
+
+```bash
+php artisan backup:run
+php artisan backup:list
+```
+
+### Memulihkan
+
+```bash
+cd ~ && mkdir pulih && cd pulih
+unzip /var/www/msc-hub/storage/app/backups/msc-hub/2026-10-09-01-30-00.zip   # meminta kata sandi
+gunzip db-dumps/mysql-*.sql.gz
+mysql -u USER -p NAMA_DB < db-dumps/mysql-*.sql
+cp -r public/* /var/www/msc-hub/storage/app/public/
+```
+
+---
+
 ## Yang berubah perilakunya setelah rilis ini
+
+- **Cadangan otomatis harian** — lihat bagian 9. Isi `MSC_BACKUP_PASSWORD` di
+  `.env` server.
 
 - **Riwayat Aktivitas** (menu Pengaturan) mencatat siapa mengubah apa:
   pencabutan dan koreksi sertifikat, perubahan kegiatan, template, dan

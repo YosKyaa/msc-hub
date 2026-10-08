@@ -61,6 +61,14 @@ return [
             'options' => extension_loaded('pdo_mysql') ? array_filter([
                 (PHP_VERSION_ID >= 80500 ? \Pdo\Mysql::ATTR_SSL_CA : \PDO::MYSQL_ATTR_SSL_CA) => env('MYSQL_ATTR_SSL_CA'),
             ]) : [],
+            // Dipakai cadangan otomatis (mysqldump). Kosongkan bila mysqldump
+            // sudah ada di PATH server; isi foldernya bila tidak, misalnya
+            // C:/laragon/bin/mysql/mysql-8.0.30-winx64/bin di Laragon.
+            'dump' => [
+                'dump_binary_path' => env('DB_DUMP_PATH', ''),
+                'use_single_transaction' => true,
+                'timeout' => 300,
+            ],
         ],
 
         'mariadb' => [

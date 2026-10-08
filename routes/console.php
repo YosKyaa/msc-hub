@@ -54,3 +54,19 @@ Schedule::command('queue:prune-failed --hours=720')
 Schedule::command('activitylog:clean --force')
     ->monthly()
     ->name('bersihkan-jejak-audit');
+
+/*
+|--------------------------------------------------------------------------
+| Cadangan otomatis (config/backup.php)
+|--------------------------------------------------------------------------
+|
+| Tanpa basis data, setiap tautan verifikasi sertifikat yang pernah dibagikan
+| berhenti berfungsi, jadi cadangannya harian, bukan hanya sebelum rilis.
+|
+| Pemeriksa kesehatan mengirim email bila cadangan terakhir lebih tua dari
+| sehari: cadangan yang diam-diam berhenti jauh lebih berbahaya daripada yang
+| gagal dengan suara, karena baru ketahuan ketika dibutuhkan.
+*/
+Schedule::command('backup:clean')->dailyAt('01:00')->name('bersihkan-cadangan-lama');
+Schedule::command('backup:run')->dailyAt('01:30')->withoutOverlapping()->name('cadangan-harian');
+Schedule::command('backup:monitor')->dailyAt('03:00')->name('periksa-cadangan');

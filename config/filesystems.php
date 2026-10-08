@@ -38,6 +38,15 @@ return [
             'report' => false,
         ],
 
+        // Cadangan otomatis (config/backup.php). Privat: tidak pernah
+        // disajikan lewat web.
+        'backups' => [
+            'driver' => 'local',
+            'root' => storage_path('app/backups'),
+            'serve' => false,
+            'throw' => false,
+        ],
+
         'public' => [
             'driver' => 'local',
             'root' => storage_path('app/public'),
