@@ -576,7 +576,8 @@ class ParticipationsRelationManager extends RelationManager
             ->count();
 
         return $yatim > 0
-            ? $ringkasan." — perhatian: {$yatim} sertifikat tidak lagi terhubung ke peserta mana pun."
+            ? $ringkasan." — perhatian: {$yatim} sertifikat tidak lagi terhubung ke peserta mana pun. "
+                .'Buka menu Cari Sertifikat dengan filter "Tidak terhubung ke peserta" untuk mencabutnya.'
             : $ringkasan;
     }
 

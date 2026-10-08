@@ -23,8 +23,9 @@ use Tests\TestCase;
  *
  * Sertifikat dulu hanya terlihat dari dalam kegiatannya masing-masing, jadi
  * ketika seseorang menghubungi dan mengaku belum menerima emailnya, staf
- * harus menebak dulu kegiatan mana yang dimaksud. Halaman ini hanya untuk
- * melihat dan menelusuri — tidak ada satu pun yang bisa diubah dari sini.
+ * harus menebak dulu kegiatan mana yang dimaksud. Halaman ini untuk melihat
+ * dan menelusuri. Satu-satunya pengecualian, sertifikat yang tidak lagi
+ * terhubung ke peserta, diuji di OrphanCertificateTest.
  */
 class CertificateLookupTest extends TestCase
 {

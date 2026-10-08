@@ -10,8 +10,11 @@ use App\Support\CertificatePermission;
 use App\Support\CertificateStage;
 use BackedEnum;
 use Filament\Actions;
+use Filament\Forms\Components\Textarea;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -23,8 +26,12 @@ use UnitEnum;
  * Sebelumnya sertifikat hanya terlihat dari dalam kegiatannya masing-masing.
  * Ketika seseorang menghubungi dan mengaku belum menerima emailnya, staf
  * harus menebak dulu kegiatan mana yang dimaksud sebelum bisa mencarinya.
- * Halaman ini hanya untuk melihat dan menelusuri — tidak ada yang bisa
- * diubah dari sini, dan penerbitan tetap dikerjakan di halaman kegiatan.
+ * Halaman ini untuk melihat dan menelusuri; penerbitan tetap dikerjakan di
+ * halaman kegiatan.
+ *
+ * Satu pengecualian: sertifikat yang keikutsertaannya sudah dihapus. Ia tidak
+ * lagi muncul di tabel kegiatan mana pun, tetapi tetap sah di halaman
+ * verifikasi — dan tanpa aksi di sini, tidak ada tempat untuk mencabutnya.
  */
 class CertificateResource extends Resource
 {
@@ -94,7 +101,8 @@ class CertificateResource extends Resource
             ->columns([
                 TextColumn::make('recipient_name')
                     ->label('Penerima')
-                    ->description(fn (Certificate $record) => $record->recipient_email ?: 'Tanpa email')
+                    ->description(fn (Certificate $record) => ($record->recipient_email ?: 'Tanpa email')
+                        .($record->event_participant_id === null ? ' · tidak terhubung ke peserta' : ''))
                     ->searchable(['recipient_name', 'recipient_email'])
                     ->sortable(),
 
@@ -158,8 +166,13 @@ class CertificateResource extends Resource
                     ->query(fn (Builder $query, array $data) => filled($data['value'] ?? null)
                         ? $query->whereHas('event', fn (Builder $event) => $event->where('issuer_id', $data['value']))
                         : $query),
+
+                Filter::make('orphaned')
+                    ->label('Tidak terhubung ke peserta')
+                    ->query(fn (Builder $query) => $query->whereNull('event_participant_id')),
             ])
-            // Hanya aksi yang membuka atau menyalin; tidak ada yang mengubah.
+            // Aksi yang membuka atau menyalin, ditambah cabut dan pulihkan
+            // khusus sertifikat yatim — lihat keterangan di atas kelas ini.
             ->actions([
                 Actions\Action::make('verify')
                     ->iconButton()
@@ -184,8 +197,46 @@ class CertificateResource extends Resource
                         ? CertificateEventResource::getUrl('edit', ['record' => $record->event])
                         : null)
                     ->visible(fn (Certificate $record) => $record->event !== null),
+
+                Actions\Action::make('revokeOrphan')
+                    ->iconButton()
+                    ->tooltip('Cabut sertifikat')
+                    ->icon('heroicon-o-no-symbol')
+                    ->color('danger')
+                    ->requiresConfirmation()
+                    ->modalHeading('Cabut Sertifikat')
+                    ->modalDescription('Keikutsertaan pemilik sertifikat ini sudah dihapus, tetapi sertifikatnya masih sah '
+                        .'di halaman verifikasi. Setelah dicabut, halaman verifikasinya menyatakan sertifikat tidak berlaku.')
+                    ->schema([Textarea::make('reason')->label('Alasan pencabutan')->required()])
+                    ->visible(fn (Certificate $record) => self::isManageableOrphan($record) && $record->revoked_at === null)
+                    ->action(function (Certificate $record, array $data): void {
+                        $record->update(['revoked_at' => now(), 'revocation_reason' => $data['reason']]);
+                        Notification::make()->title('Sertifikat dicabut')->success()->send();
+                    }),
+
+                Actions\Action::make('restoreOrphan')
+                    ->iconButton()
+                    ->tooltip('Pulihkan sertifikat')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Pulihkan Sertifikat')
+                    ->visible(fn (Certificate $record) => self::isManageableOrphan($record) && $record->revoked_at !== null)
+                    ->action(function (Certificate $record): void {
+                        $record->update(['revoked_at' => null, 'revocation_reason' => null]);
+                        Notification::make()->title('Sertifikat dipulihkan')->success()->send();
+                    }),
             ])
             ->bulkActions([]);
+    }
+
+    /**
+     * Sertifikat yang masih punya pemilik diurus dari halaman kegiatannya,
+     * supaya keputusan tentang satu orang tidak terbagi di dua tempat.
+     */
+    private static function isManageableOrphan(Certificate $record): bool
+    {
+        return $record->event_participant_id === null && CertificatePermission::allowsIssuing();
     }
 
     public static function getPages(): array

@@ -11,7 +11,8 @@ class ListCertificates extends ListRecords
 
     public function getSubheading(): ?string
     {
-        return 'Halaman ini hanya untuk melihat. Penerbitan dan pengiriman ulang dikerjakan dari halaman kegiatannya.';
+        return 'Halaman ini hanya untuk melihat. Penerbitan dan pengiriman ulang dikerjakan dari halaman kegiatannya, '
+            .'kecuali sertifikat yang tidak lagi terhubung ke peserta: yang itu dicabut dari sini.';
     }
 
     /** Tidak ada yang bisa dibuat dari sini. */
