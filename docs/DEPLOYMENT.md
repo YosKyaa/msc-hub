@@ -223,6 +223,12 @@ php artisan storage:link
 `--force` diperlukan karena `APP_ENV=production` membuat Laravel meminta
 konfirmasi interaktif.
 
+> **Jangan jalankan `php artisan db:seed --class=RoleSeeder` di server.**
+> Seeder itu memakai `syncPermissions`, yang menimpa izin setiap peran dengan
+> bawaannya — setiap perubahan izin yang pernah dibuat admin lewat panel ikut
+> hilang. Izin baru kini ditambahkan lewat migrasi yang hanya menambah, jadi
+> `migrate` sudah cukup. Seeder itu hanya untuk instalasi baru.
+
 `storage:link` membuat symlink `public/storage` → `storage/app/public`. Tanpa
 itu, PDF sertifikat tetap terbit tetapi **tanpa desain latarnya** — berkasnya
 tidak ditemukan, dan kejadian itu dicatat di log tanpa menggagalkan unduhan.
@@ -454,6 +460,13 @@ Lalu telusuri dengan tangan:
 ---
 
 ## Yang berubah perilakunya setelah rilis ini
+
+- **Riwayat Aktivitas** (menu Pengaturan) mencatat siapa mengubah apa:
+  pencabutan dan koreksi sertifikat, perubahan kegiatan, template, dan
+  penerbit, persetujuan peminjaman dan pengajuan konten, pemberian peran dan
+  izin, serta perubahan pengaturan. Hanya untuk dibaca, bahkan bagi admin,
+  dan dibersihkan otomatis setelah setahun. Izinnya `activity_log.view`,
+  diberikan kepada admin dan head_msc lewat migrasi.
 
 **Zona waktu UTC → Asia/Jakarta.** Booking dan permintaan konten yang dibuat
 **sebelum** rilis ini tersimpan sebagai UTC, jadi akan tampil bergeser tujuh

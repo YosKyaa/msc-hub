@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsActivity;
 use App\Enums\AttendanceAction;
 use App\Enums\EligibilityRule;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +15,7 @@ use Illuminate\Support\Str;
 class CertificateEvent extends Model
 {
     use HasFactory;
+    use RecordsActivity;
 
     protected $fillable = [
         'certificate_template_id', 'name', 'slug', 'event_date', 'organizer',
@@ -153,5 +155,13 @@ class CertificateEvent extends Model
     public function eligibilityRule(): EligibilityRule
     {
         return $this->eligibility_rule ?? EligibilityRule::MANUAL;
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected static function auditedAttributes(): array
+    {
+        return ['name', 'status', 'certificate_template_id', 'issuer_id', 'event_date', 'organizer', 'signatory_name', 'signatory_title', 'eligibility_rule', 'recipients_public', 'attendance_enabled'];
     }
 }

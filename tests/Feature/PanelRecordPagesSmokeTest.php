@@ -29,11 +29,13 @@ class PanelRecordPagesSmokeTest extends TestCase
      * Resource yang memang tidak bisa dibuatkan catatan contoh.
      *
      * Peran dan izin adalah model milik paket Spatie, yang tidak menyediakan
-     * factory. Keduanya sudah terjaga PanelAuthorizationTest.
+     * factory. Keduanya sudah terjaga PanelAuthorizationTest. Riwayat
+     * Aktivitas juga model paket (activitylog), dan tidak punya halaman
+     * rekaman sama sekali; terjaga di ActivityLogTest.
      *
      * @var list<string>
      */
-    private const TANPA_FACTORY = ['PermissionResource', 'RoleResource'];
+    private const TANPA_FACTORY = ['ActivityLogResource', 'PermissionResource', 'RoleResource'];
 
     private function admin(): User
     {

@@ -163,6 +163,14 @@ class PanelAuthorizationTest extends TestCase
                 continue;
             }
 
+            // Riwayat Aktivitas juga baca-saja, bahkan bagi admin: catatan
+            // audit yang bisa diubah dari panel tidak bisa dipercaya.
+            if ($resource === \App\Filament\Resources\ActivityLogResource::class) {
+                $this->assertTrue($resource::canViewAny(), 'Admin tidak bisa membaca Riwayat Aktivitas.');
+
+                continue;
+            }
+
             if (! $resource::canViewAny() || ! $resource::canCreate()) {
                 $tertutup[] = class_basename($resource);
             }

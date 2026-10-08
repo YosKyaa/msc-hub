@@ -113,6 +113,9 @@ class RoleSeeder extends Seeder
             'certificates.edit',
             'certificates.delete',
             'certificates.publish',
+
+            // Jejak audit
+            'activity_log.view',
         ];
 
         // Create all permissions
@@ -142,6 +145,7 @@ class RoleSeeder extends Seeder
                 'achievements.view', 'achievements.create', 'achievements.edit', 'achievements.delete',
                 'tags.view', 'tags.create', 'tags.edit',
                 'certificates.view', 'certificates.create', 'certificates.edit', 'certificates.delete', 'certificates.publish',
+                'activity_log.view',
             ],
             'staff_msc' => [
                 'panel.access',

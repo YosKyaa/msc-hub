@@ -30,12 +30,23 @@ class AppSetting
 
     public static function set(string $key, mixed $value): void
     {
+        $lama = self::get($key);
+
         DB::table('app_settings')->updateOrInsert(
             ['key' => $key],
             ['value' => json_encode($value), 'updated_at' => now(), 'created_at' => now()],
         );
 
         Cache::forget(self::CACHE_PREFIX.$key);
+
+        // Pengaturan disimpan tanpa model, jadi pencatat kolom tidak
+        // menangkapnya. Dicatat di sini, hanya bila nilainya berubah.
+        if ($lama !== $value) {
+            activity(AuditLog::NAME)
+                ->event('updated')
+                ->withProperties(['key' => $key, 'old' => ['value' => $lama], 'attributes' => ['value' => $value]])
+                ->log("Pengaturan {$key} diubah");
+        }
     }
 
     public static function forget(string $key): void

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsActivity;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
@@ -15,6 +16,7 @@ class User extends Authenticatable implements FilamentUser
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasFactory, Notifiable, HasRoles;
+    use RecordsActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -78,5 +80,13 @@ class User extends Authenticatable implements FilamentUser
     public function isMscStaff(): bool
     {
         return $this->hasAnyRole(['staff_msc', 'head_msc']);
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected static function auditedAttributes(): array
+    {
+        return ['name', 'email'];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsActivity;
 use App\Enums\EligibilityRule;
 use App\Enums\ParticipantRole;
 use App\Enums\ParticipantSource;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class CertificateEventParticipant extends Model
 {
     use HasFactory;
+    use RecordsActivity;
 
     protected $fillable = [
         'certificate_event_id', 'participant_id', 'role', 'role_label',
@@ -81,5 +83,19 @@ class CertificateEventParticipant extends Model
         }
 
         return $this->isEligible();
+    }
+
+    /**
+     * Pembuatannya tidak dicatat: baris ini dibuat massal lewat impor, penerbitan,
+     * atau formulir publik, dan satu impor tidak boleh membanjiri jejak audit.
+     */
+    protected static $recordEvents = ['updated', 'deleted'];
+
+    /**
+     * @return list<string>
+     */
+    protected static function auditedAttributes(): array
+    {
+        return ['role', 'role_label', 'attendance_status', 'eligible_at', 'certificate_number'];
     }
 }

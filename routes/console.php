@@ -45,3 +45,12 @@ Schedule::command('queue:work --stop-when-empty --tries=3 --max-time=50')
 Schedule::command('queue:prune-failed --hours=720')
     ->weekly()
     ->name('bersihkan-antrean-gagal');
+
+/*
+| Jejak audit disimpan setahun (bawaan activitylog: 365 hari), lalu dibuang.
+| Isinya termasuk nama dan email yang dikoreksi — data pribadi yang tidak
+| perlu disimpan selamanya.
+*/
+Schedule::command('activitylog:clean --force')
+    ->monthly()
+    ->name('bersihkan-jejak-audit');

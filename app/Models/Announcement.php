@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsActivity;
 use App\Enums\AnnouncementCategory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,6 +12,7 @@ use Illuminate\Support\Str;
 class Announcement extends Model
 {
     use HasFactory;
+    use RecordsActivity;
 
     protected $fillable = [
         'title',
@@ -104,5 +106,13 @@ class Announcement extends Model
     public function isDraft(): bool
     {
         return !$this->published_at;
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected static function auditedAttributes(): array
+    {
+        return ['title', 'summary', 'content', 'category', 'published_at', 'is_pinned', 'is_active'];
     }
 }

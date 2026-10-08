@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsActivity;
 use App\Enums\BookingStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -12,6 +13,7 @@ use Illuminate\Support\Facades\DB;
 class RoomBooking extends Model
 {
     use HasFactory;
+    use RecordsActivity;
 
     protected $fillable = [
         'booking_code',
@@ -155,5 +157,19 @@ class RoomBooking extends Model
     public function getDurationHoursAttribute(): float
     {
         return $this->start_at->diffInMinutes($this->end_at) / 60;
+    }
+
+    /**
+     * Pembuatannya tidak dicatat: baris ini dibuat massal lewat impor, penerbitan,
+     * atau formulir publik, dan satu impor tidak boleh membanjiri jejak audit.
+     */
+    protected static $recordEvents = ['updated', 'deleted'];
+
+    /**
+     * @return list<string>
+     */
+    protected static function auditedAttributes(): array
+    {
+        return ['status', 'room_id', 'start_at', 'end_at', 'reject_reason'];
     }
 }

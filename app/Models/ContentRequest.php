@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsActivity;
 use App\Enums\AssetStatus;
 use App\Enums\AssetType;
 use App\Enums\ContentType;
@@ -17,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 class ContentRequest extends Model
 {
     use HasFactory;
+    use RecordsActivity;
 
     protected $fillable = [
         'request_code',
@@ -268,5 +270,19 @@ class ContentRequest extends Model
     public function canArchive(): bool
     {
         return $this->status === RequestStatus::PUBLISHED;
+    }
+
+    /**
+     * Pembuatannya tidak dicatat: baris ini dibuat massal lewat impor, penerbitan,
+     * atau formulir publik, dan satu impor tidak boleh membanjiri jejak audit.
+     */
+    protected static $recordEvents = ['updated', 'deleted'];
+
+    /**
+     * @return list<string>
+     */
+    protected static function auditedAttributes(): array
+    {
+        return ['status', 'assigned_to_user_id', 'deadline', 'reject_reason'];
     }
 }

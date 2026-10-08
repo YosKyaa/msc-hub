@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsActivity;
 use App\Enums\BookingStatus;
 use App\Enums\InventoryLogType;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +15,7 @@ use Illuminate\Support\Facades\DB;
 class InventoryBooking extends Model
 {
     use HasFactory;
+    use RecordsActivity;
 
     protected $fillable = [
         'booking_code',
@@ -208,5 +210,19 @@ class InventoryBooking extends Model
         }
 
         return $conflicts;
+    }
+
+    /**
+     * Pembuatannya tidak dicatat: baris ini dibuat massal lewat impor, penerbitan,
+     * atau formulir publik, dan satu impor tidak boleh membanjiri jejak audit.
+     */
+    protected static $recordEvents = ['updated', 'deleted'];
+
+    /**
+     * @return list<string>
+     */
+    protected static function auditedAttributes(): array
+    {
+        return ['status', 'start_at', 'end_at', 'reject_reason', 'checkout_note'];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,6 +12,7 @@ use Illuminate\Support\Str;
 class Certificate extends Model
 {
     use HasFactory;
+    use RecordsActivity;
 
     protected $fillable = [
         'certificate_event_id', 'participant_id', 'event_participant_id', 'certificate_number',
@@ -98,5 +100,19 @@ class Certificate extends Model
     public function verificationUrl(): string
     {
         return route('certificates.verify', $this->verification_token);
+    }
+
+    /**
+     * Pembuatannya tidak dicatat: baris ini dibuat massal lewat impor, penerbitan,
+     * atau formulir publik, dan satu impor tidak boleh membanjiri jejak audit.
+     */
+    protected static $recordEvents = ['updated', 'deleted'];
+
+    /**
+     * @return list<string>
+     */
+    protected static function auditedAttributes(): array
+    {
+        return ['certificate_number', 'recipient_name', 'recipient_email', 'revoked_at', 'revocation_reason'];
     }
 }

@@ -119,7 +119,8 @@ return [
      *
      * To enable, set to true, and then create listeners to watch these events.
      */
-    'events_enabled' => false,
+    // Dinyalakan untuk jejak audit: App\Listeners\RecordAccessChange.
+    'events_enabled' => true,
 
     /*
      * Teams Feature.

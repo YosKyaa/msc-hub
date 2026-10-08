@@ -476,6 +476,12 @@ php artisan filament:clear-cached-components
 ```
 
 ### Permission Issues
+
+Di server yang sudah berjalan, **jangan** jalankan `RoleSeeder`: ia menimpa
+izin setiap peran dengan bawaannya, sehingga perubahan izin yang dibuat admin
+lewat panel hilang. Izin baru ditambahkan lewat migrasi; jalankan
+`php artisan migrate --force`. Seeder di bawah hanya untuk instalasi baru.
+
 ```bash
 php artisan db:seed --class=RoleSeeder --force
 ```

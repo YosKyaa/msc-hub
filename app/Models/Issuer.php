@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\RecordsActivity;
 use App\Enums\CertificateNumberReset;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -20,6 +21,7 @@ use Illuminate\Support\Facades\Storage;
 class Issuer extends Model
 {
     use HasFactory;
+    use RecordsActivity;
 
     protected $fillable = [
         'name', 'code', 'logo_path', 'address_line', 'verification_note',
@@ -84,5 +86,13 @@ class Issuer extends Model
             ? "Data sertifikat ini tercatat dan diterbitkan oleh {$this->name}."
             : "Data sertifikat ini tercatat dan diterbitkan oleh {$this->name}, "
                 .'difasilitasi Media & Strategic Communications Jakarta Global University.';
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected static function auditedAttributes(): array
+    {
+        return ['name', 'code', 'logo_path', 'number_pattern', 'number_reset', 'number_start', 'is_house', 'is_active'];
     }
 }
