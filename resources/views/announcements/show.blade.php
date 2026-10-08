@@ -57,10 +57,13 @@
             <p class="text-ink/75 font-medium">{{ $announcement->summary }}</p>
         </div>
 
-        {{-- Content --}}
+        {{-- Isinya ditulis staf lewat RichEditor dan sudah dinormalkan tiptap
+             saat disimpan. Penyaring Filament dipasang lagi di sini sebagai
+             lapis kedua: isi yang masuk bukan lewat editor — seeder, impor,
+             atau langsung ke basis data — tidak melewati penyaring pertama. --}}
         @if($announcement->content)
             <div class="prose text-ink/75">
-                {!! $announcement->content !!}
+                {!! \Filament\Forms\Components\RichEditor\RichContentRenderer::make($announcement->content)->toHtml() !!}
             </div>
         @endif
     </article>
