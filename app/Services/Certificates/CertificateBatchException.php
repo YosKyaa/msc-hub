@@ -28,4 +28,19 @@ class CertificateBatchException extends RuntimeException
     {
         return new self('Tidak ada sertifikat yang menunggu dikirim. Pastikan penerimanya punya alamat email.');
     }
+
+    /**
+     * Kuota harian akun pengirim sudah habis.
+     *
+     * Ditolak di sini, bukan diserahkan ke penyedia email: Gmail yang
+     * menerima kiriman melewati kuotanya mengunci akun itu sampai 24 jam,
+     * dan selama itu seluruh email aplikasi ikut tertahan, termasuk
+     * pemberitahuan peminjaman.
+     */
+    public static function dailyLimitReached(int $limit, string $tersediaLagi): self
+    {
+        return new self("Kuota harian akun pengirim sudah habis: {$limit} email dalam 24 jam terakhir. "
+            ."Kuota mulai tersedia lagi {$tersediaLagi}. Sertifikat tetap berstatus menunggu kirim, "
+            .'jadi cukup tekan Kirim Email lagi setelah itu.');
+    }
 }

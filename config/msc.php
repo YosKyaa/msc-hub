@@ -89,6 +89,19 @@ return [
          * (satu tiap tiga detik) aman untuk paket gratis kebanyakan.
          */
         'emails_per_minute' => (int) env('MSC_CERTIFICATE_EMAILS_PER_MINUTE', 20),
+
+        /*
+         * Berapa email sertifikat yang boleh dikirim dalam 24 jam bergulir.
+         * 0 berarti tanpa batas.
+         *
+         * Akun Google Workspace yang mengirim lewat smtp.gmail.com dibatasi
+         * 2.000 penerima per 24 jam. Gmail yang menerima kiriman melewati
+         * batas itu mengunci akunnya sampai sehari penuh, dan selama itu
+         * seluruh email aplikasi tertahan, bukan hanya sertifikat. Bawaannya
+         * 1.800 supaya tersisa ruang bagi pemberitahuan peminjaman dan email
+         * lain dari akun yang sama, yang tidak ikut dihitung di sini.
+         */
+        'daily_email_limit' => (int) env('MSC_CERTIFICATE_DAILY_EMAIL_LIMIT', 1800),
     ],
 
     /*

@@ -621,8 +621,10 @@ class ParticipationsRelationManager extends RelationManager
      */
     private function dispatchEmails(?Collection $certificates = null): void
     {
+        $mailer = app(CertificateBatchMailer::class);
+
         try {
-            $batch = app(CertificateBatchMailer::class)->dispatchFor(
+            $hasil = $mailer->dispatchFor(
                 $this->getOwnerRecord(),
                 $certificates,
                 auth()->user(),
@@ -640,19 +642,34 @@ class ParticipationsRelationManager extends RelationManager
         // Kirimannya sengaja dijarakkan supaya penyedia SMTP tidak menolak,
         // jadi lamanya disebutkan di muka — kalau tidak, admin menunggu satu
         // menit lalu menyimpulkan emailnya tidak jalan.
-        $menit = app(CertificateBatchMailer::class)->estimatedMinutesFor($batch->totalJobs);
+        $menit = $mailer->estimatedMinutesFor($hasil->queued());
+
+        $isi = "{$hasil->queued()} email sertifikat sedang dikirim di latar belakang, "
+            ."diperkirakan selesai dalam {$menit} menit. Kirimannya dijarakkan agar tidak ditolak penyedia email.";
+
+        // Yang ditahan harus disebut, kalau tidak admin mengira seluruhnya
+        // sedang dikirim lalu tidak pernah menekan tombolnya lagi.
+        if ($hasil->heldBack > 0) {
+            $isi .= " {$hasil->heldBack} lainnya ditahan agar tidak melewati kuota harian akun pengirim "
+                ."({$hasil->dailyLimit} email per 24 jam). Kuota mulai tersedia lagi {$mailer->quotaFreesAtLabel()}; "
+                .'tekan Kirim Email lagi setelah itu untuk mengirim sisanya.';
+        }
+
+        if ($peringatan !== null) {
+            $isi .= ' '.$peringatan;
+        }
+
+        $perluTindakLanjut = $peringatan !== null || $hasil->heldBack > 0;
 
         $pemberitahuan = Notification::make()
-            ->title('Email diantrekan')
-            ->body("{$batch->totalJobs} email sertifikat sedang dikirim di latar belakang, "
-                ."diperkirakan selesai dalam {$menit} menit. Kirimannya dijarakkan agar tidak ditolak penyedia email."
-                .($peringatan === null ? '' : ' '.$peringatan))
-            ->status($peringatan === null ? 'success' : 'warning');
+            ->title($hasil->heldBack > 0 ? 'Sebagian email diantrekan' : 'Email diantrekan')
+            ->body($isi)
+            ->status($perluTindakLanjut ? 'warning' : 'success');
 
         // persistent() di Filament tidak menerima argumen: memanggilnya dengan
         // false tetap membuat pemberitahuannya menetap, sehingga yang perlu
         // ditindaklanjuti tidak lagi bisa dibedakan dari yang baik-baik saja.
-        if ($peringatan !== null) {
+        if ($perluTindakLanjut) {
             $pemberitahuan->persistent();
         }
 
@@ -661,11 +678,21 @@ class ParticipationsRelationManager extends RelationManager
 
     private function pendingEmailSummary(): string
     {
-        $menunggu = app(CertificateBatchMailer::class)->pendingCountFor($this->getOwnerRecord());
+        $mailer = app(CertificateBatchMailer::class);
+        $menunggu = $mailer->pendingCountFor($this->getOwnerRecord());
 
         $ringkas = $menunggu === 0
             ? 'Semua sertifikat yang punya alamat email sudah pernah dikirim.'
             : "{$menunggu} sertifikat belum pernah dikirimi email. Penerima yang sudah menerima tidak dikirimi ulang.";
+
+        // Disebut sebelum tombolnya ditekan, supaya admin tidak kaget ketika
+        // hanya sebagian yang berangkat.
+        $sisa = $mailer->remainingToday();
+
+        if ($sisa !== null && $menunggu > $sisa) {
+            $ringkas .= " Kuota harian akun pengirim tersisa {$sisa} dari {$mailer->dailyLimit()} email, "
+                .'jadi sisanya ditahan sampai kuotanya terbuka lagi.';
+        }
 
         // Pengantar yang tidak benar-benar mengirim tetap dicatat sebagai
         // berhasil, jadi keadaannya harus terbaca sebelum tombolnya ditekan —

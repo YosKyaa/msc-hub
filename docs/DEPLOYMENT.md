@@ -309,18 +309,31 @@ menampilkan "Email terkirim", dan penerimanya tidak menerima apa-apa.
 php artisan tinker --execute="print_r(App\\Support\\MailHealth::summary());"
 ```
 
-`mengirim` harus bernilai 1. Bila 0, setel di `.env` server:
+`mengirim` harus bernilai 1. Bila 0, setel di `.env` server. Produksi memakai
+akun Google Workspace `no-reply@jgu.ac.id`:
 
 ```dotenv
 MAIL_MAILER=smtp
-MAIL_HOST=smtp.penyedia-anda.com
+MAIL_HOST=smtp.gmail.com
 MAIL_PORT=587
-MAIL_USERNAME=...
-MAIL_PASSWORD=...
-MAIL_FROM_ADDRESS=msc@jgu.ac.id
+MAIL_USERNAME=no-reply@jgu.ac.id
+MAIL_PASSWORD=sandi-aplikasi-16-huruf
+MAIL_FROM_ADDRESS=no-reply@jgu.ac.id
+MAIL_FROM_NAME="MSC HUB JGU"
 ```
 
-lalu `php artisan config:cache`. Panel ikut memperingatkan sendiri: alur empat
+- `MAIL_PASSWORD` adalah **Sandi Aplikasi** (App Password), bukan kata sandi
+  akun. Google menolak kata sandi biasa lewat SMTP. Sandi Aplikasi baru bisa
+  dibuat setelah Verifikasi 2 Langkah aktif di akun tersebut.
+- `MAIL_FROM_ADDRESS` harus sama dengan akun yang login, atau alias yang sudah
+  diverifikasi di setelan "Kirim email sebagai". Bila berbeda, Gmail diam-diam
+  menimpa alamat pengirimnya dengan akun yang login.
+- Port 587 tidak memerlukan `MAIL_SCHEME`: sambungannya dinaikkan ke TLS
+  dengan sendirinya. `MAIL_ENCRYPTION` sudah tidak dibaca sejak Laravel 11.
+
+Lalu `php artisan config:cache` dan `php artisan queue:restart`. Tanda
+setelannya benar: di Gmail penerima, rincian pesan menyebut **ditandatangani
+oleh: jgu.ac.id**. Panel ikut memperingatkan sendiri: alur empat
 langkah di tiap kegiatan menyebutkannya, dan tombol Kirim Email Uji menolak
 berpura-pura berhasil.
 
@@ -341,6 +354,30 @@ MSC_CERTIFICATE_EMAILS_PER_MINUTE=20
 
 Seratus peserta pada 20 per menit berarti lima menit. Panel menyebutkan
 perkiraan itu saat tombol kirim ditekan.
+
+### Kuota harian akun pengirim
+
+Akun Google Workspace yang mengirim lewat `smtp.gmail.com` dibatasi **2.000
+penerima per 24 jam bergulir** (bukan direset tengah malam). Gmail yang
+menerima kiriman melewati batas itu mengunci akunnya sampai sehari penuh, dan
+selama itu **seluruh** email aplikasi tertahan, termasuk pemberitahuan
+peminjaman.
+
+```dotenv
+# Email sertifikat per 24 jam bergulir; 0 berarti tanpa batas.
+MSC_CERTIFICATE_DAILY_EMAIL_LIMIT=1800
+```
+
+Yang dihitung: sertifikat yang terkirim dalam 24 jam terakhir, ditambah yang
+sudah diantrekan tetapi belum berangkat. Bila sisa kuota tidak cukup, hanya
+sebagian yang dikirim; sisanya tetap berstatus menunggu kirim dan panel
+menyebutkan jam kuotanya terbuka lagi. Tekan **Kirim Email** lagi setelah jam
+itu.
+
+Bawaannya 1.800, bukan 2.000, karena email lain dari akun yang sama
+(pemberitahuan peminjaman, email uji) tidak ikut dihitung. Bila kampus
+mengaktifkan SMTP relay Workspace (`smtp-relay.gmail.com`, 10.000 per hari)
+atau pindah ke layanan email transaksional, naikkan angkanya atau setel 0.
 
 ### Buktikan emailnya jalan sebelum peserta yang kena
 
