@@ -31,11 +31,11 @@ return [
         | atau alamat email: yang memuat @ diperlakukan sebagai email, sisanya
         | sebagai nomor WhatsApp.
         |
-        | Bawaannya memakai alamat email ketiga admin yang memang sudah
-        | tercatat di proyek ini, supaya halamannya tetap berguna sebelum
-        | nomor WhatsApp-nya diisi.
+        | Sengaja tanpa bawaan. Nomor pribadi tidak ditulis di kode, karena
+        | kode ini ikut terunggah ke GitHub: isinya dibaca dari .env server
+        | saja. Selama belum diisi, bagian kontak di /bio tidak ditampilkan.
         */
-        'admins' => env('MSC_BIO_ADMINS', 'Hadi:+62 822-7877-5003,Chika:+62 877-7141-2625,Yosua:+62 821-1218-7810'),
+        'admins' => env('MSC_BIO_ADMINS', ''),
     ],
 
     /*

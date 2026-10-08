@@ -122,6 +122,9 @@ class BioPageTest extends TestCase
      */
     public function test_the_three_admins_are_named(): void
     {
+        // Nomornya dibaca dari .env server, tidak ditulis di kode.
+        config(['msc.bio.admins' => 'Hadi:+62 812-0000-0001,Chika:+62 812-0000-0002,Yosua:+62 812-0000-0003']);
+
         $response = $this->get(route('bio'))->assertOk();
 
         $response->assertSee('Butuh bantuan?');
@@ -129,10 +132,24 @@ class BioPageTest extends TestCase
         $response->assertSee('Chika');
         $response->assertSee('Yosua');
 
-        // Bawaannya nomor WhatsApp ketiganya, jadi halaman ini berguna tanpa
-        // perlu menyetel apa pun di server.
         $response->assertSee('https://wa.me/', false);
         $response->assertSee('WhatsApp');
+    }
+
+    /**
+     * Kode ini ikut terunggah ke GitHub, jadi nomor pribadi tidak boleh
+     * tertulis di dalamnya, termasuk sebagai nilai bawaan atau contoh.
+     * Nomornya hanya diisi di .env server.
+     */
+    public function test_no_phone_number_is_written_into_files_that_reach_github(): void
+    {
+        foreach (['config/msc.php', '.env.example'] as $berkas) {
+            $this->assertDoesNotMatchRegularExpression(
+                '/(\+?62|0)[\s-]?8\d{2}[\s-]?\d{3,4}[\s-]?\d{3,4}/',
+                (string) file_get_contents(base_path($berkas)),
+                "{$berkas} memuat nomor telepon, padahal berkas itu ikut terunggah ke GitHub.",
+            );
+        }
     }
 
     /**
@@ -144,9 +161,11 @@ class BioPageTest extends TestCase
      */
     public function test_the_admin_numbers_never_reach_the_landing_page(): void
     {
+        config(['msc.bio.admins' => 'Hadi:+62 812-0000-0001,Chika:+62 812-0000-0002,Yosua:+62 812-0000-0003']);
+
         $beranda = $this->get(route('landing'))->assertOk()->getContent();
 
-        foreach (['wa.me', '6282278775003', '6287771412625', '6282112187810'] as $jejak) {
+        foreach (['wa.me', '6281200000001', '6281200000002', '6281200000003'] as $jejak) {
             $this->assertStringNotContainsString($jejak, $beranda,
                 "Nomor admin bocor ke beranda lewat: {$jejak}");
         }

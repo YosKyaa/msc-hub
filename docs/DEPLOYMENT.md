@@ -178,6 +178,21 @@ MSC_SITE_IMAGE=img/jgucover.png
 Semuanya punya nilai bawaan di `config/msc.php`, jadi aplikasinya tetap jalan
 tanpa kunci ini — tetapi menuliskannya membuat pengaturannya terlihat.
 
+### Kontak admin di halaman /bio
+
+```dotenv
+MSC_BIO_ADMINS="Hadi:+62 8xx-xxxx-xxxx,Chika:+62 8xx-xxxx-xxxx,Yosua:+62 8xx-xxxx-xxxx"
+```
+
+Isi dengan nomor WhatsApp atau email sungguhan, format `Nama:kontak` dipisah
+koma. Kunci ini **sengaja tanpa nilai bawaan**: nomor pribadi tidak ditulis di
+kode maupun di `.env.example`, karena keduanya ikut terunggah ke GitHub. Selama
+kunci ini belum diisi, bagian "Butuh bantuan?" di /bio tidak ditampilkan.
+
+> Nomor yang pernah tertulis di kode masih tersimpan di riwayat git lama.
+> Menghapusnya dari riwayat menuntut penulisan ulang riwayat, sama seperti
+> penghapusan ko-autor.
+
 ### SMTP
 
 Pastikan `MAIL_HOST` menunjuk SMTP kampus, bukan Mailtrap. Mailtrap hanya
