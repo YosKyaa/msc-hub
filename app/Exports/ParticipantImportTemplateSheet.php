@@ -71,14 +71,15 @@ class ParticipantImportTemplateSheet implements FromArray, WithColumnWidths, Wit
                 $judul->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
                 $sheet->getRowDimension(1)->setRowHeight(22);
 
-                // Dua kolom wajib ditandai agar terlihat sebelum diisi.
+                // Dua kolom utama diberi keterangan agar terbaca sebelum diisi.
                 $sheet->getComment('A1')->getText()->createTextRun(
                     "WAJIB. Nama yang dicetak di sertifikat, apa adanya.\n".
                     'Tulis lengkap beserta gelar bila memang ingin tercetak.'
                 );
                 $sheet->getComment('B1')->getText()->createTextRun(
-                    "WAJIB. Alamat email penerima, dipakai sebagai kunci peserta\n".
-                    'dan tujuan pengiriman sertifikat. Tidak boleh kembar.'
+                    "Disarankan. Alamat email penerima, kampus maupun pribadi.\n".
+                    "Dipakai sebagai kunci peserta dan tujuan pengiriman sertifikat.\n".
+                    'Tidak boleh kembar. Boleh kosong bila belum punya email.'
                 );
 
                 // Baris contoh dibuat miring dan kelabu supaya jelas bahwa ia

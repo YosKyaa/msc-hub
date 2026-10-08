@@ -111,9 +111,9 @@ class ParticipantImportTemplate implements WithMultipleSheets
             ],
             [
                 'email',
-                'WAJIB',
-                'Alamat email penerima.',
-                'Dipakai sebagai kunci peserta dan tujuan pengiriman sertifikat. Tidak boleh kembar di dalam satu berkas.',
+                'Disarankan',
+                'Alamat email penerima. Alamat kampus maupun pribadi (Gmail dan lainnya) sama-sama diterima.',
+                'Dipakai sebagai kunci peserta dan tujuan pengiriman sertifikat. Tidak boleh kembar di dalam satu berkas. Boleh dikosongkan bila orang ini belum punya email: sertifikatnya tetap terbit dan bisa dicari di halaman daftar penerima, tetapi tidak dikirim lewat email sampai alamatnya ditambahkan.',
             ],
             [
                 'peran',
@@ -149,7 +149,9 @@ class ParticipantImportTemplate implements WithMultipleSheets
     {
         return [
             'Baris pertama adalah nama kolom. Jangan diubah, dihapus, atau ditukar isinya.',
-            'Urutan kolom bebas, dan kolom yang tidak dipakai boleh dihapus selama nama_sertifikat dan email tetap ada.',
+            'Urutan kolom bebas, dan kolom yang tidak dipakai boleh dihapus selama kolom nama_sertifikat dan email tetap ada, walau isi email-nya boleh kosong.',
+            'Panitia dan peserta boleh di lembar terpisah dalam satu berkas, masing-masing dengan baris judul kolomnya sendiri. Semua lembar dibaca, dan peran yang dikosongkan mengikuti nama lembarnya: lembar "Panitia" berarti Panitia.',
+            'Dari Google Sheets, unduh lewat File > Download > Microsoft Excel (.xlsx) supaya semua lembar ikut terbawa.',
             'Maksimal '.ParticipantImportParser::MAX_ROWS.' baris data dalam satu berkas.',
             'Hapus tiga baris contoh sebelum mengunggah. Bila terlupa, sistem menolaknya; baris yang kosong seluruhnya dilewati.',
             'Kolom nim_nip dan nomor_sertifikat sudah berformat Teks. NIP 18 digit yang diketik di kolom berformat angka dipotong Excel setelah digit ke-15.',

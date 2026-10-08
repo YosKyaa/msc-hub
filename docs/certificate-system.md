@@ -244,15 +244,23 @@ variasi yang wajar:
 - **Baris judul boleh bergeser.** Sepuluh baris berisi teratas diperiksa, jadi
   judul kegiatan di atas tabel tidak masalah. Nomor baris yang dilaporkan tetap
   nomor baris di Excel.
-- **Data boleh di lembar mana pun.** Lembar pertama yang memuat judul kolom
-  yang dipakai. Bila itu bukan lembar pertama, atau lembar lain juga tampak
-  berisi daftar peserta, pratinjau menyebutkannya, karena hanya satu lembar
-  yang dibaca.
+- **Semua lembar yang berisi daftar dibaca.** Dokumen "Panitia-Peserta" dari
+  Google Sheets, dengan panitia dan peserta di lembar terpisah, diimpor sekali
+  jalan. Peran yang dikosongkan mengikuti nama lembarnya: lembar "Panitia" atau
+  "Panitia PKKMB" berarti Panitia, sedangkan nama yang menyebut dua peran
+  ("Panitia-Peserta") tidak menyiratkan apa pun. Peran yang ditulis selalu
+  menang. Letak baris di pratinjau menyebut lembarnya bila daftarnya lebih dari
+  satu, misalnya "Baris 5 (Peserta)".
+- **Baris tanpa nama, email, maupun NIM/NIP dilewati**, walau kolom peran atau
+  prodinya terisi. Panitia kerap mengisi kolom peran sampai ratusan baris ke
+  bawah lebih dulu; baris itu tidak memuat siapa pun dan tidak dihitung ke
+  batas 500 baris.
 - **Rumus dibaca dari nilainya**, yaitu nilai yang disimpan Excel saat berkas
   terakhir disimpan. Rumus yang gagal (`#N/A`, `#REF!`) ditolak, bukan dicetak.
 - **Spasi tak terlihat dibuang.** Spasi tak putus dan karakter lebar-nol hasil
   salin dari web atau WhatsApp, serta baris baru (Alt+Enter) dan spasi ganda di
-  tengah nama.
+  tengah nama. Begitu pula sisa penulisan di sekitar alamat email: koma atau
+  titik koma di ujungnya, `mailto:`, dan kurung sudut.
 - **CSV** dengan pemisah koma maupun titik koma (Excel berlokal Indonesia),
   dengan atau tanpa BOM, UTF-8 maupun ANSI.
 
@@ -266,6 +274,17 @@ Yang ditolak per baris, dengan alasannya di pratinjau:
 | Nomor sertifikat kembar dalam berkas, sudah terbit, atau sudah disiapkan untuk orang lain | Bila lolos, salah satu sertifikat gagal terbit belakangan |
 | Nomor sertifikat dalam notasi E (`2.0261E+17`) | Excel memotong angka di atas 15 digit |
 
+Yang diterima tetapi diperingatkan di pratinjau:
+
+- **Domain yang hampir pasti salah ketik**: berselisih satu huruf dari domain
+  JGU (`student.jgu.ic.id`, `studen.jgu.ac.id`), atau salah ketik Gmail yang
+  lazim (`gmial.com`, `gmail.co`). Domain kampus lain dan penyedia lain tidak
+  dicurigai; batasnya sengaja satu huruf karena pada dua huruf
+  `student.ugj.ac.id` milik kampus lain ikut tertangkap.
+  (`ParticipantRegistry::suggestDomain()`)
+- **Orang tanpa email**, dalam satu peringatan ringkas berisi jumlah dan letak
+  barisnya.
+
 NIP 18 digit yang diketik di kolom berformat angka juga rusak oleh Excel. Karena
 NIP hanya untuk pencatatan, barisnya tetap diimpor tetapi NIP-nya dikosongkan
 dengan peringatan. Template sudah memformat kolom `nim_nip` dan
@@ -274,7 +293,7 @@ dengan peringatan. Template sudah memformat kolom `nim_nip` dan
 | Kolom | Wajib | Dipetakan ke |
 |---|---|---|
 | `nama_sertifikat` | ya | `participants.name` (nama yang dicetak) |
-| `email` | ya | `participants.email` — kunci dedup |
+| `email` | kolomnya ya, isinya boleh kosong | `participants.email` — kunci dedup |
 | `peran` | tidak | `certificate_event_participants.role` (default Peserta) |
 | `nim_nip` | tidak | `participants.institutional_id` |
 | `unit_prodi` | tidak | `participants.study_program` |
@@ -303,8 +322,29 @@ disebut sejak pratinjau, karena nama master itulah yang akan tercetak, dan bisa
 diubah lewat tombol Koreksi Data Penerima. Peserta yang sudah terdaftar di
 kegiatan yang sama dilewati dan dihitung pada laporan hasil.
 
-Email di luar domain JGU diperbolehkan lewat import dan input manual (tipe
-`guest`); jalur absensi QR tetap ketat domain JGU.
+Email di luar domain JGU, termasuk alamat pribadi seperti Gmail, diperbolehkan
+lewat import dan input manual (tipe `guest`); jalur absensi QR tetap ketat
+domain JGU. Peserta beralamat pribadi atau tanpa email karena itu tidak bisa
+absen mandiri lewat QR: tandai kehadirannya dari panel, misalnya dengan aksi
+massal **Tandai Hadir & Berhak**.
+
+### Peserta tanpa email
+
+Tetap diimpor dan tetap mendapat sertifikat. Sertifikatnya terbit dengan status
+**Terbit, tanpa email**: sah, bisa diverifikasi, dan bisa dicari berdasarkan
+nama di halaman daftar penerima (`/kegiatan/{slug}/penerima`, bila admin
+membukanya). Yang tidak terjadi hanya pengirimannya: tombol Kirim Email
+melewatinya. Begitu alamatnya ditambahkan lewat tombol **Koreksi Data
+Penerima**, sertifikatnya langsung masuk antrean kirim.
+
+Tanpa email tidak ada kunci dedup, jadi orangnya dikenali dengan aturan yang
+jauh lebih sempit (`ParticipantRegistry::findOrCreateWithoutEmail()`): hanya di
+dalam kegiatan yang sama, dengan nama persis sama dan NIM/NIP sama atau
+sama-sama kosong. Itu cukup agar impor ulang berkas yang sama tidak
+menggandakan siapa pun. Lintas kegiatan sengaja tidak dicocokkan: dua orang
+bernama sama di kegiatan berbeda bukan orang yang sama, dan menyatukan mereka
+berarti sertifikat yang satu tercetak atas data yang lain. Baris yang sama
+persis dua kali dalam satu berkas dilaporkan sejak pratinjau.
 
 ## Halaman verifikasi publik
 

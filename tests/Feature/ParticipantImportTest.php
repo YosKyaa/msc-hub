@@ -86,7 +86,13 @@ class ParticipantImportTest extends TestCase
         $this->assertSame('lecturer', Participant::where('email', 'siti@jgu.ac.id')->value('type'));
     }
 
-    public function test_a_row_without_email_is_reported_while_the_others_still_import(): void
+    /**
+     * Dulu ditolak. Kini tetap diimpor: peserta yang belum punya email tetap
+     * berhak atas sertifikatnya — terbit dan bisa dicari di halaman daftar
+     * penerima — hanya tidak dikirimi lewat email sampai alamatnya
+     * ditambahkan.
+     */
+    public function test_a_row_without_email_is_still_imported(): void
     {
         $event = $this->event();
         $path = $this->storeSpreadsheet([
@@ -98,12 +104,12 @@ class ParticipantImportTest extends TestCase
 
         $preview = $this->importSession()->preview($path);
 
-        $this->assertSame(2, $preview->validCount());
-        $this->assertSame(1, $preview->problemCount());
-        $this->assertSame(3, $preview->problems[0]['line']);
-        $this->assertStringContainsString('email wajib diisi', $preview->problems[0]['message']);
+        $this->assertSame(3, $preview->validCount());
+        $this->assertSame(0, $preview->problemCount());
+        $this->assertStringContainsString('1 orang tanpa email', implode(' ', $preview->warnings));
 
-        $this->assertSame(2, $this->importSession()->confirm($event, $path)->created);
+        $this->assertSame(3, $this->importSession()->confirm($event, $path)->created);
+        $this->assertNull(Participant::where('name', 'Tanpa Email')->sole()->email);
     }
 
     public function test_importing_the_same_file_twice_creates_nothing_the_second_time(): void

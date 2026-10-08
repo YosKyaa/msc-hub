@@ -9,7 +9,7 @@ class ParticipantImportPreview
 {
     /**
      * @param  array<int, ParticipantImportRow>  $validRows
-     * @param  array<int, array{line: int, message: string}>  $problems
+     * @param  array<int, array{line: int, message: string, sheet?: ?string}>  $problems
      * @param  array<int, string>  $warnings
      */
     public function __construct(
@@ -17,6 +17,17 @@ class ParticipantImportPreview
         public readonly array $problems = [],
         public readonly array $warnings = [],
     ) {}
+
+    /**
+     * Letak sebuah baris, seperti yang dicari admin di spreadsheet-nya.
+     *
+     * Nama lembar baru disebut bila berkasnya memuat lebih dari satu daftar;
+     * tanpa itu "baris 5" bisa berarti dua orang berbeda.
+     */
+    public static function location(?string $sheet, int $line): string
+    {
+        return $sheet === null ? "Baris {$line}" : "Baris {$line} ({$sheet})";
+    }
 
     public function validCount(): int
     {

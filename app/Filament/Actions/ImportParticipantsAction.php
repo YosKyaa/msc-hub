@@ -6,6 +6,7 @@ use App\Models\CertificateEvent;
 use App\Services\Certificates\Import\ParticipantImportException;
 use App\Services\Certificates\Import\ParticipantImportParser;
 use App\Services\Certificates\Import\ParticipantImportPreview;
+use App\Services\Certificates\Import\ParticipantImportRow;
 use App\Services\Certificates\Import\ParticipantImportSession;
 use App\Support\CertificatePermission;
 use Filament\Actions\Action;
@@ -122,7 +123,8 @@ class ImportParticipantsAction extends Action
                         Text::make(fn (Get $get) => $this->listHtml(
                             'Baris bermasalah, tidak ikut diimpor',
                             array_map(
-                                fn (array $problem) => 'Baris '.$problem['line'].': '.$problem['message'],
+                                fn (array $problem) => ParticipantImportPreview::location($problem['sheet'] ?? null, $problem['line'])
+                                    .': '.$problem['message'],
                                 $this->previewState($get('file'))['preview']?->problems ?? [],
                             ),
                             self::MAX_PROBLEMS_SHOWN,
@@ -235,7 +237,9 @@ class ImportParticipantsAction extends Action
     private function sampleHtml(?ParticipantImportPreview $preview): HtmlString
     {
         $baris = array_map(
-            fn ($row) => 'Baris '.$row->line.': '.$row->name.' <'.$row->email.'>, '.$row->role->getLabel(),
+            fn (ParticipantImportRow $row) => $row->location().': '.$row->name
+                .($row->email === null ? ' (tanpa email)' : ' <'.$row->email.'>')
+                .', '.$row->role->getLabel(),
             array_slice($preview?->validRows ?? [], 0, 5),
         );
 

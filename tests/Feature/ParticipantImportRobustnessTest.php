@@ -151,10 +151,11 @@ class ParticipantImportRobustnessTest extends TestCase
     }
 
     /**
-     * Hanya satu lembar yang dibaca. Peserta di lembar lain akan hilang tanpa
-     * jejak bila admin tidak diberi tahu.
+     * Daftar yang dipecah per lembar — Panitia di satu lembar, Peserta di
+     * lembar lain — dibaca seluruhnya. Dulu hanya lembar pertama, dan
+     * peserta di lembar berikutnya hilang tanpa jejak.
      */
-    public function test_a_second_list_of_participants_is_mentioned(): void
+    public function test_every_sheet_holding_a_list_is_imported(): void
     {
         $preview = $this->parse($this->workbook([
             self::HEADER,
@@ -166,8 +167,9 @@ class ParticipantImportRobustnessTest extends TestCase
             ]);
         }));
 
-        $this->assertSame(1, $preview->validCount());
-        $this->assertStringContainsString('Lembar "Hari 2" juga berisi daftar peserta', implode(' ', $preview->warnings));
+        $this->assertSame(2, $preview->validCount());
+        $this->assertSame('Hari 2', $preview->validRows[1]->sheet);
+        $this->assertContains('Data dibaca dari lembar "Lembar1" dan "Hari 2".', $preview->warnings);
     }
 
     // -------------------------------------------------------------- rumus

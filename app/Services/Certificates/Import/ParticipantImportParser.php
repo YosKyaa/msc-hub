@@ -38,6 +38,13 @@ class ParticipantImportParser
         'alamat_email' => 'email',
     ];
 
+    /**
+     * Kolom yang menandai seseorang. Baris yang ketiganya kosong tidak
+     * memuat siapa pun, walau peran atau prodinya terisi: panitia kerap
+     * mengisi kolom peran sampai ratusan baris ke bawah sebelum namanya.
+     */
+    private const IDENTITY_COLUMNS = ['nama_sertifikat', 'email', 'nim_nip'];
+
     /** Berapa baris berisi teratas yang diperiksa untuk mencari baris judul. */
     private const HEADER_SEARCH_ROWS = 10;
 
@@ -45,6 +52,9 @@ class ParticipantImportParser
     private const MAX_NAME_LENGTH = 150;
 
     private const MAX_TEXT_LENGTH = 255;
+
+    /** Berapa letak baris yang dirinci dalam satu peringatan ringkas. */
+    private const MAX_LOCATIONS_LISTED = 10;
 
     /** Nilai yang ditampilkan Excel ketika sebuah rumus gagal. */
     private const EXCEL_ERRORS = ['#NULL!', '#DIV/0!', '#VALUE!', '#REF!', '#NAME?', '#NUM!', '#N/A', '#SPILL!', '#CALC!', '#GETTING_DATA'];
@@ -54,112 +64,141 @@ class ParticipantImportParser
     public function parse(string $absolutePath): ParticipantImportPreview
     {
         $sheets = $this->reader->read($absolutePath);
+        $tables = $this->locateTables($sheets);
 
-        [$sheetIndex, $headerLine, $header, $labels] = $this->locateHeader($sheets);
+        // Nama lembar baru disebut bila daftarnya lebih dari satu; tanpa itu
+        // nomor baris saja sudah cukup menunjuk.
+        $sebutLembar = count($tables) > 1;
 
-        $rows = array_filter(
-            $sheets[$sheetIndex]['rows'],
-            fn (int $line) => $line > $headerLine,
-            ARRAY_FILTER_USE_KEY,
-        );
-
-        $this->guardRowCount($rows);
+        $this->guardRowCount($tables);
 
         $validRows = [];
         $problems = [];
-        $warnings = [...$this->unknownHeaderWarnings($header, $labels), ...$this->sheetWarnings($sheets, $sheetIndex)];
-        $seenEmails = [];
-        $seenNumbers = [];
+        $warnings = [...$this->unknownHeaderWarnings($tables), ...$this->sheetWarnings($sheets, $tables)];
+        $seen = ['emails' => [], 'numbers' => [], 'withoutEmail' => []];
 
-        foreach ($rows as $line => $row) {
-            $values = $this->mapRow($header, $row);
+        foreach ($tables as $table) {
+            $sheet = $sebutLembar ? $table['title'] : null;
+            $peranLembar = $this->roleFromSheetTitle($table['title']);
+            $diisiDariLembar = 0;
 
-            if ($this->isBlank($values)) {
-                continue;
+            foreach ($table['rows'] as $line => $row) {
+                $values = $this->mapRow($table['header'], $row);
+
+                if ($this->isBlank($values)) {
+                    continue;
+                }
+
+                $values['email'] = ParticipantRegistry::normaliseEmail($values['email']);
+                $lokasi = ParticipantImportPreview::location($sheet, $line);
+
+                $error = $this->validate($values, $seen);
+
+                if ($error !== null) {
+                    $problems[] = ['line' => $line, 'sheet' => $sheet, 'message' => $error];
+
+                    continue;
+                }
+
+                $nimNip = $values['nim_nip'];
+
+                // Digit setelah yang ke-15 sudah hilang di Excel, jadi nilai ini
+                // pasti keliru. Barisnya tetap diimpor — NIM/NIP hanya untuk
+                // pencatatan — tetapi nilainya tidak disimpan.
+                if ($this->isTruncatedNumber($nimNip)) {
+                    $warnings[] = "{$lokasi}: nim_nip terbaca {$nimNip} karena Excel menyimpannya sebagai angka "
+                        .'dan memotong digit setelah ke-15. Nilainya dikosongkan; ubah kolomnya menjadi Teks lalu ketik ulang bila perlu.';
+                    $nimNip = '';
+                }
+
+                $this->remember($values, lcfirst($lokasi), $seen);
+
+                // Peran yang ditulis selalu menang. Yang kosong mengikuti nama
+                // lembarnya: daftar di lembar "Panitia" tanpa kolom peran yang
+                // terisi jelas bukan daftar peserta, dan peran itulah yang
+                // tercetak di sertifikat.
+                $role = ParticipantRole::fromLabel($values['peran']);
+
+                if ($role === null) {
+                    $role = $peranLembar ?? ParticipantRole::PARTICIPANT;
+                    $diisiDariLembar += $role === ParticipantRole::PARTICIPANT ? 0 : 1;
+                }
+
+                $validRows[] = new ParticipantImportRow(
+                    line: $line,
+                    name: $values['nama_sertifikat'],
+                    email: $values['email'] ?: null,
+                    role: $role,
+                    institutionalId: $nimNip ?: null,
+                    studyProgram: $values['unit_prodi'] ?: null,
+                    certificateNumber: $values['nomor_sertifikat'] ?: null,
+                    sheet: $sheet,
+                );
             }
 
-            $values['email'] = ParticipantRegistry::normaliseEmail($values['email']);
-
-            $error = $this->validate($values, $seenEmails, $seenNumbers);
-
-            if ($error !== null) {
-                $problems[] = ['line' => $line, 'message' => $error];
-
-                continue;
+            if ($diisiDariLembar > 0) {
+                $warnings[] = "Lembar \"{$table['title']}\": {$diisiDariLembar} baris tanpa peran dicatat sebagai "
+                    ."{$peranLembar->getLabel()}, sesuai nama lembarnya.";
             }
-
-            $nimNip = $values['nim_nip'];
-
-            // Digit setelah yang ke-15 sudah hilang di Excel, jadi nilai ini
-            // pasti keliru. Barisnya tetap diimpor — NIM/NIP hanya untuk
-            // pencatatan — tetapi nilainya tidak disimpan.
-            if ($this->isTruncatedNumber($nimNip)) {
-                $warnings[] = "Baris {$line}: nim_nip terbaca {$nimNip} karena Excel menyimpannya sebagai angka "
-                    .'dan memotong digit setelah ke-15. Nilainya dikosongkan; ubah kolomnya menjadi Teks lalu ketik ulang bila perlu.';
-                $nimNip = '';
-            }
-
-            $seenEmails[$values['email']] = $line;
-
-            if ($values['nomor_sertifikat'] !== '') {
-                $seenNumbers[$values['nomor_sertifikat']] = $line;
-            }
-
-            $validRows[] = new ParticipantImportRow(
-                line: $line,
-                name: $values['nama_sertifikat'],
-                email: $values['email'],
-                role: ParticipantRole::fromLabel($values['peran']) ?? ParticipantRole::PARTICIPANT,
-                institutionalId: $nimNip ?: null,
-                studyProgram: $values['unit_prodi'] ?: null,
-                certificateNumber: $values['nomor_sertifikat'] ?: null,
-            );
         }
 
-        return new ParticipantImportPreview(
-            $validRows,
-            $problems,
-            [...$warnings, ...$this->masterNameWarnings($validRows)],
-        );
+        return new ParticipantImportPreview($validRows, $problems, [
+            ...$warnings,
+            ...$this->domainWarnings($validRows),
+            ...$this->withoutEmailWarnings($validRows),
+            ...$this->masterNameWarnings($validRows),
+        ]);
     }
 
     /**
-     * Cari lembar dan baris judul kolomnya.
+     * Cari setiap lembar yang berisi daftar, beserta baris judul kolomnya.
      *
      * Template meletakkan judul di baris pertama lembar pertama, tetapi
-     * daftar hadir buatan panitia kerap diawali judul kegiatan, atau datanya
-     * ada di lembar kedua setelah lembar rekap. Menolak berkas seperti itu
-     * hanya karena letaknya bergeser membuat orang menyusun ulang berkas yang
-     * isinya sudah benar.
+     * daftar hadir buatan panitia kerap diawali judul kegiatan, ada di lembar
+     * kedua setelah lembar rekap, atau dipecah per lembar — Panitia di satu
+     * lembar, Peserta di lembar lain. Semuanya dibaca. Menolak atau membaca
+     * hanya sebagian membuat orang menyusun ulang berkas yang isinya benar,
+     * atau lebih buruk, mengira seluruh daftarnya sudah masuk.
      *
      * @param  list<array{title: string, rows: array<int, array<int, string>>}>  $sheets
-     * @return array{0: int, 1: int, 2: array<string, int>, 3: array<string, string>}
+     * @return list<array{index: int, title: string, header: array<string, int>, labels: array<string, string>, rows: array<int, array<int, string>>}>
      *
      * @throws ParticipantImportException
      */
-    private function locateHeader(array $sheets): array
+    private function locateTables(array $sheets): array
     {
-        $adaIsi = false;
+        $tables = [];
 
-        foreach ($sheets as $sheetIndex => $sheet) {
-            $adaIsi = $adaIsi || $sheet['rows'] !== [];
-
-            foreach (array_slice($sheet['rows'], 0, self::HEADER_SEARCH_ROWS, true) as $line => $row) {
+        foreach ($sheets as $index => $sheet) {
+            foreach (array_slice($sheet['rows'], 0, self::HEADER_SEARCH_ROWS, true) as $headerLine => $row) {
                 [$header, $labels] = $this->headerMap($row);
 
                 if (array_diff(self::REQUIRED_HEADERS, array_keys($header)) === []) {
-                    return [$sheetIndex, $line, $header, $labels];
+                    $tables[] = [
+                        'index' => $index,
+                        'title' => $sheet['title'],
+                        'header' => $header,
+                        'labels' => $labels,
+                        'rows' => array_filter($sheet['rows'], fn (int $line) => $line > $headerLine, ARRAY_FILTER_USE_KEY),
+                    ];
+
+                    break;
                 }
             }
         }
 
-        if (! $adaIsi) {
+        if ($tables !== []) {
+            return $tables;
+        }
+
+        $pertama = collect($sheets)->first(fn (array $sheet) => $sheet['rows'] !== []);
+
+        if ($pertama === null) {
             throw ParticipantImportException::emptyFile();
         }
 
         // Yang disebut hilang diukur dari baris berisi pertama di lembar
         // pertama: di sanalah orang paling mungkin menaruh judul kolom.
-        $pertama = collect($sheets)->first(fn (array $sheet) => $sheet['rows'] !== []);
         [$header] = $this->headerMap(reset($pertama['rows']));
 
         throw ParticipantImportException::missingHeaders(
@@ -205,14 +244,46 @@ class ParticipantImportParser
     }
 
     /**
-     * @param  array<int, array<int, string>>  $rows
+     * Peran yang tersirat dari nama lembar: "Panitia" atau "Panitia PKKMB"
+     * berarti Panitia. Nama yang menyebut dua peran, seperti
+     * "Panitia-Peserta", tidak menyiratkan apa pun.
      */
-    private function guardRowCount(array $rows): void
+    private function roleFromSheetTitle(string $title): ?ParticipantRole
     {
-        $dataRows = array_filter($rows, fn (array $row) => ! $this->isBlankRow($row));
+        $persis = ParticipantRole::fromLabel($title);
 
-        if (count($dataRows) > self::MAX_ROWS) {
-            throw ParticipantImportException::tooManyRows(count($dataRows), self::MAX_ROWS);
+        if ($persis !== null) {
+            return $persis;
+        }
+
+        $judul = mb_strtolower($title);
+
+        $cocok = array_values(array_filter(
+            ParticipantRole::cases(),
+            fn (ParticipantRole $role) => preg_match(
+                '/\b'.preg_quote(mb_strtolower($role->getLabel()), '/').'\b/u',
+                $judul,
+            ) === 1,
+        ));
+
+        return count($cocok) === 1 ? $cocok[0] : null;
+    }
+
+    /**
+     * @param  list<array{header: array<string, int>, rows: array<int, array<int, string>>}>  $tables
+     */
+    private function guardRowCount(array $tables): void
+    {
+        $jumlah = 0;
+
+        foreach ($tables as $table) {
+            foreach ($table['rows'] as $row) {
+                $jumlah += $this->isBlank($this->mapRow($table['header'], $row)) ? 0 : 1;
+            }
+        }
+
+        if ($jumlah > self::MAX_ROWS) {
+            throw ParticipantImportException::tooManyRows($jumlah, self::MAX_ROWS);
         }
     }
 
@@ -254,11 +325,14 @@ class ParticipantImportParser
      * template yang lupa dihapus pun harus berformat benar, jadi yang
      * menolaknya cukup satu alasan itu.
      *
+     * Email boleh kosong. Peserta yang belum punya alamat tetap mendapat
+     * sertifikat — terbit, bisa dicari di halaman daftar penerima — hanya
+     * tidak dikirimi lewat email sampai alamatnya ditambahkan.
+     *
      * @param  array<string, string>  $values
-     * @param  array<string, int>  $seenEmails
-     * @param  array<string, int>  $seenNumbers
+     * @param  array{emails: array<string, string>, numbers: array<string, string>, withoutEmail: array<string, string>}  $seen
      */
-    private function validate(array $values, array $seenEmails, array $seenNumbers): ?string
+    private function validate(array $values, array $seen): ?string
     {
         $nama = $values['nama_sertifikat'];
         $email = $values['email'];
@@ -267,12 +341,8 @@ class ParticipantImportParser
             return 'Kolom nama_sertifikat wajib diisi.';
         }
 
-        if ($email === '') {
-            return 'Kolom email wajib diisi.';
-        }
-
         foreach (['nama_sertifikat' => $nama, 'email' => $email] as $kolom => $isi) {
-            if ($this->isFormulaLeftover($isi)) {
+            if ($isi !== '' && $this->isFormulaLeftover($isi)) {
                 return "Kolom {$kolom} berisi rumus yang tidak menghasilkan nilai ({$isi}). "
                     .'Periksa rumusnya di Excel, atau salin lalu tempel sebagai nilai (Paste Values).';
             }
@@ -286,21 +356,12 @@ class ParticipantImportParser
             return 'Nama terlalu panjang ('.mb_strlen($nama).' karakter); maksimal '.self::MAX_NAME_LENGTH.' karakter.';
         }
 
-        if (Validator::make(['email' => $email], ['email' => 'email:rfc'])->fails()) {
-            return "Format email tidak valid: {$email}.";
-        }
+        $masalahEmail = $email === ''
+            ? $this->withoutEmailProblem($values, $seen)
+            : $this->emailProblem($email, $seen);
 
-        // Aturan RFC menerima "budi@gmail", yang tidak akan pernah sampai.
-        if (preg_match('/@[^@\s]+\.\p{L}{2,}$/u', $email) !== 1) {
-            return "Alamat email tidak lengkap: {$email}. Bagian setelah @ harus domain utuh, misalnya gmail.com.";
-        }
-
-        if (mb_strlen($email) > self::MAX_TEXT_LENGTH) {
-            return 'Alamat email terlalu panjang; maksimal '.self::MAX_TEXT_LENGTH.' karakter.';
-        }
-
-        if (isset($seenEmails[$email])) {
-            return "Email {$email} duplikat dengan baris {$seenEmails[$email]} pada file yang sama.";
+        if ($masalahEmail !== null) {
+            return $masalahEmail;
         }
 
         if ($values['peran'] !== '' && ParticipantRole::fromLabel($values['peran']) === null) {
@@ -314,7 +375,7 @@ class ParticipantImportParser
             }
         }
 
-        $masalahNomor = $this->certificateNumberProblem($values['nomor_sertifikat'], $email, $seenNumbers);
+        $masalahNomor = $this->certificateNumberProblem($values['nomor_sertifikat'], $email, $nama, $seen['numbers']);
 
         if ($masalahNomor !== null) {
             return $masalahNomor;
@@ -328,13 +389,87 @@ class ParticipantImportParser
     }
 
     /**
+     * Alamat pribadi seperti Gmail diterima sama seperti alamat kampus: yang
+     * diperiksa hanya bentuknya, bukan domainnya.
+     *
+     * @param  array{emails: array<string, string>}  $seen
+     */
+    private function emailProblem(string $email, array $seen): ?string
+    {
+        if (Validator::make(['email' => $email], ['email' => 'email:rfc'])->fails()) {
+            return "Format email tidak valid: {$email}.";
+        }
+
+        // Aturan RFC menerima "budi@gmail", yang tidak akan pernah sampai.
+        if (preg_match('/@[^@\s]+\.\p{L}{2,}$/u', $email) !== 1) {
+            return "Alamat email tidak lengkap: {$email}. Bagian setelah @ harus domain utuh, misalnya gmail.com.";
+        }
+
+        if (mb_strlen($email) > self::MAX_TEXT_LENGTH) {
+            return 'Alamat email terlalu panjang; maksimal '.self::MAX_TEXT_LENGTH.' karakter.';
+        }
+
+        if (isset($seen['emails'][$email])) {
+            return "Email {$email} duplikat dengan {$seen['emails'][$email]} pada file yang sama.";
+        }
+
+        return null;
+    }
+
+    /**
+     * Tanpa email, orang yang sama dikenali dari nama dan NIM/NIP-nya —
+     * aturan yang sama dipakai saat menulis (ParticipantRegistry::
+     * findOrCreateWithoutEmail), jadi baris kembar di sini akan menjadi satu
+     * orang di sana.
+     *
+     * @param  array<string, string>  $values
+     * @param  array{withoutEmail: array<string, string>}  $seen
+     */
+    private function withoutEmailProblem(array $values, array $seen): ?string
+    {
+        $kunci = $this->withoutEmailKey($values);
+
+        if (! isset($seen['withoutEmail'][$kunci])) {
+            return null;
+        }
+
+        return "{$values['nama_sertifikat']} tanpa email sudah tercantum di {$seen['withoutEmail'][$kunci]}. "
+            .'Bila keduanya memang orang berbeda, isi email atau NIM/NIP-nya.';
+    }
+
+    /**
+     * @param  array<string, string>  $values
+     */
+    private function withoutEmailKey(array $values): string
+    {
+        return mb_strtolower($values['nama_sertifikat']).'|'.$values['nim_nip'];
+    }
+
+    /**
+     * @param  array<string, string>  $values
+     * @param  array{emails: array<string, string>, numbers: array<string, string>, withoutEmail: array<string, string>}  $seen
+     */
+    private function remember(array $values, string $lokasi, array &$seen): void
+    {
+        if ($values['email'] !== '') {
+            $seen['emails'][$values['email']] = $lokasi;
+        } else {
+            $seen['withoutEmail'][$this->withoutEmailKey($values)] = $lokasi;
+        }
+
+        if ($values['nomor_sertifikat'] !== '') {
+            $seen['numbers'][$values['nomor_sertifikat']] = $lokasi;
+        }
+    }
+
+    /**
      * Nomor yang ditetapkan manual harus tetap unik sampai sertifikatnya
      * terbit. Bentrokan yang lolos di sini baru ketahuan saat penerbitan,
      * ketika salah satu sertifikat gagal terbit tanpa admin tahu sebabnya.
      *
-     * @param  array<string, int>  $seenNumbers
+     * @param  array<string, string>  $seenNumbers
      */
-    private function certificateNumberProblem(string $nomor, string $email, array $seenNumbers): ?string
+    private function certificateNumberProblem(string $nomor, string $email, string $nama, array $seenNumbers): ?string
     {
         if ($nomor === '') {
             return null;
@@ -346,7 +481,7 @@ class ParticipantImportParser
         }
 
         if (isset($seenNumbers[$nomor])) {
-            return "Nomor sertifikat {$nomor} kembar dengan baris {$seenNumbers[$nomor]} pada file yang sama.";
+            return "Nomor sertifikat {$nomor} kembar dengan {$seenNumbers[$nomor]} pada file yang sama.";
         }
 
         if (Certificate::where('certificate_number', $nomor)->exists()) {
@@ -358,10 +493,66 @@ class ParticipantImportParser
         // menolak barisnya sendiri.
         $dipesan = CertificateEventParticipant::query()
             ->where('certificate_number', $nomor)
-            ->whereDoesntHave('participant', fn (Builder $query) => $query->where('email', $email))
+            ->whereDoesntHave('participant', fn (Builder $query) => $email !== ''
+                ? $query->where('email', $email)
+                : $query->whereNull('email')->where('name', $nama))
             ->exists();
 
         return $dipesan ? "Nomor sertifikat {$nomor} sudah disiapkan untuk peserta lain." : null;
+    }
+
+    /**
+     * Domain yang hampir pasti salah ketik. Diperingatkan, bukan ditolak:
+     * pesertanya tetap masuk, tetapi admin perlu tahu emailnya tidak akan
+     * sampai sebelum seratus sertifikat dikirim ke alamat yang keliru.
+     *
+     * @param  array<int, ParticipantImportRow>  $rows
+     * @return array<int, string>
+     */
+    private function domainWarnings(array $rows): array
+    {
+        $warnings = [];
+
+        foreach ($rows as $row) {
+            $saran = ParticipantRegistry::suggestDomain($row->email);
+
+            if ($saran !== null) {
+                $domain = ParticipantRegistry::domainOf($row->email);
+
+                $warnings[] = "{$row->location()}: domain {$domain} mirip {$saran}, kemungkinan salah ketik "
+                    ."({$row->email}). Email ke alamat ini hampir pasti tidak sampai; betulkan di berkas sebelum "
+                    .'mengimpor, atau lewat tombol Koreksi Data Penerima sesudahnya.';
+            }
+        }
+
+        return $warnings;
+    }
+
+    /**
+     * Satu peringatan ringkas, bukan satu per baris: daftar PKKMB bisa
+     * memuat puluhan mahasiswa baru yang belum punya email kampus.
+     *
+     * @param  array<int, ParticipantImportRow>  $rows
+     * @return array<int, string>
+     */
+    private function withoutEmailWarnings(array $rows): array
+    {
+        $tanpaEmail = array_values(array_filter($rows, fn (ParticipantImportRow $row) => $row->email === null));
+
+        if ($tanpaEmail === []) {
+            return [];
+        }
+
+        $letak = array_map(
+            fn (ParticipantImportRow $row) => lcfirst($row->location()),
+            array_slice($tanpaEmail, 0, self::MAX_LOCATIONS_LISTED),
+        );
+
+        $sisa = count($tanpaEmail) - count($letak);
+
+        return [count($tanpaEmail).' orang tanpa email ('.implode(', ', $letak).($sisa > 0 ? ", dan {$sisa} lainnya" : '').'). '
+            .'Sertifikatnya tetap terbit dan bisa dicari di halaman daftar penerima, tetapi tidak dikirim lewat email. '
+            .'Email bisa ditambahkan kapan saja lewat tombol Koreksi Data Penerima.'];
     }
 
     /**
@@ -374,21 +565,23 @@ class ParticipantImportParser
      */
     private function masterNameWarnings(array $rows): array
     {
-        if ($rows === []) {
+        $beremail = array_filter($rows, fn (ParticipantImportRow $row) => $row->email !== null);
+
+        if ($beremail === []) {
             return [];
         }
 
         $master = Participant::query()
-            ->whereIn('email', array_map(fn (ParticipantImportRow $row) => $row->email, $rows))
+            ->whereIn('email', array_map(fn (ParticipantImportRow $row) => $row->email, $beremail))
             ->pluck('name', 'email');
 
         $warnings = [];
 
-        foreach ($rows as $row) {
+        foreach ($beremail as $row) {
             $nama = $master[$row->email] ?? null;
 
             if ($nama !== null && $nama !== $row->name) {
-                $warnings[] = "Baris {$row->line}: {$row->email} sudah terdaftar atas nama \"{$nama}\". "
+                $warnings[] = "{$row->location()}: {$row->email} sudah terdaftar atas nama \"{$nama}\". "
                     ."Nama di berkas (\"{$row->name}\") tidak dipakai; sertifikat memakai nama master. "
                     .'Ubah lewat tombol Koreksi Data Penerima bila perlu.';
             }
@@ -412,20 +605,14 @@ class ParticipantImportParser
     }
 
     /**
+     * Baris tanpa nama, email, maupun NIM/NIP tidak memuat siapa pun.
+     *
      * @param  array<string, string>  $values
      */
     private function isBlank(array $values): bool
     {
-        return implode('', $values) === '';
-    }
-
-    /**
-     * @param  array<int, string>  $row
-     */
-    private function isBlankRow(array $row): bool
-    {
-        foreach ($row as $value) {
-            if ($this->cleanText($value) !== '') {
+        foreach (self::IDENTITY_COLUMNS as $kolom) {
+            if ($values[$kolom] !== '') {
                 return false;
             }
         }
@@ -434,56 +621,41 @@ class ParticipantImportParser
     }
 
     /**
-     * @param  array<string, int>  $header
-     * @param  array<string, string>  $labels
+     * @param  list<array{header: array<string, int>, labels: array<string, string>}>  $tables
      * @return array<int, string>
      */
-    private function unknownHeaderWarnings(array $header, array $labels): array
+    private function unknownHeaderWarnings(array $tables): array
     {
-        $unknown = array_values(array_diff(array_keys($header), self::KNOWN_HEADERS));
+        $unknown = [];
+
+        foreach ($tables as $table) {
+            foreach (array_diff(array_keys($table['header']), self::KNOWN_HEADERS) as $key) {
+                $unknown[$key] = $table['labels'][$key];
+            }
+        }
 
         return $unknown === []
             ? []
-            : ['Kolom berikut tidak dikenal dan diabaikan: '.implode(', ', array_map(fn (string $key) => $labels[$key], $unknown)).'.'];
+            : ['Kolom berikut tidak dikenal dan diabaikan: '.implode(', ', $unknown).'.'];
     }
 
     /**
-     * Hanya satu lembar yang dibaca. Bila datanya bukan di lembar pertama,
-     * atau lembar lain juga tampak berisi daftar peserta, admin harus tahu —
-     * peserta di lembar yang tidak terbaca akan hilang tanpa jejak.
+     * Konfirmasi lembar mana yang dibaca, bila tidak jelas dengan sendirinya:
+     * datanya bukan di lembar pertama, atau tersebar di beberapa lembar.
      *
-     * @param  list<array{title: string, rows: array<int, array<int, string>>}>  $sheets
+     * @param  list<array{title: string}>  $sheets
+     * @param  list<array{index: int, title: string}>  $tables
      * @return array<int, string>
      */
-    private function sheetWarnings(array $sheets, int $dipakai): array
+    private function sheetWarnings(array $sheets, array $tables): array
     {
-        if (count($sheets) === 1) {
+        if (count($tables) === 1 && $tables[0]['index'] === 0) {
             return [];
         }
 
-        $warnings = [];
+        $judul = array_map(fn (array $table) => '"'.$table['title'].'"', $tables);
+        $terakhir = array_pop($judul);
 
-        if ($dipakai !== 0) {
-            $warnings[] = "Data dibaca dari lembar \"{$sheets[$dipakai]['title']}\".";
-        }
-
-        foreach ($sheets as $index => $sheet) {
-            if ($index === $dipakai) {
-                continue;
-            }
-
-            foreach (array_slice($sheet['rows'], 0, self::HEADER_SEARCH_ROWS, true) as $row) {
-                [$header] = $this->headerMap($row);
-
-                if (array_diff(self::REQUIRED_HEADERS, array_keys($header)) === []) {
-                    $warnings[] = "Lembar \"{$sheet['title']}\" juga berisi daftar peserta tetapi tidak ikut dibaca. "
-                        .'Impor lembar itu sebagai berkas tersendiri.';
-
-                    break;
-                }
-            }
-        }
-
-        return $warnings;
+        return ['Data dibaca dari lembar '.($judul === [] ? $terakhir : implode(', ', $judul).' dan '.$terakhir).'.'];
     }
 }
