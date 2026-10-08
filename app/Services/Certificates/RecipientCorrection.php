@@ -63,9 +63,8 @@ class RecipientCorrection
      * Apakah email ini sudah dipakai peserta lain?
      *
      * Aturan dedupnya sendiri tinggal di ParticipantRegistry; di sini hanya
-     * dipanggil agar koreksi tidak menghasilkan dua peserta beralamat sama —
-     * keadaan yang membuat pencarian berdasarkan email tidak lagi menentukan
-     * orang mana yang dimaksud.
+     * dipanggil agar bentrokan ditolak dengan pesan yang jelas sebelum
+     * disimpan, bukan baru ketahuan sebagai galat dari batas unik basis data.
      */
     public function emailTaken(Participant $participant, ?string $email): bool
     {

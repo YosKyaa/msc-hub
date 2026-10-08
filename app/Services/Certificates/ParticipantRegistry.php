@@ -76,10 +76,9 @@ class ParticipantRegistry
     /**
      * Apakah alamat ini sudah dipakai peserta lain?
      *
-     * Email adalah kunci dedup peserta, jadi dua baris beralamat sama membuat
-     * findOrCreateByEmail tidak lagi menentukan orang mana yang dimaksud: yang
-     * terambil adalah mana pun yang kebetulan lebih dulu. Karena itu koreksi
-     * email diperiksa lewat sini sebelum disimpan.
+     * Email adalah kunci dedup peserta dan unik di basis data. Koreksi email
+     * diperiksa lewat sini sebelum disimpan, supaya bentrokan ditolak dengan
+     * pesan yang menyebutkan sebabnya alih-alih galat dari batas unik itu.
      */
     public function emailTakenByAnother(Participant $participant, ?string $email): bool
     {

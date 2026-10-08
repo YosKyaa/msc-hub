@@ -486,11 +486,10 @@ class ParticipationsRelationManager extends RelationManager
     }
 
     /**
-     * Email adalah kunci dedup peserta, jadi dua orang beralamat sama membuat
-     * pencarian berdasarkan email tidak lagi menentukan siapa yang dimaksud.
-     * Ditolak di formulir, bukan diserahkan ke basis data: batas uniknya di
-     * sana gabungan email dan NIM, sehingga bentrokan yang justru berbahaya
-     * ini lolos begitu saja.
+     * Email adalah kunci dedup peserta dan unik di basis data. Bentrokan
+     * ditolak di formulir, bukan diserahkan ke basis data: di sana ia menjadi
+     * galat yang menggagalkan seluruh penyimpanan tanpa menyebut isian mana
+     * yang salah.
      */
     private function emailBelumDipakaiOrangLain(): Closure
     {

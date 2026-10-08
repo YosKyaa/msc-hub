@@ -119,11 +119,11 @@ Satu orang satu baris peserta, dipakai bersama oleh semua kegiatan yang pernah
 diikutinya, jadi koreksi yang dilakukan dari kegiatan mana pun berlaku untuk
 semua sertifikatnya.
 
-Email tetap menjadi kunci dedup peserta, jadi alamat yang sudah dipakai peserta
-lain ditolak di formulir. Batas unik di basis data tidak menolong di sini —
-yang unik di sana gabungan email dan NIM, sehingga bentrokan yang justru
-berbahaya ini lolos. Alamat yang terbawa spasi atau huruf besar diseragamkan
-lebih dulu, sebelum divalidasi.
+Email tetap menjadi kunci dedup peserta dan unik di basis data, jadi alamat
+yang sudah dipakai peserta lain ditolak di formulir, dengan pesan yang
+menyebutkan sebabnya. Tanpa penolakan itu, bentrokannya baru ketahuan di basis
+data sebagai galat yang menggagalkan seluruh penyimpanan. Alamat yang terbawa
+spasi atau huruf besar diseragamkan lebih dulu, sebelum divalidasi.
 
 ### Aturan kelayakan
 

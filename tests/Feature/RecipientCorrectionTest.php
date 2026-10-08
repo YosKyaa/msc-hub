@@ -287,10 +287,9 @@ class RecipientCorrectionTest extends TestCase
     // ----------------------------------------------------------- penjagaan
 
     /**
-     * Email adalah kunci dedup peserta: dua baris beralamat sama membuat
-     * pencarian berdasarkan email tidak lagi menentukan siapa yang dimaksud.
-     * Batas unik di basis data tidak menolongnya — di sana yang unik gabungan
-     * email dan NIM, sehingga bentrokan ini justru lolos.
+     * Email adalah kunci dedup peserta dan unik di basis data. Bentrokannya
+     * harus ditolak di formulir dengan pesan yang jelas; kalau tidak, ia baru
+     * ketahuan sebagai galat basis data yang menggagalkan seluruh penyimpanan.
      */
     public function test_an_email_already_used_by_someone_else_is_refused(): void
     {
