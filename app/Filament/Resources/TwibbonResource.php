@@ -17,6 +17,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\ImageColumn;
@@ -95,20 +96,30 @@ class TwibbonResource extends Resource
                         ->label('Judul')
                         ->required()
                         ->maxLength(150)
+                        ->columnSpanFull()
                         ->live(onBlur: true)
                         ->afterStateUpdated(function (?string $state, Set $set, ?Twibbon $record): void {
                             if ($record === null) {
                                 $set('slug', Str::slug((string) $state));
                             }
                         }),
+                    // Awalannya dibuat pendek: domain lengkap di depan kolom
+                    // menyisakan ruang ketik hanya beberapa huruf. Tautan
+                    // utuhnya ditampilkan di bawah, mengikuti isian.
                     TextInput::make('slug')
                         ->label('Alamat')
-                        ->prefix(url('/twibbon').'/')
+                        ->prefix('/twibbon/')
+                        ->placeholder('pkkmb-2026')
                         ->required()
                         ->maxLength(150)
                         ->alphaDash()
                         ->unique(ignoreRecord: true)
-                        ->helperText('Bagian akhir tautan yang dibagikan. Jangan diubah setelah tautannya tersebar.'),
+                        ->live(onBlur: true)
+                        ->helperText(fn (Get $get) => new HtmlString(
+                            'Tautan yang dibagikan: <strong>'.e(url('/twibbon/'.($get('slug') ?: '…'))).'</strong><br>'
+                            .'Hanya huruf, angka, dan tanda hubung. Jangan diubah setelah tautannya tersebar.'
+                        ))
+                        ->columnSpanFull(),
                     Textarea::make('description')
                         ->label('Deskripsi singkat')
                         ->rows(2)
