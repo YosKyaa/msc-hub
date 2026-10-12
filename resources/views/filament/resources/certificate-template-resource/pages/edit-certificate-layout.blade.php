@@ -32,7 +32,7 @@
 .cert-properties{display:flex;flex-direction:column;gap:14px}.cert-properties-header{display:flex;align-items:center;justify-content:space-between}.cert-icon-actions{display:flex;gap:4px}.cert-icon-btn{width:32px;height:32px;border:0;border-radius:7px;background:transparent;cursor:pointer}.cert-icon-btn:hover{background:rgb(243 244 246)}
 .cert-field{display:block;font-size:12px;font-weight:600;color:rgb(75 85 99)}.dark .cert-field{color:rgb(209 213 219)}.cert-field input,.cert-field select,.cert-field textarea{display:block;width:100%;margin-top:5px;padding:8px 9px;border:1px solid rgb(209 213 219);border-radius:8px;background:#fff;color:rgb(17 24 39);font:inherit;box-sizing:border-box}.dark .cert-field input,.dark .cert-field select,.dark .cert-field textarea{background:rgb(31 41 55);border-color:rgb(75 85 99);color:white}
 .cert-fields-2{display:grid;grid-template-columns:1fr 1fr;gap:10px}.cert-divider{padding-top:12px;border-top:1px solid rgb(229 231 235)}.cert-align{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}.cert-align button{padding:8px 4px;border:1px solid rgb(209 213 219);background:#fff;font-size:12px;cursor:pointer}.cert-align button.is-active{border-color:rgb(245 158 11);background:rgb(255 251 235)}
-.cert-align-6{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}.cert-align-6 button{display:flex;height:34px;align-items:center;justify-content:center;border:1px solid rgb(209 213 219);border-radius:8px;background:#fff;color:rgb(55 65 81)}.cert-align-6 button:hover{background:rgb(255 251 235);border-color:rgb(217 119 6)}.cert-align-6 svg{width:18px;height:18px}.dark .cert-align-6 button{background:rgb(31 41 55);border-color:rgb(75 85 99);color:rgb(229 231 235)}.cert-empty{padding:18px;text-align:center;font-size:13px;line-height:1.5;color:rgb(107 114 128)}
+.cert-guide{position:absolute;z-index:30;pointer-events:none;background:rgb(236 72 153)}.cert-guide-v{top:0;bottom:0;left:50%;width:1px;transform:translateX(-.5px)}.cert-guide-h{left:0;right:0;top:50%;height:1px;transform:translateY(-.5px)}.cert-align-6{display:grid;grid-template-columns:repeat(6,1fr);gap:5px}.cert-align-6 button{display:flex;height:34px;align-items:center;justify-content:center;border:1px solid rgb(209 213 219);border-radius:8px;background:#fff;color:rgb(55 65 81)}.cert-align-6 button:hover{background:rgb(255 251 235);border-color:rgb(217 119 6)}.cert-align-6 svg{width:18px;height:18px}.dark .cert-align-6 button{background:rgb(31 41 55);border-color:rgb(75 85 99);color:rgb(229 231 235)}.cert-empty{padding:18px;text-align:center;font-size:13px;line-height:1.5;color:rgb(107 114 128)}
 @media(max-width:1279px){.cert-layout{grid-template-columns:minmax(0,1fr) 290px}.cert-layers{grid-column:1/-1;order:3}.cert-workspace{order:1}.cert-properties-wrap{order:2}.cert-layer-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}}
 @media(max-width:800px){.cert-layout{display:flex;flex-direction:column}.cert-workspace,.cert-properties-wrap,.cert-layers{width:100%}.cert-stage{padding:10px}.cert-toolbar{position:static}.cert-toolbar-group{width:100%}.cert-btn{flex:1}.cert-fields-2{grid-template-columns:1fr 1fr}}
 </style>
@@ -75,6 +75,9 @@
             <div class="cert-stage">
                 <div x-ref="canvas" @pointerdown.self="selected=-1" class="cert-canvas"
                     style="width:min(100%, {{ $record->canvas_width }}px);aspect-ratio:{{ $record->canvas_width }}/{{ $record->canvas_height }};background-image:url('{{ \Illuminate\Support\Facades\Storage::disk('public')->url($record->background_path) }}');background-size:100% 100%;background-repeat:no-repeat;">
+                    {{-- Garis bantu tengah: muncul ketika kotak menempel tepat di tengah desain. --}}
+                    <div x-show="guide.v" class="cert-guide cert-guide-v" aria-hidden="true"></div>
+                    <div x-show="guide.h" class="cert-guide cert-guide-h" aria-hidden="true"></div>
                     <template x-for="(element,index) in elements" :key="element.id">
                         <div @pointerdown.prevent="preview || startDrag($event,index)" class="cert-element"
                             :data-index="index"
@@ -126,7 +129,7 @@
 
 <script>
 function certificateEditor(initialElements,width,height){return{
-    elements:(initialElements||[]).map((e)=>({align:'center',valign:'middle',...e,id:e.id||crypto.randomUUID()})),selected:-1,preview:false,operation:null,saving:false,overflowing:[],
+    elements:(initialElements||[]).map((e)=>({align:'center',valign:'middle',...e,id:e.id||crypto.randomUUID()})),selected:-1,preview:false,operation:null,saving:false,overflowing:[],guide:{v:false,h:false},
     labels:{recipient_name:'Nama penerima',recipient_role:'Peran',certificate_number:'Nomor sertifikat',event_name:'Nama kegiatan',event_date:'Tanggal kegiatan',organizer:'Penyelenggara',signatory_name:'Nama penandatangan',signatory_title:'Jabatan penandatangan',verification_url:'URL verifikasi',qr_code:'QR verifikasi',custom_text:'Teks statis'},
     init(){window.addEventListener('keydown',(e)=>{if(this.selected<0||['INPUT','TEXTAREA','SELECT'].includes(document.activeElement.tagName))return;const el=this.elements[this.selected];if(e.key==='Delete'){this.removeSelected();return}const step=e.shiftKey?10:1;if(e.key==='ArrowLeft')el.x-=step;if(e.key==='ArrowRight')el.x+=step;if(e.key==='ArrowUp')el.y-=step;if(e.key==='ArrowDown')el.y+=step;});
         // Teks yang tidak muat diukur dari DOM, bukan ditaksir: hanya peramban
@@ -146,7 +149,13 @@ function certificateEditor(initialElements,width,height){return{
     // Berbeda dari align/valign, yang meratakan teks di dalam kotaknya.
     alignToCanvas(posisi){const e=this.elements[this.selected];if(!e)return;
         if(posisi==='left')e.x=0;else if(posisi==='center')e.x=Math.round((width-e.width)/2);else if(posisi==='right')e.x=Math.round(width-e.width);
-        else if(posisi==='top')e.y=0;else if(posisi==='middle')e.y=Math.round((height-e.height)/2);else if(posisi==='bottom')e.y=Math.round(height-e.height);},
+        else if(posisi==='top')e.y=0;else if(posisi==='middle')e.y=Math.round((height-e.height)/2);else if(posisi==='bottom')e.y=Math.round(height-e.height);
+        this.guide={v:posisi==='center',h:posisi==='middle'};clearTimeout(this.guideTimer);this.guideTimer=setTimeout(()=>{this.guide={v:false,h:false}},900);},
+    // Saat digeser, kotak menempel ke tengah desain bila jaraknya kurang dari
+    // 6 piksel layar, dan garis bantu merah muda menandainya.
+    snapToCenter(e,o){const tx=Math.round((width-e.width)/2),ty=Math.round((height-e.height)/2);
+        this.guide.v=Math.abs(e.x-tx)<=6*o.sx;if(this.guide.v)e.x=tx;
+        this.guide.h=Math.abs(e.y-ty)<=6*o.sy;if(this.guide.h)e.y=ty;},
     syncLabel(){this.elements[this.selected].label=this.labels[this.elements[this.selected].variable]},
     previewValue(e){return({recipient_name:'Nama Penerima',recipient_role:'Panitia',certificate_number:'CERT-2026-0001',event_name:'Nama Kegiatan',event_date:'12 Juli 2026',organizer:'Jakarta Global University',signatory_name:'Nama Penandatangan',signatory_title:'Jabatan',verification_url:'msc.jgu.ac.id/verify/...',custom_text:e.text})[e.variable]||e.variable},
     // Cerminan App\Support\CertificateElement: kotak luar hanya posisi dan
@@ -160,8 +169,8 @@ function certificateEditor(initialElements,width,height){return{
     startDrag(ev,index){this.selected=index;const m=this.metrics(),e=this.elements[index];this.operation={type:'drag',index,startX:ev.clientX,startY:ev.clientY,x:e.x,y:e.y,...m};this.listen()},
     startResize(ev,index){const m=this.metrics(),e=this.elements[index];this.operation={type:'resize',index,startX:ev.clientX,startY:ev.clientY,width:e.width,height:e.height,...m};this.listen()},
     listen(){this.onMove=e=>this.move(e);this.onStop=()=>this.stop();window.addEventListener('pointermove',this.onMove);window.addEventListener('pointerup',this.onStop,{once:true})},
-    move(ev){const o=this.operation;if(!o)return;const e=this.elements[o.index];if(o.type==='drag'){e.x=Math.max(0,Math.min(width-e.width,Math.round(o.x+(ev.clientX-o.startX)*o.sx)));e.y=Math.max(0,Math.min(height-e.height,Math.round(o.y+(ev.clientY-o.startY)*o.sy)))}else{e.width=Math.max(30,Math.min(width-e.x,Math.round(o.width+(ev.clientX-o.startX)*o.sx)));e.height=Math.max(20,Math.min(height-e.y,Math.round(o.height+(ev.clientY-o.startY)*o.sy)))}},
-    stop(){this.operation=null;window.removeEventListener('pointermove',this.onMove);this.$nextTick(()=>this.checkFit())},duplicateSelected(){if(this.selected<0)return;const copy={...this.elements[this.selected],id:crypto.randomUUID(),x:this.elements[this.selected].x+15,y:this.elements[this.selected].y+15};this.elements.push(copy);this.selected=this.elements.length-1},removeSelected(){if(this.selected<0)return;this.elements.splice(this.selected,1);this.selected=Math.min(this.selected,this.elements.length-1)},togglePreview(){this.preview=!this.preview;if(this.preview)this.selected=-1},async save(){this.saving=true;try{await this.$wire.save(this.elements.map(({id,...e})=>e))}finally{this.saving=false}}
+    move(ev){const o=this.operation;if(!o)return;const e=this.elements[o.index];if(o.type==='drag'){e.x=Math.max(0,Math.min(width-e.width,Math.round(o.x+(ev.clientX-o.startX)*o.sx)));e.y=Math.max(0,Math.min(height-e.height,Math.round(o.y+(ev.clientY-o.startY)*o.sy)));this.snapToCenter(e,o)}else{e.width=Math.max(30,Math.min(width-e.x,Math.round(o.width+(ev.clientX-o.startX)*o.sx)));e.height=Math.max(20,Math.min(height-e.y,Math.round(o.height+(ev.clientY-o.startY)*o.sy)))}},
+    stop(){this.operation=null;this.guide={v:false,h:false};window.removeEventListener('pointermove',this.onMove);this.$nextTick(()=>this.checkFit())},duplicateSelected(){if(this.selected<0)return;const copy={...this.elements[this.selected],id:crypto.randomUUID(),x:this.elements[this.selected].x+15,y:this.elements[this.selected].y+15};this.elements.push(copy);this.selected=this.elements.length-1},removeSelected(){if(this.selected<0)return;this.elements.splice(this.selected,1);this.selected=Math.min(this.selected,this.elements.length-1)},togglePreview(){this.preview=!this.preview;if(this.preview)this.selected=-1},async save(){this.saving=true;try{await this.$wire.save(this.elements.map(({id,...e})=>e))}finally{this.saving=false}}
 }}
 </script>
 </x-filament-panels::page>

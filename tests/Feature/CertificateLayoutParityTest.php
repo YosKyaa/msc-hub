@@ -297,6 +297,11 @@ class CertificateLayoutParityTest extends TestCase
         $skrip = file_get_contents(resource_path('views/filament/resources/certificate-template-resource/pages/edit-certificate-layout.blade.php'));
         $this->assertStringContainsString('e.x=Math.round((width-e.width)/2)', $skrip);
         $this->assertStringContainsString('e.y=Math.round((height-e.height)/2)', $skrip);
+
+        // Saat digeser, kotak menempel ke tengah dan garis bantunya muncul.
+        $this->assertStringContainsString('this.snapToCenter(e,o)', $skrip);
+        $this->assertStringContainsString('cert-guide-v', $halaman);
+        $this->assertStringContainsString('cert-guide-h', $halaman);
     }
 
     private function admin(): User
