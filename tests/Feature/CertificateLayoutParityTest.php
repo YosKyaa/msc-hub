@@ -276,6 +276,29 @@ class CertificateLayoutParityTest extends TestCase
             ->assertSee('Perataan mendatar');
     }
 
+    /**
+     * Tombol perataan terhadap kanvas, seperti di Photoshop: menggeser kotak
+     * ke tepi atau tengah sertifikat. Berbeda dari perataan teks di dalam
+     * kotak, yang tidak memindahkan kotaknya.
+     */
+    public function test_the_editor_can_place_a_box_against_the_canvas(): void
+    {
+        $certificate = $this->certificate($this->nameElement());
+
+        $halaman = Livewire::actingAs($this->admin())
+            ->test(EditCertificateLayout::class, ['record' => $certificate->event->template->id])
+            ->assertSee('Posisi di kanvas')
+            ->html();
+
+        foreach (['left', 'center', 'right', 'top', 'middle', 'bottom'] as $posisi) {
+            $this->assertStringContainsString("alignToCanvas('{$posisi}')", $halaman);
+        }
+
+        $skrip = file_get_contents(resource_path('views/filament/resources/certificate-template-resource/pages/edit-certificate-layout.blade.php'));
+        $this->assertStringContainsString('e.x=Math.round((width-e.width)/2)', $skrip);
+        $this->assertStringContainsString('e.y=Math.round((height-e.height)/2)', $skrip);
+    }
+
     private function admin(): User
     {
         $this->seed(RoleSeeder::class);
