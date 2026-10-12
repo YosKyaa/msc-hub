@@ -28,12 +28,19 @@ pulihkan() {
 }
 trap pulihkan ERR
 
-langkah "Ambil kode terbaru dari GitHub"
-git fetch origin
-# Perubahan yang dibuat langsung di server dibuang: server pernah menyimpan
-# commit "Resolve merge conflict" berisi sisa penanda konflik, dan seluruh
-# halaman menjadi galat 500.
-git reset --hard origin/main
+if [ "${1:-}" != "--sudah-diambil" ]; then
+    langkah "Ambil kode terbaru dari GitHub"
+    git fetch origin
+    # Perubahan yang dibuat langsung di server dibuang: server pernah menyimpan
+    # commit "Resolve merge conflict" berisi sisa penanda konflik, dan seluruh
+    # halaman menjadi galat 500.
+    git reset --hard origin/main
+
+    # Skrip ini sendiri bisa ikut berubah oleh reset di atas. Bash membaca
+    # skrip sedikit demi sedikit, jadi melanjutkan berarti menjalankan
+    # campuran isi lama dan baru. Jalankan ulang dari versi yang baru.
+    exec bash "$0" --sudah-diambil
+fi
 
 langkah "Tolak sisa konflik merge"
 if git grep -nE '^(<{7}|>{7})( |$)' -- . ':!*.md'; then
@@ -45,11 +52,13 @@ langkah "Mode perawatan"
 php artisan down --retry=15
 mode_rawat=1
 
-langkah "Cadangkan basis data sebelum migrasi"
-php artisan backup:run --only-db --disable-notifications
-
+# Dependensi dipasang lebih dulu: perintah backup sendiri berasal dari paket
+# yang mungkin baru ditambahkan di rilis ini.
 langkah "Pasang dependensi"
 composer install --no-dev --optimize-autoloader --no-interaction --no-progress
+
+langkah "Cadangkan basis data sebelum migrasi"
+php artisan backup:run --only-db --disable-notifications
 
 langkah "Migrasi basis data"
 # Izin baru ikut lewat migrasi. Jangan jalankan RoleSeeder di sini: ia
