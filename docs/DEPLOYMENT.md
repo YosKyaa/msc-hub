@@ -535,6 +535,9 @@ cp -r public/* /var/www/msc-hub/storage/app/public/
 
 ## Yang berubah perilakunya setelah rilis ini
 
+- **Twibbon** (menu Konten): admin mengunggah bingkai PNG, publik memasangnya
+  di `/twibbon`. Lihat `docs/twibbon.md`. Izinnya masuk lewat migrasi.
+
 - **Cadangan otomatis harian** — lihat bagian 9. Isi `MSC_BACKUP_PASSWORD` di
   `.env` server.
 

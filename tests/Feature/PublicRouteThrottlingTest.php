@@ -35,6 +35,12 @@ class PublicRouteThrottlingTest extends TestCase
         'bio',
         'announcements.index',
         'announcements.show',
+
+        // Saat kegiatan kampus, ratusan peserta membuka twibbon bersamaan
+        // dari Wi-Fi yang sama; pembatas per IP akan menolak sebagian besar.
+        // Fotonya diolah di peramban, jadi halamannya murah.
+        'twibbon.index',
+        'twibbon.show',
         'sitemap',
         'robots',
         'login.portal',

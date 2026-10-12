@@ -49,6 +49,23 @@ class SitemapController extends Controller
             ];
         }
 
+        // Twibbon dibagikan lewat media sosial, tetapi orang juga mencarinya
+        // dengan nama kegiatannya. Hanya yang sedang dibuka.
+        $twibbon = \App\Models\Twibbon::open()->latest()->get();
+
+        if ($twibbon->isNotEmpty()) {
+            $halaman[] = ['loc' => route('twibbon.index'), 'priority' => '0.6', 'changefreq' => 'weekly'];
+        }
+
+        foreach ($twibbon as $satu) {
+            $halaman[] = [
+                'loc' => $satu->publicUrl(),
+                'lastmod' => $satu->updated_at?->toAtomString(),
+                'priority' => '0.6',
+                'changefreq' => 'weekly',
+            ];
+        }
+
         // Hanya kegiatan yang daftarnya memang dibuka admin.
         foreach (CertificateEvent::where('recipients_public', true)->where('status', 'published')->get() as $kegiatan) {
             $halaman[] = [

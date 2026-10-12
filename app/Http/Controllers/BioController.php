@@ -86,6 +86,15 @@ class BioController extends Controller
                 'judul' => 'Lainnya',
                 'catatan' => null,
                 'tautan' => [
+                    // Twibbon kerap dibagikan lewat bio Instagram, jadi
+                    // tautannya hadir selama ada yang sedang dibuka.
+                    ...(\App\Models\Twibbon::open()->exists() ? [[
+                        'label' => 'Twibbon kegiatan',
+                        'keterangan' => 'Pasang twibbon di foto Anda, langsung dari ponsel.',
+                        'url' => route('twibbon.index'),
+                        'icon' => 'M4 16l4.6-4.6a2 2 0 012.8 0L16 16m-2-2l1.6-1.6a2 2 0 012.8 0L20 14M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z',
+                        'utama' => false,
+                    ]] : []),
                     [
                         'label' => 'Pengumuman',
                         'keterangan' => 'Jadwal, info layanan, dan kabar terbaru.',

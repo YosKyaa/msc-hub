@@ -22,6 +22,16 @@ Route::get('/bio', App\Http\Controllers\BioController::class)->name('bio');
 
 // Public Announcements
 Route::get('/announcements', [AnnouncementPublicController::class, 'index'])->name('announcements.index');
+
+// Twibbon. Halamannya sengaja tanpa pembatas laju: saat kegiatan kampus,
+// ratusan peserta membukanya bersamaan dari Wi-Fi yang sama, dan pembatas per
+// IP akan menolak sebagian besar dari mereka. Halamannya murah — foto diolah
+// di peramban peserta, bukan di server.
+Route::get('/twibbon', [App\Http\Controllers\TwibbonController::class, 'index'])->name('twibbon.index');
+Route::get('/twibbon/{slug}', [App\Http\Controllers\TwibbonController::class, 'show'])->name('twibbon.show');
+Route::post('/twibbon/{slug}/dipakai', [App\Http\Controllers\TwibbonController::class, 'used'])
+    ->middleware('throttle:120,1')
+    ->name('twibbon.used');
 Route::get('/announcements/{slug}', [AnnouncementPublicController::class, 'show'])->name('announcements.show');
 
 // Satu pintu masuk: pengunjung memilih mahasiswa/pengaju atau admin, lalu

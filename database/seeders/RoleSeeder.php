@@ -116,6 +116,12 @@ class RoleSeeder extends Seeder
 
             // Jejak audit
             'activity_log.view',
+
+            // Twibbon
+            'twibbons.view',
+            'twibbons.create',
+            'twibbons.edit',
+            'twibbons.delete',
         ];
 
         // Create all permissions
@@ -146,6 +152,7 @@ class RoleSeeder extends Seeder
                 'tags.view', 'tags.create', 'tags.edit',
                 'certificates.view', 'certificates.create', 'certificates.edit', 'certificates.delete', 'certificates.publish',
                 'activity_log.view',
+                'twibbons.view', 'twibbons.create', 'twibbons.edit', 'twibbons.delete',
             ],
             'staff_msc' => [
                 'panel.access',
@@ -162,6 +169,7 @@ class RoleSeeder extends Seeder
                 'achievements.view', 'achievements.create', 'achievements.edit',
                 'tags.view', 'tags.create',
                 'certificates.view', 'certificates.create', 'certificates.edit', 'certificates.publish',
+                'twibbons.view', 'twibbons.create', 'twibbons.edit',
             ],
             'department' => [
                 'panel.access',
