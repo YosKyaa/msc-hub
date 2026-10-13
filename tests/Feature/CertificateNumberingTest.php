@@ -106,17 +106,63 @@ class CertificateNumberingTest extends TestCase
 
     // -------------------------------------------------------- nomor urut
 
+    /**
+     * Tahunnya mengikuti tanggal kegiatan (CertificateEvent::numberingDate),
+     * dan urutan kembali ke 001 di tahun berikutnya.
+     */
     public function test_the_sequence_restarts_each_year(): void
     {
         $this->setPattern('{nomor:3}/{tahun}', CertificateNumberReset::YEARLY);
-        $event = CertificateEvent::factory()->published()->create();
         $issuer = app(CertificateIssuer::class);
 
-        $this->travelTo(now()->setDate(2026, 12, 31));
-        $this->assertSame('001/2026', $issuer->issue($this->eligible($event))->certificate_number);
+        $akhirTahun = CertificateEvent::factory()->published()->create(['event_date' => '2026-12-31']);
+        $awalTahun = CertificateEvent::factory()->published()->create(['event_date' => '2027-01-01']);
 
-        $this->travelTo(now()->setDate(2027, 1, 1));
-        $this->assertSame('001/2027', $issuer->issue($this->eligible($event))->certificate_number);
+        $this->assertSame('001/2026', $issuer->issue($this->eligible($akhirTahun))->certificate_number);
+        $this->assertSame('001/2027', $issuer->issue($this->eligible($awalTahun))->certificate_number);
+    }
+
+    /**
+     * Yang diminta: kegiatan bulan September yang sertifikatnya baru
+     * diterbitkan bulan Oktober tetap bernomor IX, bukan X.
+     */
+    public function test_the_month_follows_the_event_not_the_day_of_issuing(): void
+    {
+        $this->setPattern('{nomor:3}/SCD/SERT-PKKMB/{bulan_romawi}/{tahun}', CertificateNumberReset::YEARLY);
+        $event = CertificateEvent::factory()->published()->create(['event_date' => '2026-09-15']);
+
+        $this->travelTo(now()->setDate(2026, 10, 13));
+
+        $this->assertSame('001/SCD/SERT-PKKMB/IX/2026',
+            app(CertificateIssuer::class)->issue($this->eligible($event))->certificate_number);
+    }
+
+    /**
+     * Bila nomor harus memakai tanggal lain, misalnya tanggal surat
+     * keputusan, tanggal itu yang menang.
+     */
+    public function test_a_chosen_numbering_date_overrides_the_event_date(): void
+    {
+        $this->setPattern('{nomor:3}/{bulan_romawi}/{tahun}', CertificateNumberReset::YEARLY);
+        $event = CertificateEvent::factory()->published()->create([
+            'event_date' => '2026-09-15',
+            'numbered_at' => '2026-08-01',
+        ]);
+
+        $this->assertSame('001/VIII/2026',
+            app(CertificateIssuer::class)->issue($this->eligible($event))->certificate_number);
+    }
+
+    /**
+     * Contoh nomor di form harus sama dengan nomor yang nanti terbit.
+     */
+    public function test_the_preview_uses_the_same_date(): void
+    {
+        $this->travelTo(now()->setDate(2026, 10, 13));
+
+        $format = new \App\Services\Certificates\CertificateNumberFormat('{nomor:3}/{bulan_romawi}/{tahun}', CertificateNumberReset::YEARLY, 'SCD');
+
+        $this->assertSame('057/IX/2026', $format->preview(new CertificateEvent(['name' => 'PKKMB', 'event_date' => '2026-09-15'])));
     }
 
     public function test_the_sequence_can_restart_for_each_event(): void

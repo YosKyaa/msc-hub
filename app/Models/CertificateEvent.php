@@ -20,7 +20,7 @@ class CertificateEvent extends Model
     protected $fillable = [
         'certificate_template_id', 'name', 'slug', 'event_date', 'organizer',
         'signatory_name', 'signatory_title', 'status', 'created_by',
-        'certificate_code', 'certificate_number_format', 'issuer_id',
+        'certificate_code', 'certificate_number_format', 'numbered_at', 'issuer_id',
         'attendance_enabled', 'eligibility_rule', 'recipients_public',
         'checkin_token', 'checkin_open_at', 'checkin_close_at',
         'checkout_token', 'checkout_open_at', 'checkout_close_at',
@@ -28,6 +28,7 @@ class CertificateEvent extends Model
 
     protected $casts = [
         'event_date' => 'date',
+        'numbered_at' => 'date',
         'attendance_enabled' => 'boolean',
         'recipients_public' => 'boolean',
         'checkin_open_at' => 'datetime',
@@ -162,6 +163,21 @@ class CertificateEvent extends Model
      */
     protected static function auditedAttributes(): array
     {
-        return ['name', 'status', 'certificate_template_id', 'issuer_id', 'event_date', 'organizer', 'signatory_name', 'signatory_title', 'eligibility_rule', 'recipients_public', 'attendance_enabled'];
+        return ['name', 'status', 'certificate_template_id', 'issuer_id', 'event_date', 'numbered_at', 'organizer', 'signatory_name', 'signatory_title', 'eligibility_rule', 'recipients_public', 'attendance_enabled'];
+    }
+
+    /**
+     * Tanggal yang menentukan bulan dan tahun pada nomor sertifikat, juga
+     * kapan nomor urut kembali ke 1 bagi penerbit yang mengulang per bulan
+     * atau per tahun.
+     *
+     * Bawaannya tanggal kegiatan, bukan tanggal tombol Terbitkan ditekan:
+     * kegiatan bulan September yang sertifikatnya baru terbit bulan Oktober
+     * tetap bernomor IX. Kolom numbered_at mengganti tanggal itu bila nomor
+     * harus memakai tanggal lain, misalnya tanggal surat keputusan.
+     */
+    public function numberingDate(): \Illuminate\Support\Carbon
+    {
+        return \Illuminate\Support\Carbon::instance($this->numbered_at ?? $this->event_date ?? now());
     }
 }

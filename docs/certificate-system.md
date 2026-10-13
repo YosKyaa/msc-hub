@@ -449,6 +449,22 @@ Contoh: `{nomor:4}/CERT/{kode_unit}/{bulan_romawi}/{tahun}` menghasilkan
 Pola **wajib memuat `{nomor}`** — divalidasi di panel — karena tanpa nomor urut
 setiap sertifikat akan menghasilkan teks yang sama dan bertabrakan.
 
+### Bulan dan tahun pada nomor
+
+`{tahun}`, `{bulan}`, dan `{bulan_romawi}` mengikuti **tanggal kegiatan**, bukan
+tanggal tombol Terbitkan ditekan: kegiatan bulan September yang sertifikatnya
+baru diterbitkan bulan Oktober tetap bernomor `IX`. Tanggal yang sama menentukan
+kapan nomor urut kembali ke 1 bagi penerbit yang mengulang per bulan atau per
+tahun.
+
+Bila nomor harus memakai tanggal lain — misalnya tanggal surat keputusan — isi
+**Tanggal pada nomor sertifikat** di bagian Penomoran Sertifikat pada kegiatan.
+Contoh nomor di form ikut berubah. Aturannya tinggal di
+`CertificateEvent::numberingDate()`.
+
+Nomor yang ditulis di kolom `nomor_sertifikat` berkas impor dipakai apa adanya
+dan tidak terpengaruh aturan ini.
+
 ### Nomor urut
 
 Diambil dari tabel `certificate_number_sequences` dengan penguncian baris,

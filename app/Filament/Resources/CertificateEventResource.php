@@ -69,7 +69,7 @@ class CertificateEventResource extends Resource
                                 ->afterStateUpdated(fn ($state, $set, $record) => $record ?: $set('slug', Str::slug($state)))
                                 ->columnSpanFull(),
                             TextInput::make('slug')->required()->unique(ignoreRecord: true),
-                            DatePicker::make('event_date')->label('Tanggal kegiatan')->required()->native(false),
+                            DatePicker::make('event_date')->label('Tanggal kegiatan')->required()->native(false)->live(),
                             Select::make('certificate_template_id')
                                 ->label('Template')
                                 ->relationship('template', 'name', fn ($query) => $query->where('is_active', true))
@@ -116,6 +116,13 @@ class CertificateEventResource extends Resource
                                             }
                                         },
                                     ]),
+
+                                DatePicker::make('numbered_at')
+                                    ->label('Tanggal pada nomor sertifikat')
+                                    ->native(false)
+                                    ->live()
+                                    ->helperText('Menentukan bulan dan tahun di nomor. Kosongkan agar mengikuti tanggal kegiatan, '
+                                        .'walau sertifikatnya baru diterbitkan bulan berikutnya.'),
 
                                 Text::make(fn (Get $get, ?CertificateEvent $record) => static::numberPreview($get, $record))
                                     ->columnSpanFull(),
@@ -209,6 +216,8 @@ class CertificateEventResource extends Resource
             ->preview(new CertificateEvent([
                 'name' => $get('name') ?: ($record?->name ?? 'Contoh Kegiatan'),
                 'certificate_code' => $get('certificate_code'),
+                'event_date' => $get('event_date'),
+                'numbered_at' => $get('numbered_at'),
             ]));
 
         return new HtmlString(

@@ -21,7 +21,9 @@ class CertificateNumberGenerator
     public function next(CertificateEvent $event): string
     {
         $format = CertificateNumberFormat::for($event);
-        $moment = now();
+        // Tanggal kegiatan, bukan tanggal penerbitan: lihat
+        // CertificateEvent::numberingDate().
+        $moment = $event->numberingDate();
         $scope = $format->sequenceScope($event, $moment);
 
         for ($attempt = 0; $attempt < self::MAX_ATTEMPTS; $attempt++) {

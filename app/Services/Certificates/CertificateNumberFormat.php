@@ -82,10 +82,10 @@ class CertificateNumberFormat
     {
         return [
             '{nomor}' => 'Nomor urut, contoh 57. Tambahkan panjang digit dengan {nomor:4} menjadi 0057.',
-            '{tahun}' => 'Tahun terbit empat digit, contoh 2026.',
-            '{tahun_pendek}' => 'Tahun terbit dua digit, contoh 26.',
-            '{bulan}' => 'Bulan terbit dua digit, contoh 09.',
-            '{bulan_romawi}' => 'Bulan terbit angka Romawi, contoh IX.',
+            '{tahun}' => 'Tahun kegiatan empat digit, contoh 2026.',
+            '{tahun_pendek}' => 'Tahun kegiatan dua digit, contoh 26.',
+            '{bulan}' => 'Bulan kegiatan dua digit, contoh 09.',
+            '{bulan_romawi}' => 'Bulan kegiatan angka Romawi, contoh IX.',
             '{tanggal}' => 'Tanggal terbit dua digit, contoh 06.',
             '{kode_kegiatan}' => 'Kode kegiatan yang diisi pada kegiatan bersangkutan.',
             '{kode_unit}' => 'Kode unit penerbit dari pengaturan, contoh MSC-JGU.',
@@ -142,7 +142,9 @@ class CertificateNumberFormat
      */
     public function preview(?CertificateEvent $event = null): string
     {
-        return $this->render($event ?? new CertificateEvent(['name' => 'Contoh Kegiatan']), 57);
+        $event ??= new CertificateEvent(['name' => 'Contoh Kegiatan']);
+
+        return $this->render($event, 57, $event->numberingDate());
     }
 
     private function eventCode(CertificateEvent $event): string
