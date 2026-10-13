@@ -38,6 +38,8 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
+            // Gaya tambahan panel, misalnya baris peserta tanpa email.
+            ->renderHook(\Filament\View\PanelsRenderHook::HEAD_END, fn () => view('filament.panel-styles'))
             ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
             ->sidebarCollapsibleOnDesktop()
             ->databaseNotifications()

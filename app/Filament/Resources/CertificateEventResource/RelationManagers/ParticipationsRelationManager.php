@@ -31,6 +31,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -113,10 +114,16 @@ class ParticipationsRelationManager extends RelationManager
             ->recordTitleAttribute('id')
             ->description($this->progressSummary())
             ->modifyQueryUsing(fn (Builder $query) => $query->with(['participant', 'certificate']))
+            // Peserta tanpa email tetap terdaftar dan tetap mendapat
+            // sertifikat, tetapi tidak bisa dikirimi. Barisnya dikuningkan
+            // (resources/views/filament/panel-styles.blade.php) supaya admin
+            // tahu siapa yang emailnya masih perlu dilengkapi.
+            ->recordClasses(fn (CertificateEventParticipant $record) => blank($record->participant?->email) ? 'msc-tanpa-email' : null)
             ->columns([
                 TextColumn::make('participant.name')
                     ->label('Nama')
-                    ->description(fn (CertificateEventParticipant $record) => $record->participant?->email ?: 'Tanpa email')
+                    ->description(fn (CertificateEventParticipant $record) => $record->participant?->email
+                        ?: '⚠ Belum ada email — lengkapi lewat tombol Koreksi Data Penerima')
                     ->searchable(query: fn (Builder $query, string $search) => $query->whereHas(
                         'participant',
                         fn (Builder $participant) => $participant
@@ -166,6 +173,9 @@ class ParticipationsRelationManager extends RelationManager
                     ->query(fn (Builder $query, array $data) => $this->filterByStage($query, $data['value'] ?? null)),
                 SelectFilter::make('role')->label('Peran')->options(ParticipantRole::options()),
                 SelectFilter::make('source')->label('Asal pendaftaran')->options(ParticipantSource::options()),
+                Filter::make('without_email')
+                    ->label('Belum ada email')
+                    ->query(fn (Builder $query) => $query->whereHas('participant', fn (Builder $p) => $p->whereNull('email'))),
             ])
             ->emptyStateHeading('Belum ada peserta')
             ->emptyStateDescription('Tambahkan satu per satu, atau impor sekaligus dari Excel. Templat Excel-nya bisa diunduh dari tombol impor.')
@@ -568,6 +578,14 @@ class ParticipationsRelationManager extends RelationManager
         }
 
         $ringkasan = $total.' orang: '.implode(' · ', $bagian);
+
+        // Ditandai kuning di tabel; jumlahnya disebut di sini supaya terlihat
+        // tanpa harus menggulir seluruh daftar.
+        $tanpaEmail = $event->participations()->whereHas('participant', fn (Builder $p) => $p->whereNull('email'))->count();
+
+        if ($tanpaEmail > 0) {
+            $ringkasan .= " — {$tanpaEmail} belum punya email (baris kuning): sertifikatnya tetap terbit, tetapi tidak terkirim sampai emailnya dilengkapi.";
+        }
 
         // Sertifikat yang kehilangan pemiliknya tidak muncul di tabel ini,
         // jadi keberadaannya harus tetap diberitahukan.
