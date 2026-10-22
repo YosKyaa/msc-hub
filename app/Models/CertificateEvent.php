@@ -21,7 +21,7 @@ class CertificateEvent extends Model
         'certificate_template_id', 'name', 'slug', 'event_date', 'organizer',
         'signatory_name', 'signatory_title', 'status', 'created_by',
         'certificate_code', 'certificate_number_format', 'numbered_at', 'issuer_id',
-        'attendance_enabled', 'eligibility_rule', 'recipients_public',
+        'attendance_enabled', 'attendance_guests_allowed', 'eligibility_rule', 'recipients_public',
         'checkin_token', 'checkin_open_at', 'checkin_close_at',
         'checkout_token', 'checkout_open_at', 'checkout_close_at',
     ];
@@ -30,6 +30,7 @@ class CertificateEvent extends Model
         'event_date' => 'date',
         'numbered_at' => 'date',
         'attendance_enabled' => 'boolean',
+        'attendance_guests_allowed' => 'boolean',
         'recipients_public' => 'boolean',
         'checkin_open_at' => 'datetime',
         'checkin_close_at' => 'datetime',
@@ -163,7 +164,7 @@ class CertificateEvent extends Model
      */
     protected static function auditedAttributes(): array
     {
-        return ['name', 'status', 'certificate_template_id', 'issuer_id', 'event_date', 'numbered_at', 'organizer', 'signatory_name', 'signatory_title', 'eligibility_rule', 'recipients_public', 'attendance_enabled'];
+        return ['name', 'status', 'certificate_template_id', 'issuer_id', 'event_date', 'numbered_at', 'organizer', 'signatory_name', 'signatory_title', 'eligibility_rule', 'recipients_public', 'attendance_enabled', 'attendance_guests_allowed'];
     }
 
     /**

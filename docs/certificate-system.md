@@ -344,9 +344,15 @@ kegiatan yang sama dilewati dan dihitung pada laporan hasil.
 
 Email di luar domain JGU, termasuk alamat pribadi seperti Gmail, diperbolehkan
 lewat import dan input manual (tipe `guest`); jalur absensi QR tetap ketat
-domain JGU. Peserta beralamat pribadi atau tanpa email karena itu tidak bisa
-absen mandiri lewat QR: tandai kehadirannya dari panel, misalnya dengan aksi
-massal **Tandai Hadir & Berhak**.
+domain JGU, **kecuali** kegiatan yang menyalakan **Izinkan peserta di luar
+JGU** di bagian absensi. Pada kegiatan itu akun Google apa pun, termasuk Gmail
+pribadi, bisa absen mandiri lewat QR. Akun tersebut masuk ke sesi tamu
+tersendiri (`App\Support\AttendanceGuest`) yang hanya berlaku di halaman
+absensi kegiatan itu: portal pengajuan dan peminjaman tetap khusus sivitas JGU.
+
+Peserta tanpa email, atau beralamat pribadi di kegiatan yang tidak dibuka untuk
+tamu, tidak bisa absen mandiri: tandai kehadirannya dari panel, misalnya dengan
+aksi massal **Tandai Hadir & Berhak**.
 
 ### Peserta tanpa email
 

@@ -61,14 +61,18 @@
             @if($requester === null)
                 <div class="text-center space-y-4">
                     <p class="text-sm text-ink/65">
-                        Masuk dengan akun Google JGU Anda untuk mencatat {{ strtolower($action->getLabel()) }}.
+                        Masuk dengan akun Google {{ $event->attendance_guests_allowed ? '' : 'JGU ' }}Anda untuk mencatat {{ strtolower($action->getLabel()) }}.
                     </p>
                     <a href="{{ $loginUrl }}"
                        class="w-full inline-flex items-center justify-center gap-2 bg-{{ $accent }}-600 hover:bg-{{ $accent }}-700 text-white font-semibold rounded-xl px-6 py-4 text-base">
                         Masuk dengan Google
                     </a>
                     <p class="text-xs text-ink/60">
-                        Gunakan email @jgu.ac.id atau @student.jgu.ac.id.
+                        @if($event->attendance_guests_allowed)
+                            Kegiatan ini terbuka untuk umum: akun Google apa pun bisa dipakai, termasuk Gmail pribadi.
+                        @else
+                            Gunakan email @jgu.ac.id atau @student.jgu.ac.id.
+                        @endif
                     </p>
                 </div>
             @else

@@ -170,6 +170,14 @@ class CertificateEventResource extends Resource
                                     ->live()
                                     ->columnSpanFull(),
 
+                                Toggle::make('attendance_guests_allowed')
+                                    ->label('Izinkan peserta di luar JGU')
+                                    ->helperText('Peserta boleh absen dengan akun Google apa pun, termasuk Gmail pribadi. '
+                                        .'Nyalakan untuk kegiatan yang terbuka untuk umum. Akun itu hanya bisa absen; '
+                                        .'portal pengajuan dan peminjaman tetap khusus sivitas JGU.')
+                                    ->visible(fn (Get $get) => (bool) $get('attendance_enabled'))
+                                    ->columnSpanFull(),
+
                                 Select::make('eligibility_rule')
                                     ->label('Aturan kelayakan sertifikat')
                                     ->options(EligibilityRule::options())

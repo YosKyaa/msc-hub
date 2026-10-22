@@ -7,6 +7,7 @@ use App\Models\CertificateEvent;
 use App\Services\Certificates\AttendanceService;
 use App\Services\Certificates\ParticipantRegistry;
 use App\Services\QrCodeGenerator;
+use App\Support\AttendanceGuest;
 use App\Support\PdfLetterhead;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
@@ -25,7 +26,7 @@ class AttendanceController extends Controller
     public function show(AttendanceAction $action, string $token)
     {
         $event = $this->resolveEvent($action, $token);
-        $requester = $this->requester();
+        $requester = $this->requester($event);
         $participant = $requester ? $this->attendance->knownParticipant($requester['email']) : null;
 
         return view('attendance.show', [
@@ -45,7 +46,7 @@ class AttendanceController extends Controller
     public function store(Request $request, AttendanceAction $action, string $token)
     {
         $event = $this->resolveEvent($action, $token);
-        $requester = $this->requester();
+        $requester = $this->requester($event);
 
         if ($requester === null) {
             return redirect()->route('google.redirect', ['redirect' => $event->attendanceUrl($action)]);
@@ -55,8 +56,9 @@ class AttendanceController extends Controller
             return back()->with('error', $this->closedMessage($event, $action));
         }
 
-        // Jalur absensi QR hanya untuk sivitas JGU (keputusan D6).
-        if (! ParticipantRegistry::isJguDomain($requester['email'])) {
+        // Jalur absensi QR khusus sivitas JGU (keputusan D6), kecuali kegiatan
+        // yang dibuka untuk tamu dari luar kampus.
+        if (! $event->attendance_guests_allowed && ! ParticipantRegistry::isJguDomain($requester['email'])) {
             return back()->with('error', 'Absensi hanya dapat digunakan oleh email @jgu.ac.id atau @student.jgu.ac.id.');
         }
 
@@ -164,10 +166,16 @@ class AttendanceController extends Controller
     /**
      * @return array{email: string, name?: string|null, google_id?: string|null}|null
      */
-    private function requester(): ?array
+    private function requester(CertificateEvent $event): ?array
     {
         $requester = Session::get('requester');
 
-        return is_array($requester) && filled($requester['email'] ?? null) ? $requester : null;
+        if (is_array($requester) && filled($requester['email'] ?? null)) {
+            return $requester;
+        }
+
+        // Sesi tamu (akun di luar JGU) hanya berlaku di kegiatan yang
+        // memang menerima tamu.
+        return $event->attendance_guests_allowed ? AttendanceGuest::current() : null;
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Support\AttendanceGuest;
 use App\Support\GoogleLogin;
 use App\Support\RequesterSession;
 use App\Support\SafeRedirect;
@@ -62,6 +63,23 @@ class GoogleAuthController extends Controller
         $domain = strtolower(substr(strrchr($email, '@'), 1));
 
         if (! in_array($domain, $this->allowedDomains, true)) {
+            // Akun di luar JGU hanya diterima untuk absensi kegiatan yang
+            // memang terbuka bagi tamu, dan masuk ke sesi tamu yang terpisah:
+            // portal pengajuan dan peminjaman tetap khusus sivitas JGU.
+            if (AttendanceGuest::eventForUrl($intended) !== null) {
+                AttendanceGuest::start([
+                    'google_id' => $googleUser->getId(),
+                    'name' => $googleUser->getName(),
+                    'email' => $email,
+                    'avatar' => $googleUser->getAvatar(),
+                ]);
+
+                Session::forget('google_auth_redirect');
+                GoogleLogin::finish();
+
+                return redirect($intended)->with('success', 'Login berhasil. Selamat datang, '.$googleUser->getName().'.');
+            }
+
             return redirect($intended)->with('error', 'Hanya email @jgu.ac.id atau @student.jgu.ac.id yang diperbolehkan.');
         }
 
@@ -88,6 +106,7 @@ class GoogleAuthController extends Controller
     public function logout(Request $request)
     {
         RequesterSession::forget();
+        AttendanceGuest::forget();
         Session::forget(RequesterSession::NOTICE_KEY);
 
         return redirect($this->intendedUrl($request->input('redirect')))
