@@ -79,6 +79,24 @@ class UploadLimitTest extends TestCase
         $this->assertSame(1024, UploadLimit::forField(1024));
     }
 
+    /**
+     * Livewire menyimpan unggahan sebagai berkas sementara dengan batasnya
+     * sendiri — bawaannya 12 MB. Server yang PHP-nya sudah dinaikkan ke 16 MB
+     * tetap menolak berkas 14 MB, jadi isian tidak boleh menjanjikannya.
+     */
+    public function test_a_field_never_promises_more_than_livewire_accepts(): void
+    {
+        config(['livewire.temporary_file_upload.rules' => ['required', 'file', 'max:300']]);
+        $this->assertLessThanOrEqual(300, UploadLimit::maxKilobytes());
+
+        config(['livewire.temporary_file_upload.rules' => 'required|file|max:200']);
+        $this->assertLessThanOrEqual(200, UploadLimit::maxKilobytes());
+
+        // Tanpa pengaturan, bawaan Livewire yang berlaku.
+        config(['livewire.temporary_file_upload.rules' => null]);
+        $this->assertLessThanOrEqual(12288, UploadLimit::maxKilobytes());
+    }
+
     public function test_the_size_is_written_the_way_people_read_it(): void
     {
         $this->assertSame('4 MB', UploadLimit::describe(4096));

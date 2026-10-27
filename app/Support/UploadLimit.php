@@ -17,7 +17,8 @@ namespace App\Support;
 class UploadLimit
 {
     /**
-     * Batas efektif dalam kilobita: yang terkecil di antara kedua pengaturan.
+     * Batas efektif dalam kilobita: yang terkecil di antara kedua pengaturan
+     * PHP dan batas berkas sementara Livewire.
      */
     public static function maxKilobytes(): int
     {
@@ -27,9 +28,29 @@ class UploadLimit
         $berlaku = min(
             $unggah > 0 ? $unggah : PHP_INT_MAX,
             $kiriman > 0 ? $kiriman : PHP_INT_MAX,
+            self::livewireKilobytes(),
         );
 
         return $berlaku === PHP_INT_MAX ? 2048 : $berlaku;
+    }
+
+    /**
+     * Livewire menyimpan setiap unggahan sebagai berkas sementara dengan
+     * aturannya sendiri — bawaannya 12 MB — dan menolak yang lebih besar
+     * tanpa menyebut angkanya, walaupun PHP di server sudah dinaikkan.
+     */
+    private static function livewireKilobytes(): int
+    {
+        $aturan = config('livewire.temporary_file_upload.rules') ?? ['required', 'file', 'max:12288'];
+        $aturan = is_string($aturan) ? explode('|', $aturan) : (array) $aturan;
+
+        foreach ($aturan as $satu) {
+            if (is_string($satu) && preg_match('/^max:(\d+)$/', trim($satu), $cocok) === 1) {
+                return (int) $cocok[1];
+            }
+        }
+
+        return PHP_INT_MAX;
     }
 
     /**
