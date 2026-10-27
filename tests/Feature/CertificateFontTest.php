@@ -339,6 +339,33 @@ class CertificateFontTest extends TestCase
         $this->assertCount(1, $this->cachedCopies($font, 'bold'));
     }
 
+    /**
+     * Semi Bold dulu tercetak dengan Times-Bold di font apa pun, karena tidak
+     * ada font PDF yang punya varian 600. Kini memakai versi tebal dari font
+     * yang sama.
+     */
+    public function test_semi_bold_keeps_its_typeface_in_the_pdf(): void
+    {
+        Storage::fake('public');
+        Storage::disk('public')->put('certificates/templates/latar.png', $this->png());
+
+        $template = CertificateTemplate::factory()->create([
+            'background_path' => 'certificates/templates/latar.png',
+            'elements' => [[
+                'variable' => 'recipient_name',
+                'x' => 100, 'y' => 300, 'width' => 900, 'height' => 80,
+                'font_family' => 'DejaVu Sans', 'font_size' => 40, 'font_weight' => 600,
+            ]],
+        ]);
+        $event = CertificateEvent::factory()->published()->create(['certificate_template_id' => $template->id]);
+        $sertifikat = Certificate::factory()->create(['certificate_event_id' => $event->id, 'recipient_name' => 'Budi Hartono']);
+
+        $pdf = app(CertificateRenderService::class)->pdf($sertifikat)->output();
+
+        $this->assertMatchesRegularExpression('#/BaseFont\s*/(?:[A-Z]{6}\+)?DejaVuSans-Bold\b#', $pdf);
+        $this->assertStringNotContainsString('Times-Bold', $pdf);
+    }
+
     public function test_a_missing_font_file_falls_back_instead_of_breaking_the_pdf(): void
     {
         Storage::fake('public');

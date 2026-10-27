@@ -33,7 +33,7 @@ class CertificateTextMeasurer
             $this->registerTemplateFonts($metrics, $template);
         }
 
-        $subtype = $weight >= 600 ? 'bold' : 'normal';
+        $subtype = CertificateElement::weightVariant($weight);
         $font = $metrics->getFont($family, $subtype)
             ?? $metrics->getFont(CertificateElement::DEFAULT_FONT_FAMILY, $subtype);
 

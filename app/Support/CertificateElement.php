@@ -187,6 +187,19 @@ final class CertificateElement
         return (int) ($this->raw['font_weight'] ?? self::DEFAULT_FONT_WEIGHT);
     }
 
+    /**
+     * Ketebalan yang benar-benar dipakai: reguler atau tebal saja.
+     *
+     * Font di PDF hanya punya dua versi itu. Dompdf mencari varian "600"
+     * secara harfiah, tidak menemukannya di font mana pun, lalu memakai
+     * Times-Bold, sehingga teks Semi Bold dulu tercetak dengan huruf yang
+     * sama sekali lain. PDF, pratinjau, dan pengukur teks memakai aturan ini.
+     */
+    public static function weightVariant(int $weight): string
+    {
+        return $weight >= 600 ? 'bold' : 'normal';
+    }
+
     public function color(): string
     {
         return (string) ($this->raw['color'] ?? self::DEFAULT_COLOR);
@@ -276,7 +289,7 @@ final class CertificateElement
         return $dasar
             ."font-family:'".$this->fontFamily()."';"
             ."font-size:{$fontSize};"
-            .'font-weight:'.$this->fontWeight().';'
+            .'font-weight:'.self::weightVariant($this->fontWeight()).';'
             .'color:'.$this->color().';'
             .'line-height:'.self::LINE_HEIGHT.';';
     }

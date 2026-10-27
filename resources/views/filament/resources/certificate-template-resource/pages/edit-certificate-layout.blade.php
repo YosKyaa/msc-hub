@@ -168,7 +168,7 @@ function certificateEditor(initialElements,width,height){return{
     elementStyle(e){return`left:${e.x/width*100}%;top:${e.y/height*100}%;width:${e.width/width*100}%;height:${e.height/height*100}%;`},
     contentStyle(e){const scale=this.$refs.canvas?this.$refs.canvas.clientWidth/width:1;const dasar=`height:100%;vertical-align:${e.valign||'middle'};text-align:${e.align||'center'};`;
         if(e.variable==='qr_code')return dasar;
-        return dasar+`font-family:${e.font_family};font-size:${Math.max(6,e.font_size*scale)}px;font-weight:${e.font_weight};color:${e.color};line-height:1.2;`},
+        return dasar+`font-family:${e.font_family};font-size:${Math.max(6,e.font_size*scale)}px;font-weight:${e.font_weight>=600?'bold':'normal'};color:${e.color};line-height:1.2;`},
     metrics(){const r=this.$refs.canvas.getBoundingClientRect();return{sx:width/r.width,sy:height/r.height}},
     startDrag(ev,index){this.selected=index;const m=this.metrics(),e=this.elements[index];this.operation={type:'drag',index,startX:ev.clientX,startY:ev.clientY,x:e.x,y:e.y,...m};this.listen()},
     startResize(ev,index){const m=this.metrics(),e=this.elements[index];this.operation={type:'resize',index,startX:ev.clientX,startY:ev.clientY,width:e.width,height:e.height,...m};this.listen()},
