@@ -16,6 +16,8 @@ use App\Policies\AssetPolicy;
 use App\Policies\ContentRequestPolicy;
 use App\Policies\ProjectPolicy;
 use App\Policies\TagPolicy;
+use App\Support\CertificateFont;
+use App\Support\CertificateTextMeasurer;
 use App\Support\QueueHealth;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Queue\Events\Looping;
@@ -34,7 +36,12 @@ class AppServiceProvider extends ServiceProvider
     {
         // Satu pengukur per permintaan: metrik font dompdf cukup dimuat sekali
         // untuk seluruh elemen di satu sertifikat.
-        $this->app->scoped(\App\Support\CertificateTextMeasurer::class);
+        $this->app->scoped(CertificateTextMeasurer::class);
+
+        // Dompdf tidak membuat folder cache fontnya sendiri. Tanpa folder
+        // itu, font unggahan sertifikat gagal didaftarkan dan PDF diam-diam
+        // memakai font cadangan.
+        $this->app->beforeResolving('dompdf', fn () => CertificateFont::prepareCacheDirectory());
     }
 
     /**

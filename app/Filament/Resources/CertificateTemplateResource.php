@@ -5,8 +5,10 @@ namespace App\Filament\Resources;
 use App\Filament\Concerns\AuthorizesCertificateModule;
 use App\Filament\Resources\CertificateTemplateResource\Pages;
 use App\Models\CertificateTemplate;
+use App\Support\CertificateFont;
 use App\Support\UploadLimit;
 use BackedEnum;
+use Closure;
 use Filament\Actions;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\TextInput;
@@ -17,7 +19,9 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\HtmlString;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 use UnitEnum;
 
 class CertificateTemplateResource extends Resource
@@ -70,9 +74,45 @@ class CertificateTemplateResource extends Resource
                     Toggle::make('is_active')->label('Template aktif')->default(true),
                 ])->columns(2),
 
-            Section::make('Font Kustom')->description('Unggah TTF jika diperlukan. Setelah menyimpan, Anda otomatis masuk ke editor visual untuk menambah dan mengatur elemen.')
-                ->schema([FileUpload::make('fonts')->multiple()->disk('public')->directory('certificates/fonts')->acceptedFileTypes(['font/ttf', 'application/x-font-ttf'])->maxSize(5120)]),
+            Section::make('Font Kustom')->description('Opsional. Font yang diunggah muncul di pilihan Font pada editor visual dengan nama berkasnya. Setelah menyimpan, Anda otomatis masuk ke editor visual untuk menambah dan mengatur elemen.')
+                ->schema([
+                    FileUpload::make('fonts')
+                        ->label('Berkas font')
+                        ->multiple()
+                        ->disk('public')
+                        ->directory(CertificateFont::DIRECTORY)
+                        ->acceptedFileTypes(CertificateFont::MIME_TYPES)
+                        ->mimeTypeMap(CertificateFont::MIME_TYPE_MAP)
+                        ->maxSize(UploadLimit::forField(CertificateFont::MAX_KB))
+                        ->validationMessages(['mimetypes' => CertificateFont::WRONG_TYPE_MESSAGE])
+                        ->getUploadedFileNameForStorageUsing(fn (TemporaryUploadedFile $file): string => CertificateFont::storedName($file->getClientOriginalName()))
+                        // Isinya diperiksa sebelum disimpan: font yang tidak
+                        // bisa ditanam baru ketahuan ketika PDF sertifikat
+                        // ternyata memakai font cadangan.
+                        ->rule(fn () => function (string $attribute, mixed $value, Closure $fail): void {
+                            if ($value instanceof UploadedFile && ($masalah = CertificateFont::problem((string) $value->getRealPath(), $value->getClientOriginalName())) !== null) {
+                                $fail($masalah);
+                            }
+                        })
+                        ->helperText(fn (): HtmlString => self::fontHelp()),
+                ]),
         ]);
+    }
+
+    private static function fontHelp(): HtmlString
+    {
+        $bantuan = 'Berkas .ttf (atau .otf berbasis TrueType), maksimal '
+            .e(UploadLimit::describe(UploadLimit::forField(CertificateFont::MAX_KB))).' per berkas. '
+            .'Font ikut ditanam ke setiap PDF sertifikat.';
+
+        // Font tetap tampil di editor, tetapi PDF memakai font cadangan
+        // tanpa tanda apa pun — jadi diberitahukan di sini.
+        if (! CertificateFont::cacheIsWritable()) {
+            $bantuan .= '<br><span style="color:rgb(220 38 38);">Folder storage/fonts di server tidak dapat ditulisi, sehingga PDF sertifikat memakai font cadangan. '
+                .'Jalankan <code>bash deploy.sh</code> di server untuk memperbaikinya.</span>';
+        }
+
+        return new HtmlString($bantuan);
     }
 
     public static function table(Table $table): Table

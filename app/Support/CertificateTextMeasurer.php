@@ -4,7 +4,6 @@ namespace App\Support;
 
 use App\Models\CertificateTemplate;
 use Dompdf\FontMetrics;
-use Illuminate\Support\Facades\Storage;
 use Throwable;
 
 /**
@@ -53,26 +52,31 @@ class CertificateTextMeasurer
      */
     private function registerTemplateFonts(FontMetrics $metrics, CertificateTemplate $template): void
     {
-        foreach ($template->fonts ?? [] as $path) {
-            if (isset($this->registered[$path]) || ! Storage::disk('public')->exists($path)) {
+        foreach (CertificateFont::forTemplate($template) as $font) {
+            if (isset($this->registered[$font->path])) {
                 continue;
             }
 
-            $this->registered[$path] = true;
-            $family = pathinfo($path, PATHINFO_FILENAME);
+            $this->registered[$font->path] = true;
+            $sumber = $font->dompdfUri();
 
-            if ($metrics->getFamily($family) !== null) {
+            if ($sumber === null) {
                 continue;
             }
 
-            try {
-                $metrics->registerFont(
-                    ['family' => $family, 'weight' => 'normal', 'style' => 'normal'],
-                    'file:///'.str_replace('\\', '/', Storage::disk('public')->path($path)),
-                );
-            } catch (Throwable) {
-                // Font yang rusak tidak boleh menggagalkan pencetakan: ukurannya
-                // diukur dengan font bawaan, sama seperti dompdf akan menggambarnya.
+            // Alamat dan ketebalannya sama persis dengan @font-face di PDF,
+            // sehingga keduanya berbagi entri cache dompdf. Dompdf sendiri
+            // melewati font yang sudah terdaftar dengan alamat yang sama.
+            foreach (CertificateFont::WEIGHTS as $tebal) {
+                try {
+                    $metrics->registerFont(
+                        ['family' => $font->family(), 'weight' => $tebal, 'style' => 'normal'],
+                        $sumber,
+                    );
+                } catch (Throwable) {
+                    // Font yang rusak tidak boleh menggagalkan pencetakan: ukurannya
+                    // diukur dengan font bawaan, sama seperti dompdf akan menggambarnya.
+                }
             }
         }
     }

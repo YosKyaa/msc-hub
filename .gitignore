@@ -25,6 +25,9 @@
 /public/storage
 /storage/*.key
 /storage/pail
+# Cache font dompdf, dibuat server saat mencetak PDF. Sengaja tidak dibawa git:
+# folder yang dibuat git saat rilis dimiliki pengguna rilis, bukan server web.
+/storage/fonts
 /vendor
 Homestead.json
 Homestead.yaml

@@ -68,6 +68,14 @@ php artisan migrate --force
 langkah "Tautan storage"
 [ -L public/storage ] || php artisan storage:link
 
+langkah "Folder font PDF"
+# dompdf menyimpan font unggahan sertifikat di storage/fonts. Folder itu harus
+# bisa ditulisi server web, atau PDF diam-diam memakai font cadangan. Pemilik
+# dan izinnya disamakan dengan storage/logs, yang pasti bisa ditulisinya.
+mkdir -p storage/fonts
+chown -R --reference=storage/logs storage/fonts 2>/dev/null || true
+chmod --reference=storage/logs storage/fonts 2>/dev/null || true
+
 langkah "Bangun ulang cache"
 php artisan optimize:clear
 php artisan optimize

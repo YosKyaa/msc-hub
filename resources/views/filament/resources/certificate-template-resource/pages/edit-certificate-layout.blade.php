@@ -1,7 +1,11 @@
 <x-filament-panels::page>
+{{-- Rentang font-weight: satu berkas melayani semua ketebalan, sama seperti
+     dompdf yang memakai versi regulernya untuk Bold. Tanpa itu peramban
+     menebalkannya sendiri dan editor tampak lebih tebal daripada PDF. --}}
+@php($fontUnggahan = \App\Support\CertificateFont::forTemplate($record))
 <style>
-@foreach($record->fonts ?? [] as $font)
-@font-face { font-family:'{{ pathinfo($font, PATHINFO_FILENAME) }}'; src:url('{{ \Illuminate\Support\Facades\Storage::disk('public')->url($font) }}') format('truetype'); font-display:swap; }
+@foreach($fontUnggahan as $font)
+@font-face { font-family:'{{ $font->family() }}'; src:url('{{ $font->url() }}') format('truetype'); font-weight:100 900; font-display:swap; }
 @endforeach
 .cert-editor{display:flex;flex-direction:column;gap:16px;color:rgb(17 24 39)}
 .dark .cert-editor{color:rgb(243 244 246)}
@@ -108,7 +112,7 @@
                     </label>
                     <label x-show="elements[selected].variable==='custom_text'" class="cert-field">Isi teks<textarea x-model="elements[selected].text" rows="2"></textarea></label>
                     <div class="cert-fields-2">
-                        <label class="cert-field">Font<select x-model="elements[selected].font_family"><option>DejaVu Sans</option><option>serif</option><option>sans-serif</option>@foreach($record->fonts ?? [] as $font)<option>{{ pathinfo($font, PATHINFO_FILENAME) }}</option>@endforeach</select></label>
+                        <label class="cert-field">Font<select x-model="elements[selected].font_family"><option>DejaVu Sans</option><option>serif</option><option>sans-serif</option>@if($fontUnggahan)<optgroup label="Font unggahan">@foreach($fontUnggahan as $font)<option value="{{ $font->family() }}">{{ $font->label() }}</option>@endforeach</optgroup>@endif</select></label>
                         <label class="cert-field">Ukuran<input type="number" min="6" max="200" x-model.number="elements[selected].font_size"></label>
                         <label class="cert-field">Ketebalan<select x-model.number="elements[selected].font_weight"><option value="400">Regular</option><option value="600">Semi Bold</option><option value="700">Bold</option></select></label>
                         <label class="cert-field">Warna<input type="color" x-model="elements[selected].color"></label>

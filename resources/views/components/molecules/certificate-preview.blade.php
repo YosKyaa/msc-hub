@@ -8,6 +8,7 @@
 
 @php
     use App\Support\CertificateElement;
+    use App\Support\CertificateFont;
     use Illuminate\Support\Facades\Storage;
 
     $canvasWidth = max(1, (int) $template->canvas_width);
@@ -27,14 +28,21 @@
      Dirender di tempatnya berdiri, bukan lewat @push('styles'): halaman yang
      memakai komponen ini menaruh @stack('styles') di <head>, sedangkan Blade
      merender stack di tempat ia ditulis — apa pun yang didorong sesudahnya
-     dibuang tanpa suara. --}}
+     dibuang tanpa suara.
+
+     Rentang font-weight membuat satu berkas melayani semua ketebalan, sama
+     seperti dompdf yang memakai versi regulernya untuk Bold. Tanpa rentang
+     itu peramban menebalkannya sendiri, dan pratinjau tampak lebih tebal
+     daripada PDF-nya. --}}
 @once
-    @if (filled($template->fonts ?? []))
+    @php($fontUnggahan = CertificateFont::forTemplate($template))
+    @if ($fontUnggahan !== [])
         <style>
-            @foreach($template->fonts as $fontPath)
+            @foreach($fontUnggahan as $font)
                 @font-face {
-                    font-family: "{{ pathinfo($fontPath, PATHINFO_FILENAME) }}";
-                    src: url("{{ Storage::disk('public')->url($fontPath) }}") format("truetype");
+                    font-family: "{{ $font->family() }}";
+                    src: url("{{ $font->url() }}") format("truetype");
+                    font-weight: 100 900;
                     font-display: swap;
                 }
             @endforeach

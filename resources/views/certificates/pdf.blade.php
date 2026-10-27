@@ -13,8 +13,12 @@
 <html><head><meta charset="utf-8"><style>
 @page { margin: 0; }
 html, body { margin:0; padding:0; width:{{ $template->canvas_width }}px; height:{{ $template->canvas_height }}px; overflow:hidden; }
-@foreach($template->fonts ?? [] as $fontPath)
-@font-face { font-family:"{{ pathinfo($fontPath, PATHINFO_FILENAME) }}"; src:url("file:///{{ str_replace('\\', '/', \Illuminate\Support\Facades\Storage::disk('public')->path($fontPath)) }}") format("truetype"); font-weight:normal; }
+{{-- Dompdf hanya membaca sumber berformat "truetype". Alamat, nama
+     keluarga, dan ketebalannya diputuskan App\Support\CertificateFont. --}}
+@foreach(\App\Support\CertificateFont::forTemplate($template) as $font)
+@foreach(\App\Support\CertificateFont::WEIGHTS as $tebal)
+@font-face { font-family:"{{ $font->family() }}"; src:url("{{ $font->pdfSource() }}") format("truetype"); font-weight:{{ $tebal }}; }
+@endforeach
 @endforeach
 .canvas { position:relative; width:{{ $template->canvas_width }}px; height:{{ $template->canvas_height }}px; }
 .background { position:absolute; left:0; top:0; width:{{ $template->canvas_width }}px; height:{{ $template->canvas_height }}px; }

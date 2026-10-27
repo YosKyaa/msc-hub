@@ -575,6 +575,7 @@ tail -50 storage/logs/laravel.log
 | Semua halaman 500 | `php artisan config:clear` lalu `config:cache` belum diulang setelah menyunting `.env` |
 | Email tidak sampai | Pekerja antrean tidak berjalan; periksa `supervisorctl status` |
 | Sertifikat tanpa latar | `php artisan storage:link` belum dijalankan |
+| Font kustom tidak tampil di PDF | Folder `storage/fonts` tidak bisa ditulisi server web; `bash deploy.sh` menyamakan pemiliknya dengan `storage/logs` |
 | Alamat aneh di email | `APP_URL` kurang `https://` atau berakhiran garis miring |
 
 ### Mengembalikan keadaan
