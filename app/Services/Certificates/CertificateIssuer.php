@@ -2,6 +2,7 @@
 
 namespace App\Services\Certificates;
 
+use App\Enums\CertificateDesign;
 use App\Models\Certificate;
 use App\Models\CertificateEvent;
 use App\Models\CertificateEventParticipant;
@@ -21,18 +22,23 @@ class CertificateIssuer
 
     /**
      * Terbitkan sertifikat, atau kembalikan yang sudah ada. Aman dipanggil ulang.
+     *
+     * Sertifikat yang sudah ada dikembalikan apa adanya, apa pun cara
+     * pembuatannya: nomor dan QR yang sudah terbit tidak pernah diganti.
      */
-    public function issue(CertificateEventParticipant $participation): Certificate
-    {
+    public function issue(
+        CertificateEventParticipant $participation,
+        CertificateDesign $design = CertificateDesign::TEMPLATE,
+    ): Certificate {
         $participation->loadMissing(['participant', 'event', 'certificate']);
 
-        return DB::transaction(function () use ($participation) {
+        return DB::transaction(function () use ($participation, $design) {
             if ($participation->certificate) {
                 return $participation->certificate;
             }
 
             try {
-                return $this->create($participation);
+                return $this->create($participation, $design);
             } catch (QueryException $exception) {
                 // Job yang dijalankan ulang bersamaan: unique index menang,
                 // sertifikat yang sudah ada dipakai bersama.
@@ -55,7 +61,7 @@ class CertificateIssuer
         return $event->participations()->getQuery()->eligible()->withoutCertificate();
     }
 
-    private function create(CertificateEventParticipant $participation): Certificate
+    private function create(CertificateEventParticipant $participation, CertificateDesign $design): Certificate
     {
         $person = $participation->participant;
 
@@ -69,6 +75,7 @@ class CertificateIssuer
             'recipient_role' => $participation->role,
             'recipient_role_label' => $participation->resolvedRoleLabel(),
             'variables' => $participation->variables,
+            'design_source' => $design,
         ]);
     }
 

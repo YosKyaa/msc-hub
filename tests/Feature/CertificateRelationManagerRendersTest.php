@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\CertificateDesign;
 use App\Filament\Resources\CertificateEventResource;
 use App\Filament\Resources\CertificateEventResource\Pages\EditCertificateEvent;
 use App\Filament\Resources\CertificateEventResource\RelationManagers\ParticipationsRelationManager;
@@ -173,6 +174,15 @@ class CertificateRelationManagerRendersTest extends TestCase
 
         $dicabut = $this->extraParticipation($event);
         app(CertificateIssuer::class)->issue($dicabut)->forceFill(['revoked_at' => now()])->save();
+
+        // Desain sendiri: menunggu berkasnya, lalu terbit seperti biasa
+        // setelah berkasnya diunggah.
+        $menungguDesain = $this->extraParticipation($event);
+        app(CertificateIssuer::class)->issue($menungguDesain, CertificateDesign::EXTERNAL);
+
+        $desainTerpasang = $this->extraParticipation($event);
+        app(CertificateIssuer::class)->issue($desainTerpasang, CertificateDesign::EXTERNAL)
+            ->forceFill(['design_file_path' => 'certificates/designs/contoh.pdf'])->save();
 
         $this->extraParticipation($event, eligible: false);
 

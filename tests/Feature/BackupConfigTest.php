@@ -25,7 +25,11 @@ class BackupConfigTest extends TestCase
     public function test_the_database_and_the_uploads_are_backed_up(): void
     {
         $this->assertSame(['mysql'], config('backup.backup.source.databases'));
-        $this->assertSame([storage_path('app'.DIRECTORY_SEPARATOR.'public')], config('backup.backup.source.files.include'));
+        $this->assertSame([
+            storage_path('app'.DIRECTORY_SEPARATOR.'public'),
+            // Berkas jadi sertifikat desain sendiri, yang disimpan privat.
+            storage_path('app'.DIRECTORY_SEPARATOR.'private'.DIRECTORY_SEPARATOR.'certificates'),
+        ], config('backup.backup.source.files.include'));
     }
 
     /**

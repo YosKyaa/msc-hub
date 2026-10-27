@@ -94,7 +94,12 @@ client_max_body_size 20M;
 ```
 
 Formulir di panel menyebut angkanya sendiri mengikuti pengaturan ini, jadi
-setelah diubah tidak ada yang perlu disunting di kode.
+setelah diubah tidak ada yang perlu disunting di kode. Livewire punya batas
+sendiri untuk berkas sementara, bawaannya 12 MB, dan formulir sudah
+memperhitungkannya.
+
+Berkas jadi sertifikat desain sendiri — PDF siap cetak dari Canva — biasanya
+2–8 MB, jadi batas bawaan 2 MB pasti menolaknya.
 
 > Desain latar ditanam ke dalam **setiap** PDF sertifikat. Latar 8 MB membuat
 > tiap sertifikat ikut ± 10 MB, dan seribu peserta berarti 10 GB terkirim lewat
@@ -485,7 +490,8 @@ Lalu telusuri dengan tangan:
 
 Setiap malam penjadwal mencadangkan basis data dan berkas unggahan
 (`storage/app/public`: desain dan font sertifikat, tanda tangan, logo penerbit,
-foto prestasi, bingkai twibbon). Kode tidak ikut karena sudah di git.
+foto prestasi, bingkai twibbon; `storage/app/private/certificates`: berkas jadi
+sertifikat desain sendiri). Kode tidak ikut karena sudah di git.
 
 | Waktu | Perintah | Gunanya |
 |---|---|---|
@@ -534,6 +540,11 @@ cp -r public/* /var/www/msc-hub/storage/app/public/
 ---
 
 ## Yang berubah perilakunya setelah rilis ini
+
+- **Sertifikat desain sendiri**: untuk pemenang dan pembicara, nomor dan QR
+  terbit lebih dulu, desainnya dibuat di luar sistem lalu diunggah kembali.
+  Template kegiatan kini boleh kosong bila seluruh sertifikatnya didesain
+  sendiri. Lihat `docs/certificate-system.md`.
 
 - **Twibbon** (menu Konten): admin mengunggah bingkai PNG, publik memasangnya
   di `/twibbon`. Lihat `docs/twibbon.md`. Izinnya masuk lewat migrasi.

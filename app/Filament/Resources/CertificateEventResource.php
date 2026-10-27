@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Enums\AttendanceAction;
+use App\Enums\CertificateDesign;
 use App\Enums\EligibilityRule;
 use App\Filament\Concerns\AuthorizesCertificateModule;
 use App\Filament\Resources\CertificateEventResource\Pages;
@@ -70,12 +71,19 @@ class CertificateEventResource extends Resource
                                 ->columnSpanFull(),
                             TextInput::make('slug')->required()->unique(ignoreRecord: true),
                             DatePicker::make('event_date')->label('Tanggal kegiatan')->required()->native(false)->live(),
+                            // Boleh kosong bila seluruh sertifikatnya didesain
+                            // sendiri. Begitu ada sertifikat yang digambar dari
+                            // template, templatenya tidak boleh dilepas lagi:
+                            // PDF dan halaman verifikasinya bergantung padanya.
                             Select::make('certificate_template_id')
                                 ->label('Template')
                                 ->relationship('template', 'name', fn ($query) => $query->where('is_active', true))
-                                ->required()
+                                ->required(fn (?CertificateEvent $record) => $record?->certificates()
+                                    ->where('design_source', CertificateDesign::TEMPLATE->value)
+                                    ->exists() ?? false)
                                 ->searchable()
-                                ->preload(),
+                                ->preload()
+                                ->helperText('Kosongkan bila seluruh sertifikat kegiatan ini didesain sendiri — nomor dan QR-nya diterbitkan dari tabel peserta.'),
                             Select::make('issuer_id')
                                 ->label('Penerbit')
                                 ->relationship('issuer', 'name', fn ($query) => $query->where('is_active', true))
@@ -291,7 +299,7 @@ class CertificateEventResource extends Resource
     {
         return $table->columns([
             TextColumn::make('name')->label('Kegiatan')->searchable()->sortable(),
-            TextColumn::make('template.name')->label('Template')->toggleable(),
+            TextColumn::make('template.name')->label('Template')->placeholder('Desain sendiri')->toggleable(),
             TextColumn::make('issuer.name')->label('Penerbit')->placeholder('MSC JGU')->toggleable(),
             TextColumn::make('event_date')->label('Tanggal')->date('d M Y')->sortable(),
             TextColumn::make('participations_count')->label('Terdaftar')->counts('participations'),

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Enums\CertificateDesign;
 use App\Models\CertificateEventParticipant;
 use App\Services\Certificates\CertificateIssuer;
 use Illuminate\Bus\Batchable;
@@ -34,7 +35,10 @@ class IssueCertificateJob implements ShouldQueue
     /** @var array<int, int> */
     public array $backoff = [10, 30, 60];
 
-    public function __construct(public CertificateEventParticipant $participation) {}
+    public function __construct(
+        public CertificateEventParticipant $participation,
+        public CertificateDesign $design = CertificateDesign::TEMPLATE,
+    ) {}
 
     public function handle(CertificateIssuer $issuer): void
     {
@@ -48,7 +52,7 @@ class IssueCertificateJob implements ShouldQueue
             return;
         }
 
-        $issuer->issue($participation);
+        $issuer->issue($participation, $this->design);
     }
 
     public function failed(Throwable $exception): void

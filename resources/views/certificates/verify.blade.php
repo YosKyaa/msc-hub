@@ -1,7 +1,9 @@
 @php
     $event = $certificate->event;
     $isValid = $certificate->isValid();
+    $isDeliverable = $certificate->isDeliverable();
     $verificationUrl = $certificate->verificationUrl();
+    $designIsImage = $designUrl !== null && \App\Services\Certificates\CertificateDesignFile::isImage($certificate);
 
     $brandName = $issuer?->name ?? 'MSC Hub';
 
@@ -41,15 +43,50 @@
 
 <main class="mx-auto max-w-5xl px-4 py-8">
 
-    {{-- Pratinjau memakai template, koordinat, dan variabel yang sama dengan
-         berkas PDF, sehingga yang dilihat pemeriksa identik dengan yang dicetak. --}}
-    <x-molecules.certificate-preview
-        :template="$event->template"
-        :values="$values"
-        :qr-data-uri="$qrDataUri"
-        :muted="! $isValid"
-        :watermark="$isValid ? null : 'Tidak Berlaku'"
-        class="mx-auto max-w-3xl" />
+    @if($certificate->isOwnDesign())
+        {{-- Desain sendiri: yang ditampilkan berkas jadinya sendiri, bila sudah
+             diunggah. Bila belum, pemeriksa diminta membandingkan rinciannya. --}}
+        @if($designIsImage)
+            <div class="relative mx-auto max-w-3xl overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-slate-200">
+                <img src="{{ $designUrl }}" alt="Sertifikat {{ $certificate->recipient_name }}"
+                     class="block w-full {{ $isValid ? '' : 'opacity-40 grayscale' }}">
+                @unless($isValid)
+                    <div class="absolute inset-0 flex items-center justify-center">
+                        <span class="rotate-[-18deg] rounded-lg border-4 border-red-500/70 px-6 py-2 text-3xl font-black uppercase tracking-[0.2em] text-red-500/70 sm:text-5xl">
+                            Tidak Berlaku
+                        </span>
+                    </div>
+                @endunless
+            </div>
+        @else
+            <div class="mx-auto max-w-3xl rounded-xl border border-dashed border-slate-300 bg-white px-6 py-8 text-center shadow-sm">
+                <svg class="mx-auto size-10 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M9 12h6m-6 4h6M7 3h7l5 5v11a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+                <p class="mt-3 font-semibold">Sertifikat ini didesain tersendiri oleh penerbitnya</p>
+                <p class="mx-auto mt-1 max-w-xl text-sm text-slate-600">
+                    Pastikan nama, peran, dan nomor sertifikat pada dokumen yang Anda periksa sama persis dengan rincian di bawah.
+                    Bila berbeda, dokumen itu bukan sertifikat yang sah.
+                </p>
+                @if($designUrl)
+                    <a href="{{ $designUrl }}" target="_blank" rel="noopener"
+                       class="mt-4 inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50">
+                        Lihat sertifikat (PDF)
+                    </a>
+                @endif
+            </div>
+        @endif
+    @else
+        {{-- Pratinjau memakai template, koordinat, dan variabel yang sama dengan
+             berkas PDF, sehingga yang dilihat pemeriksa identik dengan yang dicetak. --}}
+        <x-molecules.certificate-preview
+            :template="$event->template"
+            :values="$values"
+            :qr-data-uri="$qrDataUri"
+            :muted="! $isValid"
+            :watermark="$isValid ? null : 'Tidak Berlaku'"
+            class="mx-auto max-w-3xl" />
+    @endif
 
     <div class="mx-auto mt-6 max-w-3xl">
         @if($isValid)
@@ -89,7 +126,7 @@
                 <p class="mt-1 text-lg font-bold leading-snug">{{ $certificate->recipient_name }}</p>
                 <p class="text-sm text-slate-500">{{ $certificate->recipient_role_label ?: ucfirst($certificate->recipient_role) }}</p>
 
-                @if($isValid)
+                @if($isDeliverable)
                     <a href="{{ $certificate->downloadUrl() }}"
                        class="mt-4 flex w-full items-center justify-center gap-2 rounded-lg bg-sun px-4 py-3 font-semibold text-ink hover:bg-sun-deep">
                         <svg class="size-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

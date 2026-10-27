@@ -11,7 +11,13 @@ class CertificateBatchException extends RuntimeException
 {
     public static function inactiveTemplate(): self
     {
-        return new self('Kegiatan ini belum memakai template sertifikat yang aktif.');
+        return new self('Kegiatan ini belum memakai template sertifikat yang aktif. Pilih template di pengaturan kegiatan, '
+            .'atau — bila sertifikatnya didesain sendiri — pilih penerimanya lalu pakai Terbitkan Nomor & QR (Desain Sendiri).');
+    }
+
+    public static function alreadyIssued(): self
+    {
+        return new self('Semua penerima yang dipilih sudah punya sertifikat. Nomor dan QR yang sudah terbit tidak pernah diganti.');
     }
 
     public static function nothingToIssue(): self

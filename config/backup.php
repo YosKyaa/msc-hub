@@ -39,6 +39,8 @@ return [
                     // Pemisahnya DIRECTORY_SEPARATOR, bukan '/': di Windows, path
                     // berpemisah campuran tidak cocok dengan relative_path di bawah.
                     storage_path('app'.DIRECTORY_SEPARATOR.'public'),
+                    // Berkas jadi sertifikat desain sendiri, disimpan privat.
+                    storage_path('app'.DIRECTORY_SEPARATOR.'private'.DIRECTORY_SEPARATOR.'certificates'),
                 ],
 
                 /*

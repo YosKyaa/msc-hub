@@ -183,11 +183,11 @@ class CertificateResource extends Resource
 
                 Actions\Action::make('download')
                     ->iconButton()
-                    ->tooltip('Unduh PDF')
+                    ->tooltip('Unduh sertifikat')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->url(fn (Certificate $record) => $record->downloadUrl())
                     ->openUrlInNewTab()
-                    ->visible(fn (Certificate $record) => $record->isValid()),
+                    ->visible(fn (Certificate $record) => $record->isDeliverable()),
 
                 Actions\Action::make('openEvent')
                     ->iconButton()

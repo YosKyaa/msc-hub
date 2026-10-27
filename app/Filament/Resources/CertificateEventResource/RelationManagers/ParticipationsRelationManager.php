@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\CertificateEventResource\RelationManagers;
 
+use App\Enums\CertificateDesign;
 use App\Enums\ParticipantRole;
 use App\Enums\ParticipantSource;
 use App\Filament\Actions\ImportParticipantsAction;
@@ -12,6 +13,8 @@ use App\Models\CertificateEventParticipant;
 use App\Services\Certificates\CertificateBatchException;
 use App\Services\Certificates\CertificateBatchIssuer;
 use App\Services\Certificates\CertificateBatchMailer;
+use App\Services\Certificates\CertificateDesignFile;
+use App\Services\Certificates\CertificateQrPack;
 use App\Services\Certificates\ParticipantRegistry;
 use App\Services\Certificates\RecipientCorrection;
 use App\Services\Certificates\RecipientCorrectionOutcome;
@@ -19,9 +22,11 @@ use App\Support\CertificatePermission;
 use App\Support\CertificateStage;
 use App\Support\MailHealth;
 use App\Support\QueueHealth;
+use App\Support\UploadLimit;
 use Closure;
 use Filament\Actions;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -35,7 +40,10 @@ use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
+use Illuminate\Support\HtmlString;
+use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
 
 /**
  * Satu tabel untuk seluruh perjalanan sertifikat.
@@ -224,6 +232,49 @@ class ParticipationsRelationManager extends RelationManager
                     ->modalSubmitActionLabel('Ya, Kirim')
                     ->visible(fn () => CertificatePermission::allowsIssuing())
                     ->action(fn () => $this->dispatchEmails()),
+
+                // Sertifikat yang didesain di luar sistem, misalnya untuk
+                // pemenang dan pembicara: nomor dan QR-nya terbit lebih dulu,
+                // desainnya menyusul. Penerbitannya lewat aksi massal, karena
+                // yang menentukan siapa saja penerimanya adalah admin.
+                Actions\ActionGroup::make([
+                    Actions\Action::make('ownDesignGuide')
+                        ->label('Cara Memakai')
+                        ->icon('heroicon-o-question-mark-circle')
+                        ->modalHeading('Sertifikat Desain Sendiri')
+                        ->modalDescription(new HtmlString(
+                            'Untuk sertifikat yang didesain di luar sistem, misalnya pemenang dan pembicara.<ol style="margin-top:.75rem;padding-left:1.25rem;list-style:decimal;">'
+                            .'<li>Centang penerimanya, lalu pilih <b>Terbitkan Nomor &amp; QR (Desain Sendiri)</b> dari menu aksi massal.</li>'
+                            .'<li><b>Unduh Paket QR</b>: QR setiap penerima dalam SVG dan PNG, beserta daftar nomor dan namanya.</li>'
+                            .'<li>Desain sertifikatnya di Canva, Photoshop, atau Illustrator, lalu pasang QR dan nomornya.</li>'
+                            .'<li><b>Unggah Berkas Desain</b> (PDF, JPG, atau PNG). Berkas yang namanya diawali nomor sertifikat dipasangkan sendiri ke penerimanya.</li>'
+                            .'<li>Publikasikan kegiatan: QR mulai menyatakan sertifikat valid, dan emailnya bisa dikirim.</li></ol>'
+                        ))
+                        ->modalSubmitAction(false)
+                        ->modalCancelActionLabel('Tutup'),
+
+                    Actions\Action::make('downloadQrPack')
+                        ->label('Unduh Paket QR')
+                        ->icon('heroicon-o-qr-code')
+                        ->visible(fn () => $this->hasOwnDesignCertificates())
+                        ->action(fn () => $this->downloadQrPack()),
+
+                    Actions\Action::make('uploadDesigns')
+                        ->label('Unggah Berkas Desain')
+                        ->icon('heroicon-o-arrow-up-tray')
+                        ->modalHeading('Unggah Berkas Desain')
+                        ->modalDescription('Pilih banyak berkas sekaligus. Berkas yang namanya diawali nomor sertifikat — seperti nama berkas di Paket QR — '
+                            .'atau memuat nama penerimanya dipasangkan sendiri. Berkas yang sudah ada diganti.')
+                        ->modalSubmitActionLabel('Pasang')
+                        ->visible(fn () => $this->hasOwnDesignCertificates())
+                        ->schema([$this->designUpload('berkas')->multiple()->maxFiles(200)->required()])
+                        ->action(fn (array $data) => $this->attachDesigns($data['berkas'] ?? [])),
+                ])
+                    ->label('Desain Sendiri')
+                    ->icon('heroicon-o-paint-brush')
+                    ->button()
+                    ->color('gray')
+                    ->visible(fn () => CertificatePermission::allowsIssuing()),
             ])
             // Tombol ikon inline, bukan dropdown: panel ActionGroup Filament
             // dirender tanpa modifier `.flip`, sehingga selalu membuka ke bawah
@@ -280,11 +331,26 @@ class ParticipationsRelationManager extends RelationManager
 
                 Actions\Action::make('download')
                     ->iconButton()
-                    ->tooltip('Unduh PDF')
+                    ->tooltip('Unduh sertifikat')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->url(fn (CertificateEventParticipant $record) => $record->certificate?->downloadUrl())
                     ->openUrlInNewTab()
-                    ->visible(fn (CertificateEventParticipant $record) => $record->certificate?->isValid() === true),
+                    ->visible(fn (CertificateEventParticipant $record) => $record->certificate?->isDeliverable() === true),
+
+                Actions\Action::make('uploadDesign')
+                    ->iconButton()
+                    ->tooltip(fn (CertificateEventParticipant $record) => filled($record->certificate?->design_file_path) ? 'Ganti berkas desain' : 'Unggah berkas desain')
+                    ->icon('heroicon-o-arrow-up-tray')
+                    ->color('warning')
+                    ->modalHeading('Berkas Desain Sertifikat')
+                    ->modalDescription(fn (CertificateEventParticipant $record) => 'Untuk '.$record->certificate?->recipient_name
+                        .', nomor '.$record->certificate?->certificate_number.'. Berkas yang sudah ada akan diganti.')
+                    ->modalSubmitActionLabel('Pasang')
+                    ->visible(fn (CertificateEventParticipant $record) => CertificatePermission::allowsIssuing()
+                        && $record->certificate?->isOwnDesign() === true
+                        && $record->certificate->revoked_at === null)
+                    ->schema([$this->designUpload('berkas')->required()])
+                    ->action(fn (CertificateEventParticipant $record, array $data) => $this->attachDesign($record->certificate, $data['berkas'])),
 
                 Actions\Action::make('sendEmail')
                     ->iconButton()
@@ -299,6 +365,7 @@ class ParticipationsRelationManager extends RelationManager
                     ->modalSubmitActionLabel('Ya, Kirim')
                     ->visible(fn (CertificateEventParticipant $record) => CertificatePermission::allowsIssuing()
                         && $record->certificate !== null
+                        && $record->certificate->hasDocument()
                         && filled($record->certificate->recipient_email))
                     ->action(fn (CertificateEventParticipant $record) => $this->resendEmail($record->certificate)),
 
@@ -368,6 +435,24 @@ class ParticipationsRelationManager extends RelationManager
                     ->modalSubmitActionLabel('Ya, Terbitkan')
                     ->visible(fn () => CertificatePermission::allowsIssuing())
                     ->action(fn (Collection $records) => $this->dispatchIssuing($records)),
+
+                Actions\BulkAction::make('issueOwnDesign')
+                    ->label('Terbitkan Nomor & QR (Desain Sendiri)')
+                    ->icon('heroicon-o-qr-code')
+                    ->requiresConfirmation()
+                    ->modalHeading('Terbitkan Nomor & QR untuk Desain Sendiri')
+                    ->modalDescription('Penerima yang dipilih mendapat nomor resmi dan QR verifikasi sekarang; sertifikatnya didesain di luar sistem. '
+                        .'Yang belum ditandai berhak akan ditandai berhak. QR berlaku setelah kegiatan dipublikasikan, '
+                        .'dan nomor serta QR yang sudah terbit tidak pernah berubah.')
+                    ->modalSubmitActionLabel('Ya, Terbitkan')
+                    ->visible(fn () => CertificatePermission::allowsIssuing())
+                    ->action(fn (Collection $records) => $this->dispatchIssuing($records, CertificateDesign::EXTERNAL)),
+
+                Actions\BulkAction::make('downloadQrPackSelected')
+                    ->label('Unduh Paket QR')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->visible(fn () => CertificatePermission::allowsIssuing())
+                    ->action(fn (Collection $records) => $this->downloadQrPack($records)),
 
                 Actions\BulkAction::make('sendEmails')
                     ->label('Kirim Email')
@@ -526,12 +611,12 @@ class ParticipationsRelationManager extends RelationManager
      */
     private function resendEmailsFor(Collection $certificates): void
     {
-        $siap = $certificates->filter(fn (Certificate $certificate) => $certificate->isValid());
+        $siap = $certificates->filter(fn (Certificate $certificate) => $certificate->isDeliverable());
 
         if ($siap->isEmpty()) {
             Notification::make()
                 ->title('Tidak ada yang dikirim ulang')
-                ->body('Sertifikat yang dipilih belum valid atau sudah dicabut.')
+                ->body('Sertifikat yang dipilih belum valid, sudah dicabut, atau berkas desainnya belum diunggah.')
                 ->warning()
                 ->send();
 
@@ -610,14 +695,14 @@ class ParticipationsRelationManager extends RelationManager
      *
      * @param  Collection<int, CertificateEventParticipant>|null  $records
      */
-    private function dispatchIssuing(?Collection $records = null): void
+    private function dispatchIssuing(?Collection $records = null, CertificateDesign $design = CertificateDesign::TEMPLATE): void
     {
+        $issuer = app(CertificateBatchIssuer::class);
+
         try {
-            $outcome = app(CertificateBatchIssuer::class)->issueFor(
-                $this->getOwnerRecord(),
-                $records,
-                auth()->user(),
-            );
+            $outcome = $design === CertificateDesign::EXTERNAL
+                ? $issuer->issueOwnDesignFor($this->getOwnerRecord(), $records ?? collect(), auth()->user())
+                : $issuer->issueFor($this->getOwnerRecord(), $records, auth()->user());
         } catch (CertificateBatchException $exception) {
             Notification::make()->title('Penerbitan dibatalkan')->body($exception->getMessage())->warning()->send();
 
@@ -730,10 +815,12 @@ class ParticipationsRelationManager extends RelationManager
             return;
         }
 
-        if (! $certificate->isValid()) {
+        if (! $certificate->isDeliverable()) {
             Notification::make()
                 ->title('Email tidak dikirim')
-                ->body('Sertifikat belum valid. Pastikan kegiatan sudah dipublikasikan dan sertifikat tidak dicabut.')
+                ->body($certificate->hasDocument()
+                    ? 'Sertifikat belum valid. Pastikan kegiatan sudah dipublikasikan dan sertifikat tidak dicabut.'
+                    : 'Berkas desain sertifikat ini belum diunggah, jadi belum ada yang bisa diunduh penerimanya.')
                 ->warning()
                 ->send();
 
@@ -744,6 +831,120 @@ class ParticipationsRelationManager extends RelationManager
         SendCertificateEmailJob::dispatch($certificate);
 
         Notification::make()->title('Email sertifikat diantrekan ulang.')->success()->send();
+    }
+
+    // ------------------------------------------------------ desain sendiri
+
+    private function hasOwnDesignCertificates(): bool
+    {
+        return $this->getOwnerRecord()->certificates()
+            ->where('design_source', CertificateDesign::EXTERNAL->value)
+            ->exists();
+    }
+
+    /**
+     * Isian unggah berkas jadi, dipakai satu per satu maupun sekaligus.
+     * Berkasnya tidak disimpan Filament: setiap berkas lebih dulu dicocokkan
+     * dengan penerimanya, lalu disimpan oleh CertificateDesignFile.
+     */
+    private function designUpload(string $name): FileUpload
+    {
+        return FileUpload::make($name)
+            ->label('Berkas desain')
+            ->storeFiles(false)
+            ->acceptedFileTypes(CertificateDesignFile::MIME_TYPES)
+            ->maxSize(UploadLimit::forField(CertificateDesignFile::MAX_KB))
+            ->validationMessages(['mimetypes' => CertificateDesignFile::WRONG_TYPE_MESSAGE])
+            ->rule(fn () => function (string $attribute, mixed $value, Closure $fail): void {
+                if ($value instanceof UploadedFile && ($masalah = CertificateDesignFile::problem((string) $value->getRealPath(), $value->getClientOriginalName())) !== null) {
+                    $fail($masalah);
+                }
+            })
+            ->helperText('PDF, JPG, atau PNG, maksimal '.UploadLimit::describe(UploadLimit::forField(CertificateDesignFile::MAX_KB)).' per berkas.');
+    }
+
+    /**
+     * @param  array<int, TemporaryUploadedFile>  $berkas
+     */
+    private function attachDesigns(array $berkas): void
+    {
+        $sertifikat = CertificateQrPack::certificatesFor($this->getOwnerRecord());
+        $terpasang = 0;
+        $tidakCocok = [];
+
+        foreach ($berkas as $satu) {
+            $nama = $satu->getClientOriginalName();
+            $pemilik = CertificateDesignFile::match($nama, $sertifikat);
+
+            if ($pemilik === null) {
+                $tidakCocok[] = $nama;
+
+                continue;
+            }
+
+            CertificateDesignFile::attach($pemilik, (string) $satu->getRealPath(), $nama);
+            $terpasang++;
+        }
+
+        $isi = $tidakCocok === []
+            ? 'Setiap berkas sudah terpasang pada penerimanya, dan halaman verifikasinya kini menampilkan desain aslinya.'
+            : count($tidakCocok).' berkas tidak cocok dengan nomor maupun nama penerima mana pun: '
+                .implode(', ', array_slice($tidakCocok, 0, 10)).(count($tidakCocok) > 10 ? ', …' : '').'. '
+                .'Ganti namanya agar diawali nomor sertifikat, atau unggah lewat tombol di baris penerimanya.';
+
+        $pemberitahuan = Notification::make()
+            ->title($terpasang > 0 ? "{$terpasang} berkas desain terpasang" : 'Tidak ada berkas yang terpasang')
+            ->body($isi)
+            ->status($tidakCocok === [] ? 'success' : 'warning');
+
+        // Yang tidak cocok harus ditindaklanjuti, jadi pesannya menetap.
+        if ($tidakCocok !== []) {
+            $pemberitahuan->persistent();
+        }
+
+        $pemberitahuan->send();
+    }
+
+    private function attachDesign(?Certificate $certificate, TemporaryUploadedFile $berkas): void
+    {
+        if ($certificate === null || ! $certificate->isOwnDesign()) {
+            return;
+        }
+
+        CertificateDesignFile::attach($certificate, (string) $berkas->getRealPath(), $berkas->getClientOriginalName());
+
+        Notification::make()
+            ->title('Berkas desain terpasang')
+            ->body('Halaman verifikasi kini menampilkan desain aslinya, dan penerimanya bisa mengunduhnya.')
+            ->success()
+            ->send();
+    }
+
+    /**
+     * @param  Collection<int, CertificateEventParticipant>|null  $records
+     */
+    private function downloadQrPack(?Collection $records = null)
+    {
+        /** @var CertificateEvent $event */
+        $event = $this->getOwnerRecord();
+
+        $pilihan = $records?->map(fn (CertificateEventParticipant $record) => $record->certificate)->filter()->values();
+        $sertifikat = CertificateQrPack::certificatesFor($event, $pilihan);
+
+        if ($sertifikat->isEmpty()) {
+            Notification::make()
+                ->title('Belum ada QR untuk diunduh')
+                ->body('Paket QR hanya berisi sertifikat desain sendiri yang belum dicabut. '
+                    .'Terbitkan lebih dulu lewat aksi massal Terbitkan Nomor & QR (Desain Sendiri).')
+                ->warning()
+                ->send();
+
+            return null;
+        }
+
+        return response()
+            ->download(app(CertificateQrPack::class)->build($event, $sertifikat), CertificateQrPack::downloadName($event))
+            ->deleteFileAfterSend();
     }
 
     /**

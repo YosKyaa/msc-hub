@@ -18,6 +18,7 @@ enum CertificateStage: string
 {
     case NOT_ELIGIBLE = 'not_eligible';
     case READY = 'ready';
+    case AWAITING_DESIGN = 'awaiting_design';
     case ISSUED = 'issued';
     case ISSUED_WITHOUT_EMAIL = 'issued_without_email';
     case SENT = 'sent';
@@ -47,6 +48,12 @@ enum CertificateStage: string
             return self::REVOKED;
         }
 
+        // Sertifikat desain sendiri sudah sah sejak nomor dan QR-nya terbit,
+        // tetapi belum ada dokumen yang bisa diunduh atau dikirim.
+        if (! $certificate->hasDocument()) {
+            return self::AWAITING_DESIGN;
+        }
+
         if ($certificate->emailed_at !== null) {
             return self::SENT;
         }
@@ -70,12 +77,13 @@ enum CertificateStage: string
             // Dua tahap ini milik peserta yang belum punya sertifikat sama
             // sekali, jadi tidak pernah cocok di tabel ini.
             self::NOT_ELIGIBLE, self::READY => $query->whereRaw('1 = 0'),
-            self::ISSUED => $query->whereNull('revoked_at')->whereNull('emailed_at')
+            self::AWAITING_DESIGN => $query->whereNull('revoked_at')->awaitingDesign(),
+            self::ISSUED => $query->whereNull('revoked_at')->withDocument()->whereNull('emailed_at')
                 ->whereNull('email_failed_at')->whereNotNull('recipient_email'),
-            self::ISSUED_WITHOUT_EMAIL => $query->whereNull('revoked_at')->whereNull('emailed_at')
+            self::ISSUED_WITHOUT_EMAIL => $query->whereNull('revoked_at')->withDocument()->whereNull('emailed_at')
                 ->whereNull('recipient_email'),
-            self::SENT => $query->whereNull('revoked_at')->whereNotNull('emailed_at'),
-            self::FAILED => $query->whereNull('revoked_at')->whereNull('emailed_at')
+            self::SENT => $query->whereNull('revoked_at')->withDocument()->whereNotNull('emailed_at'),
+            self::FAILED => $query->whereNull('revoked_at')->withDocument()->whereNull('emailed_at')
                 ->whereNotNull('email_failed_at'),
             self::REVOKED => $query->whereNotNull('revoked_at'),
         };
@@ -86,6 +94,7 @@ enum CertificateStage: string
         return match ($this) {
             self::NOT_ELIGIBLE => 'Belum berhak',
             self::READY => 'Siap diterbitkan',
+            self::AWAITING_DESIGN => 'Menunggu desain',
             self::ISSUED => 'Terbit, belum dikirim',
             self::ISSUED_WITHOUT_EMAIL => 'Terbit, tanpa email',
             self::SENT => 'Email terkirim',
@@ -99,7 +108,7 @@ enum CertificateStage: string
         return match ($this) {
             self::NOT_ELIGIBLE => 'gray',
             self::READY => 'info',
-            self::ISSUED, self::ISSUED_WITHOUT_EMAIL => 'warning',
+            self::AWAITING_DESIGN, self::ISSUED, self::ISSUED_WITHOUT_EMAIL => 'warning',
             self::SENT => 'success',
             self::FAILED, self::REVOKED => 'danger',
         };
@@ -113,6 +122,7 @@ enum CertificateStage: string
         return match ($this) {
             self::NOT_ELIGIBLE => 'Tandai berhak dulu sebelum sertifikatnya bisa diterbitkan.',
             self::READY => 'Tinggal diterbitkan lewat tombol Terbitkan Digital.',
+            self::AWAITING_DESIGN => 'Nomor dan QR sudah sah. Pasang QR-nya di desain, lalu unggah berkas jadinya lewat menu Desain Sendiri.',
             self::ISSUED => 'Sudah bisa diunduh dan diverifikasi. Kirim emailnya bila hasilnya sudah benar.',
             self::ISSUED_WITHOUT_EMAIL => 'Penerimanya belum punya alamat email, jadi tidak bisa dikirimi.',
             self::SENT => 'Selesai — sertifikat sudah sampai ke penerimanya.',
@@ -137,14 +147,16 @@ enum CertificateStage: string
         return match ($this) {
             self::NOT_ELIGIBLE => $query->whereNull('eligible_at'),
             self::READY => $query->whereNotNull('eligible_at')->whereDoesntHave('certificate'),
+            self::AWAITING_DESIGN => $query->whereHas('certificate', fn (Builder $c) => $c
+                ->whereNull('revoked_at')->awaitingDesign()),
             self::ISSUED => $query->whereHas('certificate', fn (Builder $c) => $c
-                ->whereNull('revoked_at')->whereNull('emailed_at')->whereNull('email_failed_at')->whereNotNull('recipient_email')),
+                ->whereNull('revoked_at')->withDocument()->whereNull('emailed_at')->whereNull('email_failed_at')->whereNotNull('recipient_email')),
             self::ISSUED_WITHOUT_EMAIL => $query->whereHas('certificate', fn (Builder $c) => $c
-                ->whereNull('revoked_at')->whereNull('emailed_at')->whereNull('recipient_email')),
+                ->whereNull('revoked_at')->withDocument()->whereNull('emailed_at')->whereNull('recipient_email')),
             self::SENT => $query->whereHas('certificate', fn (Builder $c) => $c
-                ->whereNull('revoked_at')->whereNotNull('emailed_at')),
+                ->whereNull('revoked_at')->withDocument()->whereNotNull('emailed_at')),
             self::FAILED => $query->whereHas('certificate', fn (Builder $c) => $c
-                ->whereNull('revoked_at')->whereNull('emailed_at')->whereNotNull('email_failed_at')),
+                ->whereNull('revoked_at')->withDocument()->whereNull('emailed_at')->whereNotNull('email_failed_at')),
             self::REVOKED => $query->whereHas('certificate', fn (Builder $c) => $c->whereNotNull('revoked_at')),
         };
     }

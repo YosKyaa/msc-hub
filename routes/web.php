@@ -154,6 +154,11 @@ Route::get('/certificates/{token}/download', [CertificatePublicController::class
     ->middleware('throttle:20,1')
     ->name('certificates.download');
 
+// Berkas jadi sertifikat desain sendiri, ditampilkan di halaman verifikasinya.
+Route::get('/certificates/{token}/design', [CertificatePublicController::class, 'design'])
+    ->middleware('throttle:60,1')
+    ->name('certificates.design');
+
 // Log Viewer — hanya untuk admin yang sudah login ke panel.
 Route::get('logs', [\Rap2hpoutre\LaravelLogViewer\LogViewerController::class, 'index'])
     ->middleware(['web', 'auth', 'role:admin'])

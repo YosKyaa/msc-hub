@@ -178,6 +178,43 @@ ditekan. Di atas angka itu penerbitan dipecah ke antrean.
 **Pengiriman email selalu lewat antrean**, jadi `php artisan queue:work` wajib
 berjalan di server untuk langkah 10.
 
+## Sertifikat desain sendiri
+
+Untuk sertifikat yang didesain di luar sistem dengan kualitas penuh — pemenang,
+pembicara, juri — sistem hanya menerbitkan nomor dan QR verifikasinya lebih
+dulu. Satu kegiatan boleh mencampur keduanya: peserta memakai template,
+pemenang desain sendiri. Kegiatan yang seluruh sertifikatnya didesain sendiri
+tidak perlu template.
+
+1. Centang penerimanya di tabel peserta, lalu pilih aksi massal **Terbitkan
+   Nomor & QR (Desain Sendiri)**. Yang belum ditandai berhak ditandai berhak:
+   memilih mereka adalah keputusan admin, dan QR-nya perlu ada jauh sebelum
+   kehadiran mana pun tercatat.
+2. **Desain Sendiri → Unduh Paket QR**: ZIP berisi QR setiap penerima dalam
+   SVG (vektor, berukuran 3 × 3 cm saat dibuka) dan PNG 1440 px,
+   `Daftar QR.xlsx` berisi nomor, nama, peran, dan tautan verifikasi, serta
+   `PETUNJUK.txt` untuk desainernya. Nama berkasnya `<nomor> - <nama>`. QR-nya
+   memakai koreksi galat tingkat M supaya tahan cetak.
+3. Desainer memasang QR dan nomornya di Canva, Photoshop, atau Illustrator.
+4. **Desain Sendiri → Unggah Berkas Desain** (PDF, JPG, atau PNG, banyak
+   sekaligus). Berkas dicocokkan lewat nomor sertifikat di namanya, atau lewat
+   nama penerima bila hanya satu yang cocok; yang meragukan tidak dipasang dan
+   disebutkan namanya. Satu berkas juga bisa diunggah dari baris penerimanya.
+5. Publikasikan kegiatan: QR mulai menyatakan sertifikat valid.
+
+Sebelum berkasnya diunggah, sertifikat itu sudah sah dan bisa diverifikasi,
+tetapi belum bisa diunduh maupun dikirim lewat email — tahapnya **Menunggu
+desain**. Halaman verifikasinya meminta pemeriksa membandingkan nama, peran,
+dan nomor pada dokumen dengan rinciannya. Setelah diunggah, halaman itu
+menampilkan desain aslinya, atau tautan ke PDF-nya. Nomor dan QR yang sudah
+terbit tidak pernah berubah, termasuk saat namanya dikoreksi.
+
+Berkas jadi disimpan di disk privat (`storage/app/private/certificates/designs`)
+dan hanya dilayani lewat tautan bertoken, sehingga sertifikat yang dicabut tidak
+lagi bisa diunduh. Folder itu ikut dicadangkan setiap malam. Gambar yang sisi
+terpanjangnya di bawah 1000 px ditolak karena hasil cetaknya pecah. Aturan
+berkasnya ada di `CertificateDesignFile`, isi paketnya di `CertificateQrPack`.
+
 ## Variabel bawaan
 
 - `recipient_name`
@@ -488,6 +525,10 @@ Sertifikat valid hanya jika event berstatus `published`, `issued_at` terisi, dan
 
 Definisi ini hidup di satu tempat, `Certificate::isValid()`, dan dipakai oleh
 route unduh, aksi panel, serta job pengiriman email.
+
+Sertifikat yang valid baru bisa diunduh dan dikirim bila dokumennya ada
+(`Certificate::isDeliverable()`): PDF dari template selalu bisa dibentuk,
+sedangkan sertifikat desain sendiri menunggu berkas jadinya diunggah.
 
 ## Penerbitan dan email
 

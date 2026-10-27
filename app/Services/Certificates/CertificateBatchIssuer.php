@@ -2,6 +2,7 @@
 
 namespace App\Services\Certificates;
 
+use App\Enums\CertificateDesign;
 use App\Jobs\IssueCertificateJob;
 use App\Models\CertificateEvent;
 use App\Models\CertificateEventParticipant;
@@ -40,8 +41,13 @@ class CertificateBatchIssuer
         CertificateEvent $event,
         ?Collection $participations = null,
         ?User $notify = null,
+        CertificateDesign $design = CertificateDesign::TEMPLATE,
     ): CertificateIssueOutcome {
-        $this->guardTemplate($event);
+        // Sertifikat desain sendiri tidak pernah digambar sistem, jadi
+        // kegiatannya boleh tanpa template.
+        if ($design === CertificateDesign::TEMPLATE) {
+            $this->guardTemplate($event);
+        }
 
         $pending = $this->pending($event, $participations);
 
@@ -50,9 +56,9 @@ class CertificateBatchIssuer
         }
 
         if ($pending->count() > $this->inlineLimit()) {
-            $this->dispatchBatch($event, $pending, $notify);
+            $this->dispatchBatch($event, $pending, $notify, $design);
 
-            return CertificateIssueOutcome::queued($pending->count());
+            return CertificateIssueOutcome::queued($pending->count(), $design);
         }
 
         $issued = 0;
@@ -60,7 +66,7 @@ class CertificateBatchIssuer
 
         foreach ($pending as $participation) {
             try {
-                $this->issuer->issue($participation);
+                $this->issuer->issue($participation, $design);
                 $issued++;
             } catch (Throwable $exception) {
                 $failed++;
@@ -73,7 +79,37 @@ class CertificateBatchIssuer
             }
         }
 
-        return CertificateIssueOutcome::completed($issued, $failed);
+        return CertificateIssueOutcome::completed($issued, $failed, $design);
+    }
+
+    /**
+     * Terbitkan nomor dan QR lebih dulu bagi penerima yang dipilih admin,
+     * misalnya pemenang dan pembicara, yang sertifikatnya didesain di luar.
+     *
+     * Memilih mereka adalah keputusan admin bahwa mereka berhak, jadi yang
+     * belum ditandai berhak ditandai sekarang — QR-nya memang perlu ada jauh
+     * sebelum kehadiran mana pun tercatat.
+     *
+     * @param  Collection<int, CertificateEventParticipant>  $participations
+     *
+     * @throws CertificateBatchException
+     */
+    public function issueOwnDesignFor(
+        CertificateEvent $event,
+        Collection $participations,
+        ?User $notify = null,
+    ): CertificateIssueOutcome {
+        $belumTerbit = $participations->filter(fn (CertificateEventParticipant $participation) => $participation->certificate === null);
+
+        if ($belumTerbit->isEmpty()) {
+            throw CertificateBatchException::alreadyIssued();
+        }
+
+        $belumTerbit
+            ->reject(fn (CertificateEventParticipant $participation) => $participation->isEligible())
+            ->each(fn (CertificateEventParticipant $participation) => $participation->update(['eligible_at' => now()]));
+
+        return $this->issueFor($event, $belumTerbit->values(), $notify, CertificateDesign::EXTERNAL);
     }
 
     private function inlineLimit(): int
@@ -120,9 +156,13 @@ class CertificateBatchIssuer
     /**
      * @param  Collection<int, CertificateEventParticipant>  $pending
      */
-    private function dispatchBatch(CertificateEvent $event, Collection $pending, ?User $notify): Batch
-    {
-        return Bus::batch($pending->map(fn (CertificateEventParticipant $participation) => new IssueCertificateJob($participation))->all())
+    private function dispatchBatch(
+        CertificateEvent $event,
+        Collection $pending,
+        ?User $notify,
+        CertificateDesign $design = CertificateDesign::TEMPLATE,
+    ): Batch {
+        return Bus::batch($pending->map(fn (CertificateEventParticipant $participation) => new IssueCertificateJob($participation, $design))->all())
             ->name("Penerbitan sertifikat: {$event->name}")
             ->allowFailures()
             ->finally(fn (Batch $batch) => $this->announce($batch, $notify?->id))

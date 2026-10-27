@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\CertificateDesign;
 use App\Models\Concerns\RecordsActivity;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,6 +20,11 @@ class Certificate extends Model
         'verification_token', 'recipient_name', 'recipient_email', 'recipient_role',
         'recipient_role_label', 'variables', 'issued_at', 'revoked_at', 'revocation_reason',
         'emailed_at', 'email_failed_at', 'email_error',
+        'design_source', 'design_file_path', 'design_uploaded_at',
+    ];
+
+    protected $attributes = [
+        'design_source' => 'template',
     ];
 
     protected $casts = [
@@ -27,6 +33,8 @@ class Certificate extends Model
         'revoked_at' => 'datetime',
         'emailed_at' => 'datetime',
         'email_failed_at' => 'datetime',
+        'design_source' => CertificateDesign::class,
+        'design_uploaded_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -63,18 +71,59 @@ class Certificate extends Model
             && $this->event?->isPublished() === true;
     }
 
+    public function isOwnDesign(): bool
+    {
+        return $this->design_source === CertificateDesign::EXTERNAL;
+    }
+
     /**
-     * Email hanya layak dikirim untuk sertifikat valid yang punya alamat tujuan
-     * dan belum pernah terkirim.
+     * Sudah ada dokumen yang bisa diunduh: PDF dari template selalu bisa
+     * dibentuk, sedangkan sertifikat desain sendiri baru punya dokumen setelah
+     * berkas jadinya diunggah. Sebelum itu ia tetap sah dan bisa diverifikasi.
+     */
+    public function hasDocument(): bool
+    {
+        return ! $this->isOwnDesign() || filled($this->design_file_path);
+    }
+
+    /**
+     * Sertifikat yang boleh diunduh dan dikirimkan kepada penerimanya.
+     */
+    public function isDeliverable(): bool
+    {
+        return $this->isValid() && $this->hasDocument();
+    }
+
+    /**
+     * Email hanya layak dikirim untuk sertifikat yang bisa diunduh, punya
+     * alamat tujuan, dan belum pernah terkirim.
      */
     public function awaitsEmail(): bool
     {
-        return $this->emailed_at === null && filled($this->recipient_email) && $this->isValid();
+        return $this->emailed_at === null && filled($this->recipient_email) && $this->isDeliverable();
     }
 
     public function scopeNotYetEmailed(Builder $query): Builder
     {
-        return $query->whereNull('emailed_at')->whereNotNull('recipient_email')->whereNull('revoked_at');
+        return $query->whereNull('emailed_at')->whereNotNull('recipient_email')->whereNull('revoked_at')->withDocument();
+    }
+
+    /**
+     * Bentuk kueri dari hasDocument().
+     */
+    public function scopeWithDocument(Builder $query): Builder
+    {
+        return $query->where(fn (Builder $q) => $q
+            ->where('design_source', '!=', CertificateDesign::EXTERNAL->value)
+            ->orWhereNotNull('design_file_path'));
+    }
+
+    /**
+     * Sertifikat desain sendiri yang berkas jadinya belum diunggah.
+     */
+    public function scopeAwaitingDesign(Builder $query): Builder
+    {
+        return $query->where('design_source', CertificateDesign::EXTERNAL->value)->whereNull('design_file_path');
     }
 
     public function downloadUrl(): string
@@ -92,9 +141,23 @@ class Certificate extends Model
      */
     public function downloadFileName(): string
     {
-        $nomor = trim((string) preg_replace('/[^A-Za-z0-9]+/', '-', (string) $this->certificate_number), '-');
+        $nomor = self::flattenNumber($this->certificate_number);
 
-        return 'Sertifikat-'.($nomor !== '' ? $nomor : $this->verification_token).'.pdf';
+        // Berkas desain sendiri bisa berupa PDF maupun gambar.
+        $ekstensi = $this->isOwnDesign() && filled($this->design_file_path)
+            ? strtolower(pathinfo($this->design_file_path, PATHINFO_EXTENSION))
+            : 'pdf';
+
+        return 'Sertifikat-'.($nomor !== '' ? $nomor : $this->verification_token).'.'.$ekstensi;
+    }
+
+    /**
+     * Nomor sertifikat tanpa garis miring dan tanda lain yang tidak boleh ada
+     * di nama berkas, misalnya "0001-CERT-MSC-JGU-IX-2026".
+     */
+    public static function flattenNumber(?string $nomor): string
+    {
+        return trim((string) preg_replace('/[^A-Za-z0-9]+/', '-', (string) $nomor), '-');
     }
 
     public function verificationUrl(): string
@@ -113,6 +176,6 @@ class Certificate extends Model
      */
     protected static function auditedAttributes(): array
     {
-        return ['certificate_number', 'recipient_name', 'recipient_email', 'revoked_at', 'revocation_reason'];
+        return ['certificate_number', 'recipient_name', 'recipient_email', 'revoked_at', 'revocation_reason', 'design_file_path'];
     }
 }
