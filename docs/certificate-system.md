@@ -234,11 +234,24 @@ Variabel tambahan per penerima disimpan dalam field `variables` dan dapat dikemb
 ## Editor visual
 
 Editor mendukung penambahan elemen dari toolbar, geser dan ubah ukuran,
-pemilihan layer, duplikat, hapus, teks statis, font TTF sendiri, warna,
-perataan mendatar (kiri/tengah/kanan) dan tegak (atas/tengah/bawah), tombol
-panah untuk menggeser presisi, preview bersih, serta koordinat numerik.
-Maksimal 50 elemen per template dan seluruh payload divalidasi ulang di server
-sebelum disimpan.
+pemilihan layer, duplikat, hapus, teks statis, font unggahan (lihat Font
+kustom di bawah), warna, perataan mendatar (kiri/tengah/kanan) dan tegak
+(atas/tengah/bawah), tombol panah untuk menggeser presisi, preview bersih, serta
+koordinat numerik. Maksimal 50 elemen per template dan seluruh payload
+divalidasi ulang di server sebelum disimpan.
+
+### Menempatkan kotak di desain
+
+Deretan **Posisi di kanvas** di panel **Properti elemen** menggeser kotak terpilih
+terhadap desain, seperti tombol perataan di Photoshop: rata kiri, tengah
+mendatar, rata kanan, rata atas, tengah tegak, dan rata bawah. Ini berbeda dari
+perataan teks, yang meratakan tulisan **di dalam** kotaknya. Untuk nama yang
+benar-benar di tengah sertifikat, pakai keduanya: kotaknya di tengah kanvas,
+teksnya rata tengah.
+
+Saat digeser dengan tetikus, kotak menempel ke tengah desain bila jaraknya
+kurang dari 6 piksel layar, dan garis bantu merah muda menandainya. Tombol
+panah menggeser 1 piksel kanvas; dengan Shift, 10 piksel.
 
 ### Satu tata letak, tiga penggambar
 
@@ -282,6 +295,42 @@ Lebarnya diukur dengan metrik font dompdf sendiri
 yang mengenal semua font yang bisa dipilih — termasuk font bawaan PDF yang
 tidak punya berkas TTF dan font unggahan per template. Ukuran yang sama dipakai
 PDF dan pratinjau di halaman verifikasi.
+
+### Ketebalan huruf
+
+Font di PDF hanya punya dua versi: reguler dan tebal. Pilihan **Semi Bold**
+(600) dicetak dengan versi tebal dari font yang sama. Dulu dompdf mencari
+varian "600" secara harfiah, tidak menemukannya di font mana pun, lalu memakai
+Times-Bold, sehingga teks Semi Bold tercetak dengan huruf yang sama sekali
+lain. Aturannya di `CertificateElement::weightVariant()`, dipakai PDF,
+pratinjau verifikasi, pengukur teks, dan editor.
+
+### Font kustom
+
+Diunggah di **Desain Sertifikat → Font Kustom**, lalu muncul di pilihan Font
+pada editor, dalam kelompok **Font unggahan**, dengan nama berkas aslinya.
+
+- Diterima: `.ttf`, dan `.otf` yang berbasis TrueType. Maksimal 5 MB per
+  berkas, atau batas server bila lebih kecil.
+- Ditolak beserta alasannya: OpenType berbasis CFF (dompdf menanamnya dengan
+  label TrueType, dan Adobe Reader bisa tidak menampilkan hurufnya), font web
+  WOFF, kumpulan font `.ttc`, dan berkas rusak. Isinya diperiksa dengan pustaka
+  yang sama yang dipakai dompdf, bukan dari nama atau jenis berkasnya. Untuk
+  font yang ditolak, unggah versi `.ttf`-nya.
+- Disimpan sebagai `Nama-Font--acak6.ttf`. Akhiran acaknya mencegah font
+  bernama sama milik desain lain tertimpa; di editor namanya tampil tanpa
+  akhiran itu.
+- Satu berkas didaftarkan sebagai Regular sekaligus Bold. Untuk font bernama,
+  dompdf hanya memakai varian yang persis diminta, jadi tanpa itu nama penerima
+  yang bergaya Bold — bawaan editor — tercetak dengan Times-Bold. Editor dan
+  pratinjau juga tidak menebalkan font unggahan sendiri, supaya tampak sama
+  dengan PDF-nya.
+
+Dompdf menyimpan font yang didaftarkan di `storage/fonts`. Folder itu dibuat
+saat dibutuhkan dan harus bisa ditulisi server web; bila tidak, PDF diam-diam
+memakai font cadangan. Formulir Font Kustom memperingatkan admin bila itu
+terjadi, dan `deploy.sh` menyamakan pemilik folder itu dengan `storage/logs`.
+Seluruh aturannya ada di `App\Support\CertificateFont`.
 
 ## Import peserta
 
@@ -399,6 +448,11 @@ nama di halaman daftar penerima (`/kegiatan/{slug}/penerima`, bila admin
 membukanya). Yang tidak terjadi hanya pengirimannya: tombol Kirim Email
 melewatinya. Begitu alamatnya ditambahkan lewat tombol **Koreksi Data
 Penerima**, sertifikatnya langsung masuk antrean kirim.
+
+Di tabel peserta barisnya **dikuningkan**, dan di bawah namanya tertulis
+"⚠ Belum ada email", supaya admin tahu siapa yang alamatnya masih perlu
+dilengkapi. Filter **Belum ada email** menampilkan mereka saja, dan ringkasan di
+atas tabel menyebut jumlahnya.
 
 Tanpa email tidak ada kunci dedup, jadi orangnya dikenali dengan aturan yang
 jauh lebih sempit (`ParticipantRegistry::findOrCreateWithoutEmail()`): hanya di

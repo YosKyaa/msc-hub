@@ -2,6 +2,22 @@
 
 Web Application for MSC Hub management (Bookings, Content Requests, Assets, etc).
 
+## Dokumentasi
+
+| Berkas | Isinya |
+|---|---|
+| [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md) | Menaikkan ke server, `deploy.sh`, batas unggah, cadangan, dan yang berubah di tiap rilis |
+| [docs/certificate-system.md](docs/certificate-system.md) | Sertifikat: absensi, impor peserta, editor dan font, penomoran, desain sendiri (QR lebih dulu), verifikasi, email |
+| [docs/twibbon.md](docs/twibbon.md) | Twibbon untuk publik |
+| [docs/INVENTORY_ROOM_BOOKING.md](docs/INVENTORY_ROOM_BOOKING.md) | Peminjaman inventaris dan ruangan |
+| [docs/borrowing-form.md](docs/borrowing-form.md) | Formulir peminjaman FM/JGU/L.89 |
+| [docs/CONTENT_REQUEST.md](docs/CONTENT_REQUEST.md) | Pengajuan konten |
+| [docs/ASSET_VAULT.md](docs/ASSET_VAULT.md) | Arsip aset digital |
+| [docs/timezone-cutoff.md](docs/timezone-cutoff.md) | Catatan perpindahan zona waktu ke Asia/Jakarta |
+
+Berkas `.md` diabaikan git secara bawaan; dokumen baru di `docs/` perlu
+ditambahkan dengan `git add -f`.
+
 ## Feature: Email Notifications
 
 This project uses Laravel Queues to send email notifications asynchronously.

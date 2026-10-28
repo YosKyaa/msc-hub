@@ -21,8 +21,9 @@ bash deploy.sh
 
 Skrip itu mengerjakan langkah di panduan ini dalam urutan yang benar: ambil
 kode, tolak sisa konflik merge, mode perawatan, **cadangkan basis data sebelum
-migrasi**, `composer install`, migrasi, cache, `queue:restart`, lalu hidup
-kembali. Bila satu langkah gagal, ia berhenti dan menghidupkan aplikasi lagi.
+migrasi**, `composer install`, migrasi, siapkan folder font PDF
+(`storage/fonts`, pemiliknya disamakan dengan `storage/logs`), cache,
+`queue:restart`, lalu hidup kembali. Bila satu langkah gagal, ia berhenti dan menghidupkan aplikasi lagi.
 
 Cadangan sebelum migrasi memakai `mysqldump`. Bila skrip berhenti di langkah
 itu, isi `DB_DUMP_PATH` di `.env` (lihat bagian 9) — sengaja tidak dilewati,
@@ -545,6 +546,28 @@ cp -r public/* /var/www/msc-hub/storage/app/public/
   terbit lebih dulu, desainnya dibuat di luar sistem lalu diunggah kembali.
   Template kegiatan kini boleh kosong bila seluruh sertifikatnya didesain
   sendiri. Lihat `docs/certificate-system.md`.
+
+- **Font kustom sertifikat** kini bisa diunggah — dulu setiap TTF ditolak
+  dengan `validation.mimetypes` — dan benar-benar tertanam di PDF. Font yang
+  dulu gagal perlu diunggah ulang.
+
+- **Semi Bold dicetak tebal dengan font yang sama**, bukan lagi Times-Bold.
+  Sertifikat yang sudah terbit ikut berubah saat diunduh berikutnya, karena PDF
+  dibentuk ulang setiap kali diunduh.
+
+- **Absensi untuk tamu**: kegiatan yang menyalakan *Izinkan peserta di luar
+  JGU* menerima akun Google apa pun, termasuk Gmail pribadi, khusus untuk
+  absensi. Portal pengajuan dan peminjaman tetap khusus sivitas JGU.
+
+- **Bulan dan tahun pada nomor sertifikat** mengikuti tanggal kegiatan, bukan
+  tanggal penerbitan. Bisa diganti lewat *Tanggal pada nomor sertifikat* di
+  bagian *Penomoran Sertifikat* pada kegiatan.
+
+- **Peserta tanpa email ditandai kuning** di tabel peserta, lengkap dengan
+  filter *Belum ada email*.
+
+- **Pesan galat formulir dalam Bahasa Indonesia** (`lang/id/validation.php`),
+  bukan lagi kunci mentah seperti `validation.required`.
 
 - **Twibbon** (menu Konten): admin mengunggah bingkai PNG, publik memasangnya
   di `/twibbon`. Lihat `docs/twibbon.md`. Izinnya masuk lewat migrasi.
