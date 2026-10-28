@@ -6,6 +6,7 @@ use App\Filament\Pages\DokumentasiTopik;
 use App\Filament\Resources\CertificateEventResource;
 use App\Filament\Resources\CertificateTemplateResource;
 use App\Models\User;
+use App\Support\CertificateStage;
 use App\Support\PanduanPanel;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -80,7 +81,7 @@ class PanelDocumentationTest extends TestCase
 
     public function test_every_module_has_its_own_page(): void
     {
-        foreach (['permintaan-konten', 'peminjaman', 'sertifikat', 'arsip-media'] as $slug) {
+        foreach (['permintaan-konten', 'peminjaman', 'sertifikat', 'desain-sertifikat', 'desain-sendiri', 'arsip-media'] as $slug) {
             $this->topic($slug)->assertSee(PanduanPanel::topik($slug)['judul']);
         }
     }
@@ -148,6 +149,43 @@ class PanelDocumentationTest extends TestCase
             ->assertSee('Rektorat, SCD, jurusan, MSC', false);
     }
 
+    /**
+     * Alur desain sendiri hanya bisa diikuti bila tombol yang disebutnya
+     * benar-benar bernama demikian di tabel peserta.
+     */
+    public function test_the_own_design_guide_names_buttons_that_exist(): void
+    {
+        $response = $this->topic('desain-sendiri');
+        $tabel = file_get_contents(app_path('Filament/Resources/CertificateEventResource/RelationManagers/ParticipationsRelationManager.php'));
+
+        foreach (['Desain Sendiri', 'Terbitkan Nomor & QR (Desain Sendiri)', 'Unduh Paket QR', 'Unggah Berkas Desain'] as $tombol) {
+            $response->assertSee($tombol);
+            $this->assertStringContainsString("->label('{$tombol}')", $tabel, "Tombol {$tombol} tidak ada di tabel peserta.");
+        }
+
+        $response->assertSee(CertificateStage::AWAITING_DESIGN->getLabel());
+    }
+
+    /**
+     * Begitu pula istilah editor yang disebut panduan desain.
+     */
+    public function test_the_design_guide_names_what_the_editor_shows(): void
+    {
+        $response = $this->topic('desain-sertifikat');
+        $editor = file_get_contents(resource_path('views/filament/resources/certificate-template-resource/pages/edit-certificate-layout.blade.php'));
+        $formulir = file_get_contents(app_path('Filament/Resources/CertificateTemplateResource.php'));
+
+        foreach (['Properti elemen', 'Posisi di kanvas', 'Perataan mendatar', 'Font unggahan', 'Semi Bold', 'Simpan template'] as $istilah) {
+            $response->assertSee($istilah);
+            $this->assertStringContainsString($istilah, $editor, "Editor tidak lagi menampilkan {$istilah}.");
+        }
+
+        foreach (['Font Kustom', 'Berkas font', 'Atur Letak Tulisan'] as $istilah) {
+            $response->assertSee($istilah);
+            $this->assertStringContainsString($istilah, $formulir, "Formulir desain tidak lagi menampilkan {$istilah}.");
+        }
+    }
+
     public function test_it_says_who_may_do_what(): void
     {
         $response = $this->topic('hak-akses');
@@ -164,6 +202,8 @@ class PanelDocumentationTest extends TestCase
         $response->assertSee('Kenapa sertifikat tidak bisa diterbitkan?');
         $response->assertSee('queue:work', false);
         $response->assertSee('Nomor sertifikat tidak sesuai register unit.');
+        $response->assertSee('Font gagal diunggah.');
+        $response->assertSee('Sertifikat desain sendiri belum bisa diunduh atau dikirim.');
     }
 
     /**

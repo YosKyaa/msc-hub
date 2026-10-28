@@ -62,8 +62,8 @@ class PanduanPanel
                 'warna' => 'success',
                 'ikon' => 'heroicon-o-academic-cap',
                 'langkah' => [
-                    ['Siapkan desainnya', 'Di menu Desain Sertifikat: unggah gambar latar, lalu atur letak nama, nomor, dan QR. Satu desain bisa dipakai berkali-kali.'],
-                    ['Buat kegiatan', 'Di menu Kegiatan & Peserta: pilih desain dan penerbitnya, lalu ubah statusnya menjadi Dipublikasikan agar sertifikatnya sah.'],
+                    ['Siapkan desainnya', 'Di menu Desain Sertifikat: unggah gambar latar, lalu atur letak nama, nomor, dan QR. Satu desain bisa dipakai berkali-kali. Rinciannya ada di panduan Desain Sertifikat & Font.'],
+                    ['Buat kegiatan', 'Di menu Kegiatan & Peserta: pilih desain dan penerbitnya, lalu ubah statusnya menjadi Dipublikasikan agar sertifikatnya sah. Desainnya boleh dikosongkan bila seluruh sertifikatnya didesain sendiri.'],
                     ['Daftarkan peserta', 'Impor dari Excel, tambah satu per satu, atau biarkan masuk sendiri lewat absensi QR. Lalu tandai siapa yang berhak menerima.'],
                     ['Terbitkan digital', 'Nomor diberikan dan halaman verifikasinya langsung aktif. Email BELUM dikirim, jadi hasilnya masih bisa diperiksa dulu.'],
                     ['Kirim email', 'Setelah hasilnya diperiksa. Yang sudah menerima tidak dikirimi ulang. Kirimannya dijarakkan beberapa detik agar tidak ditolak penyedia email, jadi seratus peserta memakan sekitar lima menit.'],
@@ -74,12 +74,66 @@ class PanduanPanel
                     'Ragu emailnya jalan atau tidak? Tombol Kirim Email Uji di atas halaman kegiatan mengirim satu contoh ke alamat Anda sendiri, lewat jalur yang sama persis dan tanpa menyentuh peserta.',
                     'Email yang gagal terkirim tercatat sebabnya di kolom Kendala email pada tabel peserta, dan jumlahnya ikut disebut di alur empat langkah.',
                     'Tiap penerbit — Rektorat, SCD, jurusan, MSC — memegang pola dan urutan nomornya sendiri, dan nomornya bisa diselaraskan dengan register yang sudah berjalan.',
+                    'Bulan dan tahun pada nomor sertifikat mengikuti tanggal kegiatan. Bila perlu tanggal lain, ganti lewat Tanggal pada nomor sertifikat di bagian Penomoran Sertifikat pada kegiatannya.',
+                    'Baris peserta yang dikuningkan belum punya alamat email. Sertifikatnya tetap terbit dan sah, hanya tidak terkirim; lengkapi alamatnya lewat tombol koreksi pada barisnya. Filter Belum ada email menampilkan mereka saja.',
+                    'Kegiatan yang menyalakan Izinkan peserta di luar JGU menerima absensi dari akun Google apa pun, termasuk Gmail pribadi.',
+                    'Sertifikat yang didesain di luar sistem — misalnya untuk pemenang dan pembicara — punya alurnya sendiri. Lihat panduan Sertifikat Desain Sendiri.',
                     'Peserta yang sudah memegang sertifikat tidak bisa dihapus; gunakan pencabutan bila dokumennya memang harus dibatalkan.',
                 ],
                 'tautan' => [
                     'filament.admin.resources.certificate-events.index' => 'Kegiatan & Peserta',
                     'filament.admin.resources.certificate-templates.index' => 'Desain Sertifikat',
                     'filament.admin.resources.issuers.index' => 'Penerbit',
+                ],
+            ],
+
+            'desain-sertifikat' => [
+                'judul' => 'Desain Sertifikat & Font',
+                'ringkas' => 'Atur letak nama, nomor, dan QR, serta pakai font sendiri.',
+                'warna' => 'success',
+                'ikon' => 'heroicon-o-swatch',
+                'langkah' => [
+                    ['Unggah gambar latar', 'Di menu Desain Sertifikat, buat template lalu unggah latarnya: PNG atau JPG landscape, sebaiknya 1123 × 794 px. Kompres dulu bila besar, karena gambar ini ikut tertanam di setiap PDF.'],
+                    ['Unggah font, bila perlu', 'Di bagian Font Kustom pada formulir yang sama. Font yang diunggah muncul di editor dalam kelompok Font unggahan, dengan nama berkas aslinya.'],
+                    ['Tambah elemen', 'Setelah template disimpan, editornya terbuka sendiri; dari daftar template, buka lewat Atur Letak Tulisan. Tambahkan nama, nomor, peran, QR, atau teks dari toolbar, lalu atur font, ukuran, ketebalan, dan warnanya di panel Properti elemen.'],
+                    ['Tempatkan kotaknya', 'Seret kotaknya; di dekat tengah desain ia menempel sendiri dan garis bantu merah muda muncul. Deretan Posisi di kanvas menaruhnya tepat di tepi atau tengah, dan tombol panah menggesernya 1 piksel (10 piksel dengan Shift).'],
+                    ['Periksa lalu simpan', 'Kotak yang teksnya tidak muat ditandai merah. Lebarkan kotaknya atau kecilkan hurufnya, lalu tekan Simpan template.'],
+                ],
+                'catatan' => [
+                    'Posisi di kanvas menggeser kotaknya, sedangkan Perataan mendatar dan Perataan tegak meratakan teks di dalam kotak. Untuk nama yang benar-benar di tengah sertifikat, pakai keduanya.',
+                    'Font yang diterima: .ttf, dan .otf berbasis TrueType. OpenType berbasis CFF, font web .woff dan .woff2, kumpulan font .ttc, dan berkas rusak ditolak beserta alasannya — unggah versi .ttf-nya.',
+                    'Semi Bold dan Bold dicetak dengan versi tebal dari font yang sama, karena PDF hanya mengenal dua ketebalan: biasa dan tebal.',
+                    'Satu berkas font unggahan dipakai untuk huruf biasa maupun tebal, jadi memilih Bold tidak membuatnya lebih tebal — di editor maupun di PDF. Butuh versi tebalnya? Unggah juga berkas Bold dari font itu, lalu pilih untuk elemen yang ingin tebal.',
+                    'Bila muncul keterangan merah di bawah isian Berkas font, folder font di server tidak bisa ditulisi dan PDF memakai font cadangan. Minta pengelola server menjalankan bash deploy.sh.',
+                ],
+                'tautan' => [
+                    'filament.admin.resources.certificate-templates.index' => 'Desain Sertifikat',
+                ],
+            ],
+
+            'desain-sendiri' => [
+                'judul' => 'Sertifikat Desain Sendiri',
+                'ringkas' => 'Nomor dan QR terbit lebih dulu, desainnya dibuat di luar sistem.',
+                'warna' => 'success',
+                'ikon' => 'heroicon-o-qr-code',
+                'langkah' => [
+                    ['Terbitkan nomor & QR', 'Di tabel peserta kegiatan, centang penerimanya — misalnya para pemenang atau pembicara — lalu pilih Terbitkan Nomor & QR (Desain Sendiri) dari menu aksi massal. Template tidak diperlukan, dan yang belum ditandai berhak ikut ditandai.'],
+                    ['Unduh Paket QR', 'Lewat tombol Desain Sendiri di atas tabel. Isinya QR tiap penerima dalam SVG dan PNG 1440 px, Daftar QR.xlsx berisi nomor, nama, dan perannya, serta petunjuk untuk desainer.'],
+                    ['Desain di luar sistem', 'Di Canva, Photoshop, atau Illustrator, dengan kualitas penuh. Pasang QR minimal 2,5 × 2,5 cm tanpa dipotong atau diubah warnanya, lalu tulis nomor, nama, dan peran persis seperti di Daftar QR.xlsx.'],
+                    ['Unggah berkas jadinya', 'Desain Sendiri → Unggah Berkas Desain, banyak sekaligus: PDF, JPG, atau PNG. Berkas yang namanya diawali nomor sertifikat — seperti nama berkas di Paket QR — atau memuat nama penerimanya dipasangkan sendiri.'],
+                    ['Publikasikan & kirim email', 'Setelah kegiatan dipublikasikan, QR-nya menyatakan sertifikat sah. Kirim email seperti biasa; penerima yang berkasnya belum diunggah dilewati.'],
+                ],
+                'catatan' => [
+                    'Nomor dan QR yang sudah terbit tidak pernah berubah, jadi desainnya boleh dikerjakan belakangan dan QR yang sudah tercetak tetap sah.',
+                    'Selama berkas jadinya belum diunggah, tahapnya tertulis Menunggu desain, dan tombol unduh serta kirim email belum muncul untuk orang itu.',
+                    'Berkas yang tidak cocok dengan siapa pun disebutkan setelah diunggah. Pasang satu per satu lewat tombol unggah pada barisnya; tombol yang sama dipakai untuk mengganti berkas.',
+                    'Gambar yang sisi terpanjangnya di bawah 1000 px ditolak karena hasil cetaknya akan pecah. Ekspor sedikitnya 2000 px, atau sebagai PDF.',
+                    'Halaman verifikasi menampilkan desain aslinya. Sebelum berkasnya diunggah, pemeriksa diminta mencocokkan nama, peran, dan nomor dengan rincian di halaman itu.',
+                    'Satu kegiatan boleh mencampur keduanya: peserta biasa dari template, pemenang dan pembicara didesain sendiri. Paket QR juga bisa diunduh untuk peserta yang dicentang saja.',
+                    'Berkas jadi disimpan privat, hanya bisa dibuka lewat tautan sertifikatnya, dan ikut dicadangkan setiap malam.',
+                ],
+                'tautan' => [
+                    'filament.admin.resources.certificate-events.index' => 'Kegiatan & Peserta',
                 ],
             ],
 
@@ -131,7 +185,7 @@ class PanduanPanel
                 'tanya' => [
                     [
                         'Kenapa sertifikat tidak bisa diterbitkan?',
-                        'Kegiatannya belum memakai templat yang aktif, atau belum ada peserta yang ditandai berhak. Keduanya disebutkan di pesan penolakannya.',
+                        'Kegiatannya belum memakai template yang aktif, atau belum ada peserta yang ditandai berhak. Keduanya disebutkan di pesan penolakannya. Bila sertifikatnya memang didesain sendiri, template tidak diperlukan: centang penerimanya lalu pakai Terbitkan Nomor & QR (Desain Sendiri).',
                     ],
                     [
                         'Sudah diterbitkan, kenapa emailnya belum sampai?',
@@ -160,6 +214,22 @@ class PanduanPanel
                     [
                         'Desain latarnya gagal diunggah.',
                         'Berkasnya melebihi batas yang diterima server. Keterangan di bawah isiannya menyebut batas yang berlaku. Kompres gambarnya — latar yang besar juga membuat setiap PDF sertifikat ikut berat.',
+                    ],
+                    [
+                        'Font gagal diunggah.',
+                        'Pesan di bawah isiannya menyebut sebabnya. Yang diterima hanya .ttf dan .otf berbasis TrueType; untuk font lain, unggah versi .ttf-nya. Font yang dulu ditolak dengan pesan validation.mimetypes kini bisa diunggah ulang.',
+                    ],
+                    [
+                        'Font tampil di editor, tetapi PDF-nya memakai huruf lain.',
+                        'Folder font di server tidak bisa ditulisi — keterangan merah di bawah isian Berkas font menandainya. Minta pengelola server menjalankan bash deploy.sh.',
+                    ],
+                    [
+                        'Sertifikat desain sendiri belum bisa diunduh atau dikirim.',
+                        'Berkas jadinya belum diunggah; tahapnya tertulis Menunggu desain. Unggah lewat Desain Sendiri → Unggah Berkas Desain, atau lewat tombol unggah pada barisnya.',
+                    ],
+                    [
+                        'Berkas desain tidak terpasang ke penerimanya.',
+                        'Nama berkasnya tidak memuat nomor sertifikat, atau namanya cocok dengan lebih dari satu penerima. Beri nama seperti berkas QR di Paket QR, atau pasang lewat tombol unggah pada barisnya.',
                     ],
                     [
                         'Peserta salah ketik namanya di sertifikat.',
