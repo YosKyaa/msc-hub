@@ -3,46 +3,38 @@
 namespace App\Filament\Concerns;
 
 use App\Support\CertificatePermission;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Model;
 
 /**
  * Otorisasi granular untuk resource modul sertifikat di panel Filament.
  * Pemetaan aksi ke permission ada di App\Support\CertificatePermission.
+ *
+ * Pemetaannya ditaruh di getAuthorizationResponse(), satu-satunya jalur yang
+ * dilalui halaman maupun tombol aksi bawaan Filament. Menimpa canDelete() dan
+ * kawan-kawannya saja tidak cukup: halaman Ubah dan Buat memang memanggilnya,
+ * tetapi tombol Hapus di tabel, hapus massal, dan tombol Hapus di halaman Ubah
+ * langsung meminta getDeleteAuthorizationResponse(), yang tanpa policy selalu
+ * mengizinkan. Dulu staf tanpa certificates.delete karenanya tetap bisa
+ * menghapus kegiatan beserta seluruh pesertanya, template, penerbit, dan
+ * peserta.
  */
 trait AuthorizesCertificateModule
 {
-    public static function canAccess(): bool
+    public static function getAuthorizationResponse(string $action, ?Model $record = null): Response
     {
-        return CertificatePermission::allows('view');
-    }
+        $kemampuan = match ($action) {
+            'viewAny', 'view' => 'view',
+            // Menggandakan berarti membuat catatan baru.
+            'create', 'replicate' => 'create',
+            'update', 'reorder' => 'edit',
+            'delete', 'deleteAny', 'forceDelete', 'forceDeleteAny', 'restore', 'restoreAny' => 'delete',
+            // Aksi yang tidak dikenal ditutup, bukan dibuka.
+            default => null,
+        };
 
-    public static function canViewAny(): bool
-    {
-        return CertificatePermission::allows('view');
-    }
-
-    public static function canView(Model $record): bool
-    {
-        return CertificatePermission::allows('view');
-    }
-
-    public static function canCreate(): bool
-    {
-        return CertificatePermission::allows('create');
-    }
-
-    public static function canEdit(Model $record): bool
-    {
-        return CertificatePermission::allows('edit');
-    }
-
-    public static function canDelete(Model $record): bool
-    {
-        return CertificatePermission::allows('delete');
-    }
-
-    public static function canDeleteAny(): bool
-    {
-        return CertificatePermission::allows('delete');
+        return $kemampuan !== null && CertificatePermission::allows($kemampuan)
+            ? Response::allow()
+            : Response::deny();
     }
 }
