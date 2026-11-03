@@ -65,7 +65,7 @@
 
     @if ($penerima->hasPages())
         <div class="mt-6">
-            {{ $penerima->links() }}
+            {{ $penerima->links('pagination.public') }}
         </div>
     @endif
 

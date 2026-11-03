@@ -101,7 +101,7 @@
     {{-- Pagination --}}
     @if($announcements->hasPages())
         <div class="mt-8">
-            {{ $announcements->links() }}
+            {{ $announcements->links('pagination.public') }}
         </div>
     @endif
 </div>
