@@ -555,6 +555,11 @@ cp -r public/* /var/www/msc-hub/storage/app/public/
   Sertifikat yang sudah terbit ikut berubah saat diunduh berikutnya, karena PDF
   dibentuk ulang setiap kali diunduh.
 
+- **QR berlogo JGU** di sertifikat, halaman verifikasi, dan poster absensi.
+  Sertifikat yang sudah terbit ikut berubah saat diunduh berikutnya. Isinya
+  tetap tautan yang sama, jadi QR yang sudah tercetak tetap berlaku. QR-nya
+  lebih rapat, jadi cetak minimal 2,5 cm.
+
 - **QR di pratinjau halaman verifikasi tidak lagi memanjang** di iPhone dan
   iPad.
 

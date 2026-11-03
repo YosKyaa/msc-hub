@@ -488,6 +488,20 @@ sertifikat yang valid.
 Halaman juga menyediakan QR dan tombol salin tautan agar mudah dibagikan, serta
 diberi `noindex` supaya nama penerima tidak terindeks mesin pencari.
 
+### QR berlogo JGU
+
+QR di PDF, pratinjau, halaman verifikasi, dan poster absensi dibentuk
+`QrCodeGenerator::dataUri()`: logo JGU di tengah, seperti QR S JGU, dengan
+koreksi galat tingkat H. Logonya `public/img/jgu-qr-logo.png`, dipangkas dari
+`jgusolo.png` supaya tidak perlu dipangkas setiap kali QR dibuat. Isinya tetap
+URL verifikasi yang sama, jadi QR pada sertifikat yang sudah tercetak tetap
+berlaku.
+
+QR berlogo lebih rapat daripada QR polos: 49 modul untuk URL verifikasi,
+sebelumnya 33. Kotak QR di template sebaiknya tidak lebih kecil dari 2,5 cm
+saat dicetak, sama dengan anjuran di paket QR desain sendiri. Paket itu
+(`printablePng`, `printableSvg`) belum memakai logo.
+
 ## Penerbit sertifikat
 
 MSC dapat menerbitkan sertifikat untuk pihak di luar JGU. Penerbit adalah
