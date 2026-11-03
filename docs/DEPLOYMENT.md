@@ -568,6 +568,10 @@ cp -r public/* /var/www/msc-hub/storage/app/public/
   pengumuman, inventaris, karya unggulan, prestasi, dan twibbon, serta
   head_msc untuk peran. Bila memang perlu, berikan izinnya lewat menu Peran.
 
+- **Hapus di tabel peserta kegiatan** kini butuh `certificates.delete`, dan
+  hapus massalnya melewati peserta yang sudah memegang sertifikat, sama
+  seperti tombol Hapus di barisnya.
+
 - **Absensi untuk tamu**: kegiatan yang menyalakan *Izinkan peserta di luar
   JGU* menerima akun Google apa pun, termasuk Gmail pribadi, khusus untuk
   absensi. Portal pengajuan dan peminjaman tetap khusus sivitas JGU.

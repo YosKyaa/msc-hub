@@ -6,6 +6,8 @@ use App\Enums\CertificateDesign;
 use App\Enums\ParticipantRole;
 use App\Enums\ParticipantSource;
 use App\Filament\Actions\ImportParticipantsAction;
+use App\Filament\Resources\CertificateEventResource;
+use App\Filament\Resources\ParticipantResource;
 use App\Jobs\SendCertificateEmailJob;
 use App\Models\Certificate;
 use App\Models\CertificateEvent;
@@ -39,11 +41,15 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\HtmlString;
 use Livewire\Features\SupportFileUploads\TemporaryUploadedFile;
+use Throwable;
 
 /**
  * Satu tabel untuk seluruh perjalanan sertifikat.
@@ -59,6 +65,19 @@ class ParticipationsRelationManager extends RelationManager
     protected static string $relationship = 'participations';
 
     protected static ?string $title = 'Peserta & Sertifikat';
+
+    /**
+     * Tabel ini tidak punya policy, jadi tanpa ini tombol bawaannya (Tambah,
+     * Ubah, Hapus, dan Hapus massal) dijawab "boleh" oleh Filament bagi siapa
+     * pun yang bisa membuka kegiatannya. Staf MSC, yang sengaja tidak diberi
+     * certificates.delete, dulu karena itu tetap bisa menghapus peserta.
+     * Keikutsertaan kini mengikuti izin modul sertifikat yang sama dengan
+     * kegiatannya.
+     */
+    public function getAuthorizationResponse(string $action, ?Model $record = null): Response
+    {
+        return CertificateEventResource::getAuthorizationResponse($action, $record);
+    }
 
     public function form(Schema $schema): Schema
     {
@@ -409,14 +428,10 @@ class ParticipationsRelationManager extends RelationManager
                     ])
                     ->using(fn (CertificateEventParticipant $record, array $data) => $this->saveParticipation($record, $data)),
 
-                // Menghapus keikutsertaan hanya melepaskan sertifikatnya dari
-                // pemiliknya (kunci asingnya nullOnDelete), sehingga dokumen
-                // yang sudah terbit menghilang dari tabel tanpa benar-benar
-                // hilang. Pencabutan yang dipakai untuk itu.
                 Actions\DeleteAction::make()
                     ->iconButton()
                     ->tooltip('Hapus dari kegiatan')
-                    ->visible(fn (CertificateEventParticipant $record) => $record->certificate === null),
+                    ->visible(fn (CertificateEventParticipant $record) => $record->isDeletable()),
             ])
             ->bulkActions([
                 Actions\BulkAction::make('markEligible')
@@ -490,8 +505,37 @@ class ParticipationsRelationManager extends RelationManager
                         $records->map(fn (CertificateEventParticipant $record) => $record->certificate)->filter()->values(),
                     )),
 
-                Actions\DeleteBulkAction::make(),
+                Actions\DeleteBulkAction::make()
+                    ->modalDescription('Peserta yang sudah memegang sertifikat dilewati.')
+                    ->using(fn (Actions\DeleteBulkAction $action, EloquentCollection $records) => $this->deleteSelected($action, $records)),
             ]);
+    }
+
+    /**
+     * Hapus peserta yang dipilih dari kegiatan ini, kecuali yang sudah
+     * memegang sertifikat, sama seperti tombol Hapus di barisnya. Yang
+     * dilewati disebut namanya di pemberitahuan.
+     */
+    private function deleteSelected(Actions\DeleteBulkAction $action, EloquentCollection $records): void
+    {
+        $records->loadMissing(['participant', 'certificate']);
+        $dilewati = [];
+
+        foreach ($records as $record) {
+            if (! $record->isDeletable()) {
+                $dilewati[] = $record->participant?->name ?? $record->certificate->recipient_name;
+                $action->reportBulkProcessingFailure('memegang-sertifikat', ParticipantResource::skippedMessage($dilewati));
+
+                continue;
+            }
+
+            try {
+                $record->delete() || $action->reportBulkProcessingFailure();
+            } catch (Throwable $exception) {
+                $action->reportBulkProcessingFailure();
+                report($exception);
+            }
+        }
     }
 
     /**

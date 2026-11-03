@@ -41,6 +41,21 @@ class CertificateEventParticipant extends Model
     public function participant(): BelongsTo { return $this->belongsTo(Participant::class); }
     public function certificate(): HasOne { return $this->hasOne(Certificate::class, 'event_participant_id'); }
 
+    /**
+     * Keikutsertaan yang sudah punya sertifikat, termasuk yang sudah dicabut,
+     * tidak boleh dihapus.
+     *
+     * Kunci asing sertifikatnya nullOnDelete, jadi menghapus keikutsertaan
+     * hanya melepaskan sertifikat dari kegiatannya. Dokumennya tetap sah di
+     * halaman verifikasi, tetapi hilang dari tabel peserta kegiatan, sehingga
+     * tidak bisa lagi dikirim ulang, dicabut, atau dipulihkan dari sana.
+     * Sertifikat yang memang harus dibatalkan dicabut, bukan dihapus.
+     */
+    public function isDeletable(): bool
+    {
+        return $this->certificate === null;
+    }
+
     public function scopeEligible(Builder $query): Builder
     {
         return $query->whereNotNull('eligible_at');

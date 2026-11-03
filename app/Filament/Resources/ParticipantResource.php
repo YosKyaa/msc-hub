@@ -101,9 +101,12 @@ class ParticipantResource extends Resource
     }
 
     /**
+     * Kalimat untuk pemegang sertifikat yang dilewati. Dipakai juga hapus
+     * massal di tabel peserta kegiatan.
+     *
      * @param  list<string>  $nama
      */
-    private static function skippedMessage(array $nama): string
+    public static function skippedMessage(array $nama): string
     {
         $disebut = array_slice($nama, 0, 5);
         $sisa = count($nama) - count($disebut);
