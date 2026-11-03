@@ -24,6 +24,25 @@ class Participant extends Model
     public function certificates(): HasMany { return $this->hasMany(Certificate::class); }
 
     /**
+     * Peserta yang memegang sertifikat, termasuk yang sudah dicabut, tidak
+     * boleh dihapus.
+     *
+     * Menghapus peserta ikut menghapus keikutsertaannya di setiap kegiatan.
+     * Sertifikatnya tetap ada dan tetap bisa diverifikasi, tetapi kehilangan
+     * pemiliknya: tidak lagi tampil di tabel peserta kegiatannya, sehingga
+     * tidak bisa dikirim ulang, dicabut, atau dipulihkan dari sana. Sertifikat
+     * yang memang harus dibatalkan dicabut, bukan dihapus pemiliknya.
+     */
+    public function isDeletable(): bool
+    {
+        // Jumlah yang sudah dimuat tabel dipakai lebih dulu, supaya tombol
+        // Hapus di setiap baris tidak menambah satu kueri per baris.
+        $jumlah = $this->getAttributes()['certificates_count'] ?? $this->certificates()->count();
+
+        return (int) $jumlah === 0;
+    }
+
+    /**
      * Email selalu disimpan dalam bentuk ternormalisasi karena dipakai
      * sebagai kunci dedup peserta. Aturannya tinggal di ParticipantRegistry,
      * supaya jalur mana pun yang menyimpan email sampai pada bentuk yang sama.
