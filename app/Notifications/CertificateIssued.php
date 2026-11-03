@@ -29,7 +29,10 @@ class CertificateIssued extends Notification
         $issuer = $event->resolvedIssuer();
 
         return (new MailMessage)
-            ->subject("[MSC Hub] Sertifikat {$event->name} Sudah Terbit")
+            // Nama penerima ditaruh paling depan supaya tetap terbaca di kotak
+            // masuk ponsel, yang memotong subjek panjang. Subjek yang sama
+            // persis untuk ratusan orang terbaca seperti surat massal.
+            ->subject("[MSC Hub] {$certificate->recipient_name}, Sertifikat {$event->name} Anda Sudah Terbit")
             ->view('emails.notification', [
                 // Kop email mengikuti penerbit, sehingga sertifikat mitra tidak
                 // sampai ke peserta sebagai terbitan JGU.

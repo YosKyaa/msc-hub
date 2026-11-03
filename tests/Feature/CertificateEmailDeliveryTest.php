@@ -70,6 +70,22 @@ class CertificateEmailDeliveryTest extends TestCase
     }
 
     /**
+     * Subjek yang sama persis untuk ratusan penerima terbaca seperti surat
+     * massal. Namanya ditaruh paling depan, karena kotak masuk di ponsel
+     * memotong subjek yang panjang.
+     */
+    public function test_the_subject_opens_with_the_recipient_name(): void
+    {
+        $certificate = $this->certificate();
+        $certificate->event->update(['name' => 'Panitia PKKMB 2026']);
+
+        $this->assertSame(
+            '[MSC Hub] Budi Santoso, Sertifikat Panitia PKKMB 2026 Anda Sudah Terbit',
+            (new CertificateIssued($certificate))->toMail((object) [])->subject,
+        );
+    }
+
+    /**
      * Sertifikat terbitan mitra tidak boleh sampai ke peserta sebagai
      * terbitan JGU.
      */

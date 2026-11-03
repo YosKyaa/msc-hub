@@ -607,6 +607,11 @@ dibuat otomatis dan diperiksa keunikannya.
 dan tautan verifikasi. PDF tidak dilampirkan, agar penerima selalu mendapat
 versi terbaru. Idempotensinya dijaga kolom `emailed_at`.
 
+Subjeknya dibuka dengan nama penerima, misalnya "[MSC Hub] Budi Santoso,
+Sertifikat Panitia PKKMB 2026 Anda Sudah Terbit", supaya penerima langsung
+mengenali surat itu sebagai miliknya, juga di kotak masuk ponsel yang memotong
+subjek panjang.
+
 Email hanya dikirim untuk sertifikat valid, yaitu setelah kegiatannya
 `Dipublikasikan`. **Publikasi tidak mengirim email dengan sendirinya** — admin
 harus menekan "2. Kirim Email".
