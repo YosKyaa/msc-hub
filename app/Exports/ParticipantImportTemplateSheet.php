@@ -21,9 +21,15 @@ use PhpOffice\PhpSpreadsheet\Style\NumberFormat;
  */
 class ParticipantImportTemplateSheet implements FromArray, WithColumnWidths, WithEvents, WithHeadings, WithTitle
 {
+    /**
+     * Sengaja tidak bernama peran. Nama lembar dibaca sebagai kategori bagi
+     * baris yang perannya kosong atau berisi jabatan, sehingga lembar
+     * bernama "Peserta" akan mencatat setiap "Ketua Pelaksana" yang diketik
+     * di template ini sebagai peserta.
+     */
     public function title(): string
     {
-        return 'Peserta';
+        return 'Daftar Penerima';
     }
 
     /**
@@ -50,7 +56,7 @@ class ParticipantImportTemplateSheet implements FromArray, WithColumnWidths, Wit
      */
     public function columnWidths(): array
     {
-        return ['A' => 34, 'B' => 30, 'C' => 16, 'D' => 22, 'E' => 26, 'F' => 28];
+        return ['A' => 34, 'B' => 30, 'C' => 24, 'D' => 22, 'E' => 26, 'F' => 28];
     }
 
     /**
@@ -88,19 +94,22 @@ class ParticipantImportTemplateSheet implements FromArray, WithColumnWidths, Wit
                 $contoh->getFont()->setItalic(true);
                 $contoh->getFont()->getColor()->setRGB('6B7280');
 
-                // Peran dikunci menjadi daftar pilihan: mengetiknya sendiri
-                // adalah sumber kesalahan yang paling sering pada impor.
+                // Peran baku tersedia sebagai daftar pilihan, tetapi tidak
+                // dikunci: isian di luar daftar adalah jabatan, misalnya
+                // Ketua Pelaksana, yang dicetak apa adanya. Excel hanya
+                // memberi tahu, tidak menolak.
                 $pilihan = '"'.implode(',', ParticipantRole::importableLabels()).'"';
 
                 for ($baris = 2; $baris <= ParticipantImportParser::MAX_ROWS + 1; $baris++) {
                     $validasi = $sheet->getCell('C'.$baris)->getDataValidation();
                     $validasi->setType(DataValidation::TYPE_LIST);
-                    $validasi->setErrorStyle(DataValidation::STYLE_STOP);
+                    $validasi->setErrorStyle(DataValidation::STYLE_INFORMATION);
                     $validasi->setAllowBlank(true);
                     $validasi->setShowDropDown(true);
                     $validasi->setShowErrorMessage(true);
-                    $validasi->setErrorTitle('Peran tidak dikenal');
-                    $validasi->setError('Pilih salah satu dari daftar. Kosongkan bila orang ini peserta biasa.');
+                    $validasi->setErrorTitle('Dicatat sebagai jabatan');
+                    $validasi->setError('Isian di luar daftar dicetak di sertifikat sebagai jabatan, apa adanya. '
+                        .'Kategorinya ditentukan saat import.');
                     $validasi->setPromptTitle('Peran');
                     $validasi->setPrompt('Kosongkan berarti Peserta.');
                     $validasi->setFormula1($pilihan);

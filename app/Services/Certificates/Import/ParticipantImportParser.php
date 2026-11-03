@@ -79,7 +79,7 @@ class ParticipantImportParser
 
         foreach ($tables as $table) {
             $sheet = $sebutLembar ? $table['title'] : null;
-            $peranLembar = $this->roleFromSheetTitle($table['title']);
+            $peranLembar = $this->roleNamedIn($table['title']);
             $diisiDariLembar = 0;
 
             foreach ($table['rows'] as $line => $row) {
@@ -118,8 +118,24 @@ class ParticipantImportParser
                 // terisi jelas bukan daftar peserta, dan peran itulah yang
                 // tercetak di sertifikat.
                 $role = ParticipantRole::fromLabel($values['peran']);
+                $jabatan = null;
+                $asalPeran = null;
 
-                if ($role === null) {
+                if ($role === null && $values['peran'] !== '') {
+                    // Bukan peran baku, jadi jabatan: teksnya dicetak apa
+                    // adanya dan kategorinya disimpulkan. Nama lembar
+                    // didahulukan karena jabatan panitia kerap memuat kata
+                    // peran lain — "Koordinator Peserta" di lembar Panitia
+                    // tetap panitia. Bila keduanya tidak menyiratkan apa pun,
+                    // kategorinya mengikuti Kategori default saat import.
+                    $jabatan = $values['peran'];
+                    $role = $peranLembar ?? $this->roleNamedIn($jabatan);
+                    $asalPeran = match (true) {
+                        $peranLembar !== null => ParticipantImportRow::ROLE_FROM_SHEET,
+                        $role !== null => ParticipantImportRow::ROLE_FROM_LABEL,
+                        default => null,
+                    };
+                } elseif ($role === null) {
                     $role = $peranLembar ?? ParticipantRole::PARTICIPANT;
                     $diisiDariLembar += $role === ParticipantRole::PARTICIPANT ? 0 : 1;
                 }
@@ -133,6 +149,8 @@ class ParticipantImportParser
                     studyProgram: $values['unit_prodi'] ?: null,
                     certificateNumber: $values['nomor_sertifikat'] ?: null,
                     sheet: $sheet,
+                    roleLabel: $jabatan,
+                    roleSource: $asalPeran,
                 );
             }
 
@@ -144,6 +162,7 @@ class ParticipantImportParser
 
         return new ParticipantImportPreview($validRows, $problems, [
             ...$warnings,
+            ...$this->roleLabelWarnings($validRows),
             ...$this->domainWarnings($validRows),
             ...$this->withoutEmailWarnings($validRows),
             ...$this->masterNameWarnings($validRows),
@@ -244,19 +263,20 @@ class ParticipantImportParser
     }
 
     /**
-     * Peran yang tersirat dari nama lembar: "Panitia" atau "Panitia PKKMB"
-     * berarti Panitia. Nama yang menyebut dua peran, seperti
-     * "Panitia-Peserta", tidak menyiratkan apa pun.
+     * Peran yang tersirat dari sebuah nama, untuk nama lembar maupun
+     * jabatan: "Panitia" atau "Panitia PKKMB" berarti Panitia, "Juri Tamu"
+     * berarti Juri. Nama yang menyebut dua peran, seperti "Panitia-Peserta",
+     * tidak menyiratkan apa pun.
      */
-    private function roleFromSheetTitle(string $title): ?ParticipantRole
+    private function roleNamedIn(string $text): ?ParticipantRole
     {
-        $persis = ParticipantRole::fromLabel($title);
+        $persis = ParticipantRole::fromLabel($text);
 
         if ($persis !== null) {
             return $persis;
         }
 
-        $judul = mb_strtolower($title);
+        $judul = mb_strtolower($text);
 
         $cocok = array_values(array_filter(
             ParticipantRole::cases(),
@@ -341,7 +361,7 @@ class ParticipantImportParser
             return 'Kolom nama_sertifikat wajib diisi.';
         }
 
-        foreach (['nama_sertifikat' => $nama, 'email' => $email] as $kolom => $isi) {
+        foreach (['nama_sertifikat' => $nama, 'email' => $email, 'peran' => $values['peran']] as $kolom => $isi) {
             if ($isi !== '' && $this->isFormulaLeftover($isi)) {
                 return "Kolom {$kolom} berisi rumus yang tidak menghasilkan nilai ({$isi}). "
                     .'Periksa rumusnya di Excel, atau salin lalu tempel sebagai nilai (Paste Values).';
@@ -364,9 +384,20 @@ class ParticipantImportParser
             return $masalahEmail;
         }
 
-        if ($values['peran'] !== '' && ParticipantRole::fromLabel($values['peran']) === null) {
-            return "Peran \"{$values['peran']}\" tidak dikenal. Nilai yang diterima: "
-                .implode(', ', ParticipantRole::importableLabels()).'.';
+        // Peran di luar daftar baku diterima sebagai jabatan dan dicetak apa
+        // adanya, jadi isinya harus layak cetak. "-" yang biasa dipakai untuk
+        // sel kosong tidak boleh tercetak sebagai jabatan.
+        $peran = $values['peran'];
+
+        if ($peran !== '' && ParticipantRole::fromLabel($peran) === null) {
+            if (preg_match('/\p{L}/u', $peran) !== 1) {
+                return "Peran \"{$peran}\" tidak berisi huruf. Kosongkan selnya bila orang ini peserta biasa.";
+            }
+
+            if (mb_strlen($peran) > CertificateEventParticipant::ROLE_LABEL_MAX_LENGTH) {
+                return 'Jabatan di kolom peran terlalu panjang ('.mb_strlen($peran).' karakter); maksimal '
+                    .CertificateEventParticipant::ROLE_LABEL_MAX_LENGTH.' karakter.';
+            }
         }
 
         foreach (['nim_nip', 'unit_prodi', 'nomor_sertifikat'] as $kolom) {
@@ -499,6 +530,35 @@ class ParticipantImportParser
             ->exists();
 
         return $dipesan ? "Nomor sertifikat {$nomor} sudah disiapkan untuk peserta lain." : null;
+    }
+
+    /**
+     * Jabatan tercetak apa adanya dan kategorinya hasil simpulan, jadi
+     * keduanya perlu dicek admin sebelum import. Rincian per barisnya ada di
+     * pratinjau; peringatan ini merangkumnya, dan ikut terbawa ke
+     * pemberitahuan setelah import.
+     *
+     * @param  array<int, ParticipantImportRow>  $rows
+     * @return array<int, string>
+     */
+    private function roleLabelWarnings(array $rows): array
+    {
+        $jabatan = array_filter($rows, fn (ParticipantImportRow $row) => $row->roleLabel !== null);
+
+        if ($jabatan === []) {
+            return [];
+        }
+
+        $asal = array_count_values(array_map(fn (ParticipantImportRow $row) => $row->roleSource ?? 'default', $jabatan));
+
+        $rincian = array_filter([
+            isset($asal[ParticipantImportRow::ROLE_FROM_SHEET]) ? $asal[ParticipantImportRow::ROLE_FROM_SHEET].' dari nama lembar' : null,
+            isset($asal[ParticipantImportRow::ROLE_FROM_LABEL]) ? $asal[ParticipantImportRow::ROLE_FROM_LABEL].' dari kata peran di jabatannya' : null,
+            isset($asal['default']) ? $asal['default'].' mengikuti Kategori default' : null,
+        ]);
+
+        return [count($jabatan).' baris berisi jabatan, bukan peran baku; teksnya dicetak di sertifikat apa adanya. '
+            .'Kategorinya: '.implode(', ', $rincian).'.'];
     }
 
     /**

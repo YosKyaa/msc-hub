@@ -2,7 +2,9 @@
 
 namespace App\Filament\Actions;
 
+use App\Enums\ParticipantRole;
 use App\Models\CertificateEvent;
+use App\Services\Certificates\Import\ParticipantImporter;
 use App\Services\Certificates\Import\ParticipantImportException;
 use App\Services\Certificates\Import\ParticipantImportParser;
 use App\Services\Certificates\Import\ParticipantImportPreview;
@@ -11,6 +13,7 @@ use App\Services\Certificates\Import\ParticipantImportSession;
 use App\Support\CertificatePermission;
 use Filament\Actions\Action;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Text;
 use Filament\Schemas\Components\Utilities\Get;
@@ -56,6 +59,9 @@ class ImportParticipantsAction extends Action
 
     /** Berapa peringatan yang dirinci, di pratinjau maupun di pemberitahuan. */
     private const MAX_WARNINGS_SHOWN = 10;
+
+    /** Berapa baris berjabatan yang dirinci di pratinjau. */
+    private const MAX_ROLE_LABELS_SHOWN = 50;
 
     /**
      * Hasil pratinjau dalam satu permintaan, supaya kelima bagian pratinjau
@@ -140,11 +146,60 @@ class ImportParticipantsAction extends Action
                             ->color('warning')
                             ->visible(fn (Get $get) => ($this->previewState($get('file'))['preview']?->warnings ?? []) !== []),
 
-                        Text::make(fn (Get $get) => $this->sampleHtml($this->previewState($get('file'))['preview']))
+                        // Diletakkan di samping daftar jabatannya, supaya
+                        // akibat pilihannya langsung terlihat. Berkas tanpa
+                        // jabatan tidak membutuhkannya.
+                        Select::make('default_category')
+                            ->label('Kategori default')
+                            ->options(ParticipantRole::options())
+                            ->in(array_keys(ParticipantRole::options()))
+                            ->default(ParticipantImporter::DEFAULT_CATEGORY->value)
+                            ->required()
+                            ->live()
+                            ->helperText('Untuk jabatan yang kategorinya tidak tersirat dari nama lembar maupun teksnya. '
+                                .'Jabatannya tetap dicetak apa adanya.')
+                            ->visible(fn (Get $get) => $this->roleLabelLines(
+                                $this->previewState($get('file'))['preview'],
+                                ParticipantImporter::DEFAULT_CATEGORY,
+                            ) !== []),
+
+                        // Jabatan tercetak apa adanya dan kategorinya hasil
+                        // simpulan, jadi semuanya dirinci di sini, bukan hanya
+                        // yang kebetulan masuk contoh lima baris.
+                        Text::make(fn (Get $get) => $this->listHtml(
+                            'Jabatan di luar daftar peran',
+                            $this->roleLabelLines(
+                                $this->previewState($get('file'))['preview'],
+                                $this->defaultCategory($get('default_category')),
+                            ),
+                            self::MAX_ROLE_LABELS_SHOWN,
+                        ))
+                            ->color('info')
+                            ->visible(fn (Get $get) => $this->roleLabelLines(
+                                $this->previewState($get('file'))['preview'],
+                                $this->defaultCategory($get('default_category')),
+                            ) !== []),
+
+                        Text::make(fn (Get $get) => $this->sampleHtml(
+                            $this->previewState($get('file'))['preview'],
+                            $this->defaultCategory($get('default_category')),
+                        ))
                             ->visible(fn (Get $get) => ($this->previewState($get('file'))['preview']?->validCount() ?? 0) > 0),
                     ]),
             ])
-            ->action(fn (array $data) => $this->import($data['file'] ?? null));
+            ->action(fn (array $data) => $this->import(
+                $data['file'] ?? null,
+                $this->defaultCategory($data['default_category'] ?? null),
+            ));
+    }
+
+    /**
+     * Pilihan Kategori default sudah dibatasi formulirnya; yang tidak
+     * dikenal tetap jatuh ke bawaannya, bukan menggagalkan import.
+     */
+    private function defaultCategory(mixed $value): ParticipantRole
+    {
+        return ParticipantRole::tryFrom(is_string($value) ? $value : '') ?? ParticipantImporter::DEFAULT_CATEGORY;
     }
 
     /**
@@ -234,16 +289,29 @@ class ImportParticipantsAction extends Action
         ));
     }
 
-    private function sampleHtml(?ParticipantImportPreview $preview): HtmlString
+    private function sampleHtml(?ParticipantImportPreview $preview, ParticipantRole $defaultCategory): HtmlString
     {
         $baris = array_map(
             fn (ParticipantImportRow $row) => $row->location().': '.$row->name
                 .($row->email === null ? ' (tanpa email)' : ' <'.$row->email.'>')
-                .', '.$row->role->getLabel(),
+                .', '.$row->describeRole($defaultCategory),
             array_slice($preview?->validRows ?? [], 0, 5),
         );
 
         return $this->listHtml('Contoh baris valid', $baris, 5);
+    }
+
+    /**
+     * "Baris 12: Budi, Koordinator Peserta (Panitia — dari nama lembar)".
+     *
+     * @return array<int, string>
+     */
+    private function roleLabelLines(?ParticipantImportPreview $preview, ParticipantRole $defaultCategory): array
+    {
+        return array_values(array_map(
+            fn (ParticipantImportRow $row) => $row->location().': '.$row->name.', '.$row->describeRole($defaultCategory),
+            array_filter($preview?->validRows ?? [], fn (ParticipantImportRow $row) => $row->roleLabel !== null),
+        ));
     }
 
     /**
@@ -272,7 +340,7 @@ class ImportParticipantsAction extends Action
         return new HtmlString($html);
     }
 
-    private function import(mixed $file): void
+    private function import(mixed $file, ParticipantRole $defaultCategory): void
     {
         $path = $this->uploadedFile($file);
 
@@ -283,7 +351,7 @@ class ImportParticipantsAction extends Action
         }
 
         try {
-            $result = $this->session()->confirm($this->event(), $path);
+            $result = $this->session()->confirm($this->event(), $path, $defaultCategory);
         } catch (ParticipantImportException $exception) {
             $this->session()->discard($path);
             Notification::make()->title('Import dibatalkan')->body($exception->getMessage())->danger()->send();

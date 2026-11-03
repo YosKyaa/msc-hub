@@ -3,6 +3,7 @@
 namespace App\Exports;
 
 use App\Enums\ParticipantRole;
+use App\Models\CertificateEventParticipant;
 use App\Services\Certificates\Import\ParticipantImportParser;
 use Maatwebsite\Excel\Concerns\Exportable;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
@@ -13,8 +14,8 @@ use Maatwebsite\Excel\Concerns\WithMultipleSheets;
  * Nama pada sertifikat dicetak apa adanya, dan sertifikat yang telanjur
  * terkirim dengan nama keliru harus dikoreksi lalu dikirim ulang, jadi
  * kesalahan mengetiknya mahal. Template ini menyebutkan
- * kolom yang dibaca beserta artinya, memberi contoh isian, dan mengunci
- * kolom peran menjadi daftar pilihan supaya tidak bisa salah ketik.
+ * kolom yang dibaca beserta artinya, memberi contoh isian, dan menyediakan
+ * daftar pilihan peran. Isian di luar daftar itu dicatat sebagai jabatan.
  */
 class ParticipantImportTemplate implements WithMultipleSheets
 {
@@ -118,8 +119,12 @@ class ParticipantImportTemplate implements WithMultipleSheets
             [
                 'peran',
                 'Opsional',
-                'Peran orang ini pada kegiatan.',
-                'Pilih dari daftar di kolomnya. Dikosongkan berarti Peserta. Nilai yang diterima: '.implode(', ', ParticipantRole::importableLabels()).'.',
+                'Peran orang ini pada kegiatan, atau jabatannya.',
+                'Pilih dari daftar di kolomnya: '.implode(', ', ParticipantRole::importableLabels()).'. Dikosongkan berarti Peserta. '
+                    .'Isian lain, misalnya Ketua Pelaksana, dicetak di sertifikat sebagai jabatan, apa adanya, maksimal '
+                    .CertificateEventParticipant::ROLE_LABEL_MAX_LENGTH.' karakter. Kategorinya diambil dari nama lembar '
+                    .'(lembar "Panitia" berarti Panitia), lalu dari kata peran di dalam jabatannya ("Juri Tamu" berarti Juri), '
+                    .'lalu dari pilihan Kategori default saat import.',
             ],
             [
                 'nim_nip',

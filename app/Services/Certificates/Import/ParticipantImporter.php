@@ -2,6 +2,7 @@
 
 namespace App\Services\Certificates\Import;
 
+use App\Enums\ParticipantRole;
 use App\Enums\ParticipantSource;
 use App\Models\CertificateEvent;
 use App\Models\Participant;
@@ -16,11 +17,21 @@ use Illuminate\Support\Facades\DB;
  */
 class ParticipantImporter
 {
+    /**
+     * Kategori untuk jabatan yang kategorinya tidak tersirat dari nama
+     * lembar maupun teksnya. Jabatan seperti "Ketua Pelaksana" atau "LO"
+     * paling sering milik panitia.
+     */
+    public const DEFAULT_CATEGORY = ParticipantRole::COMMITTEE;
+
     public function __construct(private readonly ParticipantRegistry $participants) {}
 
-    public function import(CertificateEvent $event, ParticipantImportPreview $preview): ParticipantImportResult
-    {
-        return DB::transaction(function () use ($event, $preview) {
+    public function import(
+        CertificateEvent $event,
+        ParticipantImportPreview $preview,
+        ParticipantRole $defaultCategory = self::DEFAULT_CATEGORY,
+    ): ParticipantImportResult {
+        return DB::transaction(function () use ($event, $preview, $defaultCategory) {
             $created = 0;
             $skipped = 0;
 
@@ -39,7 +50,8 @@ class ParticipantImporter
 
                 $event->participations()->create([
                     'participant_id' => $participant->id,
-                    'role' => $row->role->value,
+                    'role' => $row->roleFor($defaultCategory)->value,
+                    'role_label' => $row->roleLabel,
                     'source' => ParticipantSource::IMPORT->value,
                     'certificate_number' => $row->certificateNumber,
                 ]);

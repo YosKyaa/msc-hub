@@ -17,6 +17,12 @@ class CertificateEventParticipant extends Model
     use HasFactory;
     use RecordsActivity;
 
+    /**
+     * Panjang maksimal jabatan (`role_label`), misalnya "Ketua Pelaksana".
+     * Kolomnya menampung 255 karakter; batas inilah yang diperiksa aplikasi.
+     */
+    public const ROLE_LABEL_MAX_LENGTH = 150;
+
     protected $fillable = [
         'certificate_event_id', 'participant_id', 'role', 'role_label',
         'attendance_status', 'eligible_at', 'variables',

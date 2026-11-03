@@ -2,6 +2,7 @@
 
 namespace App\Services\Certificates\Import;
 
+use App\Enums\ParticipantRole;
 use App\Models\CertificateEvent;
 use Closure;
 use Illuminate\Contracts\Filesystem\Filesystem;
@@ -57,12 +58,15 @@ class ParticipantImportSession
         );
     }
 
-    public function confirm(CertificateEvent $event, string $storedPath): ParticipantImportResult
-    {
+    public function confirm(
+        CertificateEvent $event,
+        string $storedPath,
+        ParticipantRole $defaultCategory = ParticipantImporter::DEFAULT_CATEGORY,
+    ): ParticipantImportResult {
         $preview = $this->preview($storedPath);
 
         try {
-            return $this->importer->import($event, $preview);
+            return $this->importer->import($event, $preview, $defaultCategory);
         } finally {
             $this->discard($storedPath);
         }

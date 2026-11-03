@@ -10,6 +10,7 @@ use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Maatwebsite\Excel\Excel as ExcelFormat;
 use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\Cell\DataValidation;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
@@ -117,19 +118,42 @@ class ParticipantImportTemplateTest extends TestCase
     }
 
     /**
-     * Mengetik peran sendiri adalah sumber kesalahan impor yang paling
-     * sering, jadi kolomnya dikunci menjadi daftar pilihan.
+     * Peran baku tetap tersedia sebagai daftar pilihan. Kolomnya tidak lagi
+     * dikunci: isian lain adalah jabatan, dan Excel yang menolaknya membuat
+     * jabatan mustahil diketik di template resmi.
      */
-    public function test_the_role_column_is_locked_to_a_dropdown(): void
+    public function test_the_role_column_offers_a_dropdown_without_refusing_titles(): void
     {
         $validasi = IOFactory::load($this->file())->getSheet(0)->getCell('C2')->getDataValidation();
 
         $this->assertSame('list', $validasi->getType());
         $this->assertTrue($validasi->getShowDropDown());
+        $this->assertNotSame(DataValidation::STYLE_STOP, $validasi->getErrorStyle());
 
         foreach (ParticipantRole::importableLabels() as $label) {
             $this->assertStringContainsString($label, $validasi->getFormula1());
         }
+    }
+
+    /**
+     * Nama lembar dibaca sebagai kategori jabatan. Lembar isian bernama
+     * "Peserta" akan mencatat setiap jabatan yang diketik di template resmi
+     * sebagai peserta, sehingga Kategori default tidak pernah terpakai.
+     */
+    public function test_a_title_typed_into_the_template_follows_the_default_category(): void
+    {
+        $buku = IOFactory::load($this->file());
+        $buku->getSheet(0)->fromArray(
+            ['Rina Wulandari', 'rina.w@student.jgu.ac.id', 'Ketua Pelaksana', '', 'BEM', ''],
+            null,
+            'A'.(count(ParticipantImportTemplate::contoh()) + 2),
+        );
+        IOFactory::createWriter($buku, 'Xlsx')->save($this->file());
+
+        $baris = app(ParticipantImportParser::class)->parse($this->file())->validRows[0];
+
+        $this->assertSame('Ketua Pelaksana', $baris->roleLabel);
+        $this->assertNull($baris->role, 'Kategori jabatan di template resmi tidak mengikuti Kategori default.');
     }
 
     /**
@@ -234,7 +258,7 @@ class ParticipantImportTemplateTest extends TestCase
     {
         $preview = app(ParticipantImportParser::class)->parse($this->file());
 
-        // Yang terbaca hanya baris contoh di lembar Peserta, baris 2 sampai 4.
+        // Yang terbaca hanya baris contoh di lembar isian, baris 2 sampai 4.
         $baris = array_column($preview->problems, 'line');
         $this->assertSame(range(2, count(ParticipantImportTemplate::contoh()) + 1), $baris);
 

@@ -215,7 +215,11 @@ class ParticipantImportTest extends TestCase
         $this->assertStringContainsString('duplikat dengan baris 2', $preview->problems[0]['message']);
     }
 
-    public function test_unknown_role_and_taken_certificate_number_are_reported(): void
+    /**
+     * Peran di luar daftar dulu ikut ditolak di sini. Sekarang ia jabatan,
+     * jadi barisnya diterima; yang lain tetap ditolak seperti biasa.
+     */
+    public function test_taken_certificate_number_and_bad_email_are_reported(): void
     {
         Certificate::factory()->create(['certificate_number' => 'CERT-SUDAH-ADA']);
 
@@ -228,10 +232,11 @@ class ParticipantImportTest extends TestCase
 
         $preview = $this->importSession()->preview($path);
 
-        $this->assertSame(0, $preview->validCount());
-        $this->assertStringContainsString('Peran "Bintang Tamu" tidak dikenal', $preview->problems[0]['message']);
-        $this->assertStringContainsString('sudah dipakai', $preview->problems[1]['message']);
-        $this->assertStringContainsString('Format email tidak valid', $preview->problems[2]['message']);
+        $this->assertSame(1, $preview->validCount());
+        $this->assertSame('Bintang Tamu', $preview->validRows[0]->roleLabel);
+        $this->assertCount(2, $preview->problems);
+        $this->assertStringContainsString('sudah dipakai', $preview->problems[0]['message']);
+        $this->assertStringContainsString('Format email tidak valid', $preview->problems[1]['message']);
     }
 
     public function test_blank_rows_are_skipped_silently(): void
