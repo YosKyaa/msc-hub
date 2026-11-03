@@ -73,7 +73,13 @@
             <div style="{{ CertificateElement::CELL_STRUCTURE }}{{ $element->contentCss($containerWidth($element->fittedFontSize($values, $template)), '100%') }}">
                 @if($element->isQr())
                     @if($qrDataUri)
-                        <img src="{{ $qrDataUri }}" alt="QR verifikasi" style="width:100%;height:100%;">
+                        {{-- Ukurannya pasti, sama seperti di PDF, dan keduanya
+                             diukur terhadap lebar kanvas. height:100% di dalam
+                             sel tabel dibaca Safari sebagai tinggi asli PNG-nya,
+                             sehingga di iPhone dan iPad QR memanjang ke bawah
+                             dan meluber keluar sertifikat. --}}
+                        <img src="{{ $qrDataUri }}" alt="QR verifikasi"
+                             style="width:{{ $containerWidth($element->width()) }};height:{{ $containerWidth($element->height()) }};">
                     @endif
                 @else
                     {{ $element->value($values) }}

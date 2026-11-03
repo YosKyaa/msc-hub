@@ -475,6 +475,11 @@ dalam persen, tipografi dalam `cqw` terhadap container kanvas. Hasilnya sebangun
 dengan PDF di lebar layar mana pun tanpa JavaScript dan tanpa render gambar di
 server.
 
+QR pengecualiannya: lebar dan tingginya ditulis dalam `cqw`, sama seperti PDF
+menuliskannya dalam piksel. Dengan `height:100%` di dalam sel tabel, Safari di
+iPhone dan iPad memakai tinggi asli PNG-nya, sehingga QR memanjang ke bawah dan
+meluber keluar sertifikat, sementara Chrome di Android menampilkannya benar.
+
 Sertifikat yang tidak berlaku tetap ditampilkan, tetapi diredupkan dan diberi
 cap "Tidak Berlaku", disertai keterangan apakah kegiatannya belum dipublikasikan
 atau sertifikatnya dicabut beserta tanggalnya. Tombol unduh hanya muncul untuk

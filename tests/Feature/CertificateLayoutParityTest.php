@@ -229,6 +229,34 @@ class CertificateLayoutParityTest extends TestCase
     }
 
     /**
+     * QR di pratinjau diberi ukuran pasti, sama seperti di PDF.
+     *
+     * Dulu ukurannya height:100% di dalam sel tabel. Chrome di Android
+     * membacanya setinggi kotaknya, tetapi Safari di iPhone dan iPad
+     * membacanya setinggi PNG aslinya, berapa pun lebar layarnya: QR memanjang
+     * ke bawah dan meluber keluar sertifikat, sementara PDF-nya baik-baik
+     * saja.
+     */
+    public function test_the_preview_gives_the_qr_a_fixed_size_like_the_pdf(): void
+    {
+        $certificate = $this->certificate([[
+            'variable' => 'qr_code',
+            'x' => 500, 'y' => 600, 'width' => 150, 'height' => 150,
+        ]]);
+
+        $html = $this->get(route('certificates.verify', $certificate->verification_token))
+            ->assertOk()
+            ->getContent();
+
+        $this->assertMatchesRegularExpression('/<img[^>]+alt="QR verifikasi"[^>]+style="([^"]*)"/', $html);
+        preg_match('/<img[^>]+alt="QR verifikasi"[^>]+style="([^"]*)"/', $html, $qr);
+
+        // 150 px pada kanvas 1123 px = 13,3571% lebar kanvas, untuk lebar
+        // maupun tingginya: cqw mengukur keduanya terhadap lebar wadah.
+        $this->assertSame('width:13.3571cqw;height:13.3571cqw;', $qr[1]);
+    }
+
+    /**
      * Akar sebabnya, dijaga langsung: komponen pratinjau tidak boleh
      * menitipkan gaya apa pun lewat `@push`.
      *

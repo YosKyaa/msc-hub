@@ -555,6 +555,9 @@ cp -r public/* /var/www/msc-hub/storage/app/public/
   Sertifikat yang sudah terbit ikut berubah saat diunduh berikutnya, karena PDF
   dibentuk ulang setiap kali diunduh.
 
+- **QR di pratinjau halaman verifikasi tidak lagi memanjang** di iPhone dan
+  iPad.
+
 - **Absensi untuk tamu**: kegiatan yang menyalakan *Izinkan peserta di luar
   JGU* menerima akun Google apa pun, termasuk Gmail pribadi, khusus untuk
   absensi. Portal pengajuan dan peminjaman tetap khusus sivitas JGU.
