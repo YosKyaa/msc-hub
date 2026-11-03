@@ -3,6 +3,7 @@
 namespace App\Filament\Concerns;
 
 use App\Support\CertificatePermission;
+use App\Support\PanelAbility;
 use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Model;
 
@@ -23,15 +24,7 @@ trait AuthorizesCertificateModule
 {
     public static function getAuthorizationResponse(string $action, ?Model $record = null): Response
     {
-        $kemampuan = match ($action) {
-            'viewAny', 'view' => 'view',
-            // Menggandakan berarti membuat catatan baru.
-            'create', 'replicate' => 'create',
-            'update', 'reorder' => 'edit',
-            'delete', 'deleteAny', 'forceDelete', 'forceDeleteAny', 'restore', 'restoreAny' => 'delete',
-            // Aksi yang tidak dikenal ditutup, bukan dibuka.
-            default => null,
-        };
+        $kemampuan = PanelAbility::forAction($action);
 
         return $kemampuan !== null && CertificatePermission::allows($kemampuan)
             ? Response::allow()

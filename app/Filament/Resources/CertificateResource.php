@@ -17,7 +17,9 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 /**
@@ -51,45 +53,19 @@ class CertificateResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'certificate_number';
 
-    public static function canAccess(): bool
-    {
-        return CertificatePermission::allows('view');
-    }
-
-    /** Halaman ini hanya untuk melihat. */
-    public static function canCreate(): bool
-    {
-        return false;
-    }
-
-    public static function canEdit(mixed $record): bool
-    {
-        return false;
-    }
-
-    public static function canDelete(mixed $record): bool
-    {
-        return false;
-    }
-
     /**
-     * Hapus massal punya penjaga tersendiri di Filament, dan tanpa metode ini
-     * ia jatuh ke bawaan yang mengizinkan — tombol hapus per baris tertutup,
-     * tetapi menghapus seluruh sertifikat sekaligus tetap bisa.
+     * Halaman ini hanya untuk melihat: sertifikat diterbitkan, dicabut, dan
+     * dipulihkan lewat aksinya sendiri, bukan diketik atau dihapus di sini.
+     *
+     * Ditaruh di getAuthorizationResponse(), jalur yang dilalui halaman
+     * maupun tombol aksi bawaan Filament. Menimpa canDelete() dan
+     * kawan-kawannya saja tidak menutup tombolnya.
      */
-    public static function canDeleteAny(): bool
+    public static function getAuthorizationResponse(string $action, ?Model $record = null): Response
     {
-        return false;
-    }
-
-    public static function canForceDelete(mixed $record): bool
-    {
-        return false;
-    }
-
-    public static function canForceDeleteAny(): bool
-    {
-        return false;
+        return in_array($action, ['viewAny', 'view'], true) && CertificatePermission::allows('view')
+            ? Response::allow()
+            : Response::deny();
     }
 
     public static function table(Table $table): Table

@@ -563,6 +563,11 @@ cp -r public/* /var/www/msc-hub/storage/app/public/
 - **QR di pratinjau halaman verifikasi tidak lagi memanjang** di iPhone dan
   iPad.
 
+- **Tombol Hapus mengikuti izin hapus** di seluruh panel. Peran tanpa izin
+  itu tidak lagi melihat maupun bisa memakai tombolnya: staf MSC untuk
+  pengumuman, inventaris, karya unggulan, prestasi, dan twibbon, serta
+  head_msc untuk peran. Bila memang perlu, berikan izinnya lewat menu Peran.
+
 - **Absensi untuk tamu**: kegiatan yang menyalakan *Izinkan peserta di luar
   JGU* menerima akun Google apa pun, termasuk Gmail pribadi, khusus untuk
   absensi. Portal pengajuan dan peminjaman tetap khusus sivitas JGU.

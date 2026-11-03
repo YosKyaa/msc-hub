@@ -12,6 +12,7 @@ use Filament\Resources\Resource;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
@@ -27,7 +28,9 @@ use UnitEnum;
  */
 class ActivityLogResource extends Resource
 {
-    use AuthorizesByPermission;
+    use AuthorizesByPermission {
+        getAuthorizationResponse as permissionResponse;
+    }
 
     protected static ?string $model = Activity::class;
 
@@ -48,24 +51,15 @@ class ActivityLogResource extends Resource
         return 'activity_log';
     }
 
-    public static function canCreate(): bool
+    /**
+     * Hanya untuk dibaca, bahkan oleh admin: catatan audit yang bisa diubah
+     * dari panel tidak bisa dipercaya.
+     */
+    public static function getAuthorizationResponse(string $action, ?Model $record = null): Response
     {
-        return false;
-    }
-
-    public static function canEdit(Model $record): bool
-    {
-        return false;
-    }
-
-    public static function canDelete(Model $record): bool
-    {
-        return false;
-    }
-
-    public static function canDeleteAny(): bool
-    {
-        return false;
+        return in_array($action, ['viewAny', 'view'], true)
+            ? static::permissionResponse($action, $record)
+            : Response::deny();
     }
 
     public static function table(Table $table): Table

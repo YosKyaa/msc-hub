@@ -2,6 +2,8 @@
 
 namespace App\Filament\Concerns;
 
+use App\Support\PanelAbility;
+use Illuminate\Auth\Access\Response;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -20,8 +22,16 @@ use Illuminate\Database\Eloquent\Model;
  * pengumuman yang tampil di halaman publik.
  *
  * Trait ini memetakan tiap aksi ke izin `{awalan}.{aksi}`, sehingga izin yang
- * tidak diberikan berarti aksinya benar-benar tertutup. Modul sertifikat
- * memakai pola yang sama lewat [AuthorizesCertificateModule].
+ * tidak diberikan berarti aksinya benar-benar tertutup.
+ *
+ * Pemetaannya ditaruh di getAuthorizationResponse(), satu-satunya jalur yang
+ * dilalui halaman maupun tombol aksi bawaan Filament. Trait ini dulu hanya
+ * menimpa canDelete() dan kawan-kawannya. Halaman Ubah dan Buat memang
+ * memanggilnya, tetapi tombol Hapus di tabel, hapus massal, dan tombol Hapus
+ * di halaman Ubah langsung meminta getDeleteAuthorizationResponse(). head_msc
+ * karena itu tetap bisa menghapus peran dari tabelnya, dan staf MSC menghapus
+ * pengumuman publik. Modul sertifikat memakai pola yang sama lewat
+ * [AuthorizesCertificateModule].
  */
 trait AuthorizesByPermission
 {
@@ -30,77 +40,12 @@ trait AuthorizesByPermission
      */
     abstract protected static function permissionPrefix(): string;
 
-    protected static function allowsAction(string $action): bool
+    public static function getAuthorizationResponse(string $action, ?Model $record = null): Response
     {
-        return auth()->user()?->can(static::permissionPrefix().'.'.$action) ?? false;
-    }
+        $kemampuan = PanelAbility::forAction($action);
 
-    public static function canViewAny(): bool
-    {
-        return static::allowsAction('view');
-    }
-
-    public static function canView(Model $record): bool
-    {
-        return static::allowsAction('view');
-    }
-
-    public static function canCreate(): bool
-    {
-        return static::allowsAction('create');
-    }
-
-    /**
-     * Menggandakan berarti membuat catatan baru, jadi izinnya izin membuat —
-     * bukan izin menyunting yang kebetulan dipakai untuk membukanya.
-     */
-    public static function canReplicate(Model $record): bool
-    {
-        return static::allowsAction('create');
-    }
-
-    public static function canEdit(Model $record): bool
-    {
-        return static::allowsAction('edit');
-    }
-
-    public static function canReorder(): bool
-    {
-        return static::allowsAction('edit');
-    }
-
-    public static function canDelete(Model $record): bool
-    {
-        return static::allowsAction('delete');
-    }
-
-    /**
-     * Hapus massal paling mudah terlewat: tombolnya tersembunyi di menu aksi
-     * terpilih, dan tanpa penjaga tersendiri ia lolos meski tombol hapus per
-     * baris sudah tertutup.
-     */
-    public static function canDeleteAny(): bool
-    {
-        return static::allowsAction('delete');
-    }
-
-    public static function canForceDelete(Model $record): bool
-    {
-        return static::allowsAction('delete');
-    }
-
-    public static function canForceDeleteAny(): bool
-    {
-        return static::allowsAction('delete');
-    }
-
-    public static function canRestore(Model $record): bool
-    {
-        return static::allowsAction('delete');
-    }
-
-    public static function canRestoreAny(): bool
-    {
-        return static::allowsAction('delete');
+        return $kemampuan !== null && (auth()->user()?->can(static::permissionPrefix().'.'.$kemampuan) ?? false)
+            ? Response::allow()
+            : Response::deny();
     }
 }
